@@ -43,10 +43,11 @@ npm install
 npm run dev
 ```
 
-🔑 Login Demo (Contoh)
-Role	Email	Password
-Admin	admin@gmail.com	admin123
-Petugas	petugas@gmail.com	petugas123
+## 🔑 Login Demo (Contoh)
+| Role    | Email                                         | Password   |
+| ------- | --------------------------------------------- | ---------- |
+| Admin   | [admin@gmail.com](mailto:admin@gmail.com)     | admin123   |
+| Petugas | [petugas@gmail.com](mailto:petugas@gmail.com) | petugas123 |
 
 Catatan: Ubah kredensial sesuai data di database kamu.
 
