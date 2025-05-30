@@ -1,0 +1,70 @@
+import React, { useState } from "react";
+import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
+import '../styles/LoginPage.css';
+
+const LoginPage = () => {
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [error, setError] = useState('');
+    const navigate = useNavigate();
+
+const handleLogin = async (e) => {
+    e.preventDefault();
+    try {
+        const res = await axios.post('http://localhost:5000/api/login', {
+            email,
+            password,
+        });
+
+    localStorage.setItem('token', res.data.token);
+    localStorage.setItem('role', res.data.role);
+    localStorage.setItem('name', res.data.name);
+    alert('Login Berhasil');
+
+    // Redirect berdasarkan role
+        if (res.data.role === 'admin') {
+            navigate('/admin/dashboard');
+        } else if (res.data.role === 'petugas') {
+            navigate('/petugas/dashboard');
+        } else {
+            setError('Role tidak dikenali');
+        }
+        } catch (err) {
+        setError('Login gagal. Periksa kembali email dan password.');
+    }
+};
+
+return (
+    <div className="login-container">
+        <h1 className="login-title">Log in</h1>
+        <p className="login-subtitle">IB Administration</p>
+        {error && <p className="error-message">{error}</p>}
+        <form onSubmit={handleLogin} className="login-form">
+            <label htmlFor="email">Email</label>
+            <input
+                id="email"
+                type="email"
+                placeholder="email"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                required
+                className="input-field"
+            />
+            <label htmlFor="password">Password</label>
+            <input
+                id="password"
+                type="password"
+                placeholder="password"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                required
+                className="input-field"
+            />
+            <button type="submit" className="submit-button">Log in</button>
+        </form>
+    </div>
+    );
+};
+
+export default LoginPage;

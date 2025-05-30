@@ -1,0 +1,79 @@
+:root {
+    --color-primary: #2bae66;
+    --color-border: #e0e0e0;
+    --color-bg: #ffffff;
+    --color-text: #212121;
+    --color-placeholder: #aaa;
+}
+
+body {
+    background-color: #f8f9fa;
+    font-family: 'Segoe UI', sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+.login-container {
+    max-width: 400px;
+    margin: 80px auto;
+    padding: 30px 25px;
+    border-radius: 10px;
+    background-color: var(--color-bg);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+}
+
+.login-title {
+    font-size: 32px;
+    font-weight: bold;
+    margin-bottom: 5px;
+    color: var(--color-text);
+}
+
+.login-subtitle {
+    font-size: 16px;
+    margin-bottom: 30px;
+    color: var(--color-placeholder);
+}
+
+.login-form {
+    display: flex;
+    flex-direction: column;
+}
+
+.input-field {
+    padding: 12px;
+    margin-bottom: 20px;
+    border: 1px solid var(--color-border);
+    border-radius: 5px;
+    font-size: 14px;
+}
+
+.input-field::placeholder {
+    color: var(--color-placeholder);
+}
+
+label {
+    margin-bottom: 5px;
+    font-size: 14px;
+    color: var(--color-text);
+}
+
+.submit-button {
+    padding: 12px;
+    font-size: 16px;
+    border: none;
+    border-radius: 5px;
+    background-color: var(--color-primary);
+    color: white;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.submit-button:hover {
+    background-color: #219e5a;
+}
+
+.error-message {
+    color: red;
+    margin-bottom: 15px;
+}
