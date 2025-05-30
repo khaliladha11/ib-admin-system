@@ -33,11 +33,15 @@ npm run dev
 
 Pastikan file .env atau konfigurasi db.js sesuai dengan database lokalmu.
 
-2. Jalankan Frontend
+```
 
+### 2. Jalankan Frontend
+
+```bash
 cd frontend
 npm install
 npm run dev
+```
 
 🔑 Login Demo (Contoh)
 Role	Email	Password
