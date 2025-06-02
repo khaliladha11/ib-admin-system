@@ -17,9 +17,10 @@ const handleLogin = async (e) => {
             password,
         });
 
-    localStorage.setItem('token', res.data.token);
-    localStorage.setItem('role', res.data.role);
-    localStorage.setItem('name', res.data.name);
+    sessionStorage.setItem('token', res.data.token);
+    sessionStorage.setItem('role', res.data.role);
+    sessionStorage.setItem('name', res.data.name);
+    sessionStorage.setItem('userId', res.data.id);
     alert('Login Berhasil');
 
     // Redirect berdasarkan role

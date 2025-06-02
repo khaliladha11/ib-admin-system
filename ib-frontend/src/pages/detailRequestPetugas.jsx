@@ -139,13 +139,17 @@ const DetailRequest = () => {
             </section>
             <section className="section">
                 <h3>Log Aktivitas</h3>
-                <ul>
+                {logs.length > 0 ? (
+                    <ul>
                     {logs.map((log) => (
                         <li key={log.id}>
-                            <strong>{new Date(log.waktu).toLocaleString('id-ID')}</strong>: {log.deskripsi}
+                        <strong>{new Date(log.waktu).toLocaleString('id-ID')}</strong>: {log.deskripsi}
                         </li>
                     ))}
-                </ul>
+                    </ul>
+                ) : (
+                    <p>Belum ada aktivitas.</p>
+                )}
             </section>
         </div>
         </div>

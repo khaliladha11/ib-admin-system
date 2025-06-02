@@ -13,8 +13,6 @@ app.use('/api/requests', requestRoutes);
 // REGISTER ROUTES
 app.use('/api', authRoutes); // ← ini penting!
 
-app.use('/api', requestRoutes); //request dari peternak
-
 // Cek koneksi DB
 db.connect(err => {
     if (err) {

@@ -17,7 +17,12 @@ exports.login = async (req, res) => {
 
         const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '1d' });
 
-        res.json({ token, role: user.role, name: user.name });
+        res.json({
+            token,
+            role: user.role,
+            name: user.name,
+            id: user.id //untuk localStorage frontend
+            });
 
     } catch (err) {
         console.error(err.message);

@@ -6,13 +6,14 @@ import './Navbar.css';
 const Navbar = () => {
     const navigate = useNavigate();
 
-    const name = localStorage.getItem('name');
-    const role = localStorage.getItem('role');
+    const name = sessionStorage.getItem('name');
+    const role = sessionStorage.getItem('role');
 
     const handleLogout = () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('role');
-        localStorage.removeItem('name');
+        sessionStorage.removeItem('token');
+        sessionStorage.removeItem('role');
+        sessionStorage.removeItem('name');
+        sessionStorage.removeItem('userId'); // Jangan lupa ini juga!
         navigate('/');
     };
 
@@ -35,7 +36,7 @@ const Navbar = () => {
                 )}
             </div>
             <div className="navbar-right">
-                <span onClick={goToHome} style={{ cursor: 'pointer' }}>Home</span>
+                <button className="nav-btn" onClick={goToHome}>Home</button>
                 <button className="logout-btn" onClick={handleLogout}>Logout</button>
             </div>
         </nav>

@@ -100,3 +100,21 @@ exports.getLogs = async (req, res) => {
         res.status(500).send('Server error');
     }
 };
+
+//dashboard petugas
+exports.getRequestsByPetugasId = async (req, res) => {
+    const { id } = req.params;
+    try {
+        const result = await pool.query(
+                `SELECT r.*, u.name AS nama_petugas
+                FROM requests r
+                JOIN users u ON r.petugas_id = u.id
+                WHERE r.petugas_id = $1
+                ORDER BY r.tanggal DESC`, [id]
+        );
+        res.json(result.rows);
+    } catch (err) {
+        console.error("Error fetching data for petugas:", err);
+        res.status(500).json({ message: "Gagal mengambil data permintaan petugas" });
+    }
+};
