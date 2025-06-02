@@ -5,9 +5,13 @@ import Navbar from "../components/Navbar";
 import "../styles/DetailRequest.css";
 
 const DetailRequest = () => {
+
     const { id } = useParams();
     const [request, setRequest] = useState(null);
     const [loading, setLoading] = useState(true);
+    
+    //log aktivitas
+    const [logs, setLogs] = useState([]);
 
     //untuk vitur verifikasi
     const [showVerifikasiModal, setShowVerifikasiModal] = useState(false);
@@ -78,9 +82,23 @@ const DetailRequest = () => {
         fetchPetugas();
         }, [id]);
 
+        //log aktivitas
+        useEffect(() => {
+            const fetchLogs = async () => {
+                try {
+                    const res = await axios.get(`http://localhost:5000/api/requests/${id}/logs`);
+                    setLogs(res.data);
+                } catch (err) {
+                    console.error("Gagal mengambil log aktivitas:", err);
+                }
+            };
+            fetchLogs();
+        }, [id]);
+
     if (loading) return <p>Loading...</p>;
     if (!request) return <p>Data tidak ditemukan</p>;
-
+    
+    
     return (
         <div>
         <Navbar />
@@ -98,7 +116,12 @@ const DetailRequest = () => {
                     Status: {request.status}
                 </span>
             </div>
-
+            {request.nama_petugas && (
+                <section className="section">
+                    <h3>Petugas yang Ditugaskan</h3>
+                    <p><strong>Nama Petugas:</strong> {request.nama_petugas}</p>
+                </section>
+                )}
             <section className="section">
             <h3>Data Peternak</h3>
             <p><strong>User ID:</strong> {request.user_id}</p>
@@ -119,6 +142,16 @@ const DetailRequest = () => {
                 Lihat di Google Maps
                 </a>
             </p>
+            </section>
+            <section className="section">
+                <h3>Log Aktivitas</h3>
+                <ul>
+                    {logs.map((log) => (
+                        <li key={log.id}>
+                            <strong>{new Date(log.waktu).toLocaleString('id-ID')}</strong>: {log.deskripsi}
+                        </li>
+                    ))}
+                </ul>
             </section>
         </div>
         {/* Modal Verifikasi */}

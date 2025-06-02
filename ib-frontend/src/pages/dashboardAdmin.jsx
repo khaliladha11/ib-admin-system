@@ -68,7 +68,7 @@ const DashboardAdmin = () => {
                 <select value={selectedStatus} onChange={(e) => setSelectedStatus(e.target.value)}>
                     <option value="Semua">Semua Status</option>
                     <option value="Menunggu Verifikasi">Menunggu Verifikasi</option>
-                    <option value="Sedang Diproses">Sedang Diproses</option>
+                    <option value="Diproses">Sedang Diproses</option>
                     <option value="Selesai">Selesai</option>
                     <option value="Ditolak">Ditolak</option>
                 </select>

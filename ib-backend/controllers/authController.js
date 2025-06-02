@@ -26,22 +26,21 @@ exports.login = async (req, res) => {
 };
 
 exports.register = async (req, res) => {
-    const { name, email, password, role } = req.body;
+    const { name, email, password, role, latitude, longitude } = req.body;
 
     try {
-        // buat cek apakah email terdaftar atau belum
         const existingUser = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
         if (existingUser.rowCount > 0) {
             return res.status(400).json({ message: 'Email already registered' });
         }
 
-        // Hash password
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        // Simpan ke database
         const newUser = await pool.query(
-            'INSERT INTO users (name, email, password, role) VALUES ($1, $2, $3, $4) RETURNING id, name, email, role',
-            [name, email, hashedPassword, role]
+                `INSERT INTO users (name, email, password, role, latitude, longitude)
+                VALUES ($1, $2, $3, $4, $5, $6)
+                RETURNING id, name, email, role, latitude, longitude`,
+            [name, email, hashedPassword, role, latitude, longitude]
         );
 
         res.status(201).json({
@@ -51,6 +50,6 @@ exports.register = async (req, res) => {
 
     } catch (err) {
         console.error(err.message);
-        res.status(500).json({ error: err.message });
+        res.status(500).send('Server error');
     }
 };

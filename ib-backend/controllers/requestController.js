@@ -42,19 +42,24 @@ exports.getAllPetugas = async (req, res) => {
 
 // Verifikasi permintaan
 exports.verifyRequest = async (req, res) => {
-    const { id } = req.params;
+    const id = req.params.id;
     const { petugas_id } = req.body;
 
     try {
-        await pool.query(
-            "UPDATE permintaan SET status = 'Diproses', petugas_id = $1 WHERE id = $2",
-            [petugas_id, id]
-        );
-        res.json({ message: 'Permintaan diverifikasi dan ditugaskan' });
-    } catch (error) {
-        console.error(error);
-        res.status(500).send('Gagal verifikasi permintaan');
+        const result = await pool.query(`
+            UPDATE requests 
+            SET status = 'Diproses', petugas_id = $1 
+            WHERE id = $2
+        `, [petugas_id, id]);
+
+        res.json({ message: 'Permintaan berhasil diverifikasi' });
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server error');
     }
+    await pool.query(`
+    INSERT INTO activity_logs (request_id, deskripsi)
+    VALUES ($1, $2)`, [id, `Permintaan diverifikasi dan diproses oleh admin`]);
 };
 
 // Tolak permintaan
@@ -71,5 +76,24 @@ exports.rejectRequest = async (req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).send('Gagal menolak permintaan');
+    }
+    await pool.query(`
+    INSERT INTO activity_logs (request_id, deskripsi)
+    VALUES ($1, $2)`, [id, `Permintaan ditolak oleh admin. Catatan: ${catatan}`]);
+};
+
+//log aktivitas
+exports.getLogs = async (req, res) => {
+    const { id } = req.params;
+    try {
+        const result = await pool.query(`
+            SELECT * FROM activity_logs 
+            WHERE request_id = $1 
+            ORDER BY waktu ASC
+        `, [id]);
+        res.json(result.rows);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server error');
     }
 };
