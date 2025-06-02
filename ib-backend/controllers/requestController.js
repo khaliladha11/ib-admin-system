@@ -66,20 +66,23 @@ exports.verifyRequest = async (req, res) => {
 exports.rejectRequest = async (req, res) => {
     const { id } = req.params;
     const { catatan } = req.body;
-
     try {
         await pool.query(
-            "UPDATE permintaan SET status = 'Ditolak', catatan = $1 WHERE id = $2",
-            [catatan, id]
+        'UPDATE requests SET status = $1 WHERE id = $2',
+        ['Ditolak', id]
         );
-        res.json({ message: 'Permintaan ditolak dengan catatan' });
-    } catch (error) {
-        console.error(error);
-        res.status(500).send('Gagal menolak permintaan');
+
+        // Simpan catatan sebagai log (jika ada tabel log aktivitas)
+        await pool.query(
+        'INSERT INTO activity_logs (request_id, deskripsi, waktu) VALUES ($1, $2, NOW())',
+        [id, `Permintaan ditolak: ${catatan}`]
+        );
+
+        res.json({ message: 'Permintaan ditolak' });
+    } catch (err) {
+        console.error('Error rejecting request:', err);
+        res.status(500).json({ error: 'Server error' });
     }
-    await pool.query(`
-    INSERT INTO activity_logs (request_id, deskripsi)
-    VALUES ($1, $2)`, [id, `Permintaan ditolak oleh admin. Catatan: ${catatan}`]);
 };
 
 //log aktivitas
