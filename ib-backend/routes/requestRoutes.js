@@ -3,15 +3,29 @@ const router = express.Router();
 const requestController = require('../controllers/requestController');
 const pool = require('../config/db');
 
-router.get('/requests', requestController.getAllRequests);
-
 // Get all requests
+router.get('/requests', requestController.getAllRequests);
 router.get('/', requestController.getAllRequests);
 
-// Route untuk verifikasi Tolak dan list petugas pada halaman detail
+// dashboard petugas
+router.get('/petugas/:id/requests', requestController.getRequestsByPetugasId);
+
+// daftar petugas
 router.get('/petugas/list', requestController.getAllPetugas);
+
+// aksi verifikasi dan tolak dari admin
 router.put('/:id/verify', requestController.verifyRequest);
 router.put('/:id/reject', requestController.rejectRequest);
+
+router.put('/:id/ganti-petugas', requestController.gantiPetugas);
+
+// aksi petugas
+router.put('/petugas/:id/proses', requestController.petugasProsesIB);
+router.put('/petugas/:id/laporan', requestController.petugasIsiLaporan);
+router.get('/pending/timeout', requestController.getLateUnprocessedRequests);
+
+// log aktivitas
+router.get('/:id/logs', requestController.getLogs);
 
 // Buat permintaan baru
 router.post('/', async (req, res) => {
@@ -39,18 +53,7 @@ router.post('/', async (req, res) => {
     }
 });
 
-
-
-//dashboard petugas
-router.get('/petugas/:id/requests', requestController.getRequestsByPetugasId);
-
-//log aktivitas
-router.get('/requests/:id/logs', requestController.getLogs);
-
-router.get('/:id/logs', requestController.getLogs);
-
-
-// Get detail request by ID
+// GET detail request by ID — taruh PALING BAWAH
 router.get('/:id', async (req, res) => {
     const id = req.params.id;
     try {
@@ -71,6 +74,5 @@ router.get('/:id', async (req, res) => {
         res.status(500).send('Server error');
     }
 });
-// (Opsional) Tambahkan post/put/delete jika dibutuhkan nanti
 
 module.exports = router;

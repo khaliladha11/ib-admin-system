@@ -7,6 +7,10 @@ import { Link } from 'react-router-dom';
 const DashboardAdmin = () => {
     const [requests, setRequests] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
+    const [selectedStatus, setSelectedStatus] = useState('Semua');
+    const [selectedDate, setSelectedDate] = useState('');
+    const [sortOrder, setSortOrder] = useState("terbaru");
+    const [timeoutRequests, setTimeoutRequests] = useState([]);
 
     // Fetch data dari backend
     useEffect(() => {
@@ -21,10 +25,6 @@ const DashboardAdmin = () => {
         fetchData();
     }, []);
 
-    const [selectedStatus, setSelectedStatus] = useState('Semua');
-    const [selectedDate, setSelectedDate] = useState('');
-    const [sortOrder, setSortOrder] = useState("terbaru");
-
     // Filter berdasarkan nama peternak, date, dan status
     const filteredRequests = [...requests]
     .filter(req => {
@@ -37,6 +37,19 @@ const DashboardAdmin = () => {
         const dateB = new Date(b.tanggal);
         return sortOrder === 'terbaru' ? dateB - dateA : dateA - dateB;
     });
+
+    useEffect(() => {
+        const fetchTimeouts = async () => {
+            try {
+            const res = await axios.get('http://localhost:5000/api/requests/pending/timeout');
+            setTimeoutRequests(res.data); // <-- buat state `timeoutRequests`
+            } catch (err) {
+            console.error("Gagal mengambil request yang belum diproses:", err);
+            }
+        };
+
+        fetchTimeouts();
+        }, []);
 
 
     return (
@@ -114,6 +127,21 @@ const DashboardAdmin = () => {
                 ))}
             </tbody>
             </table>
+            {timeoutRequests.length > 0 && (
+                <section className="section">
+                    <h3>Permintaan IB Belum Diproses (lebih dari 30 menit)</h3>
+                    <ul>
+                    {timeoutRequests.map(req => (
+                        <li key={req.id}>
+                        Permintaan #{req.id} oleh {req.nama_peternak} belum diproses.
+                        <Link to={`/admin/permintaan/${req.id}`}>
+                            <button>Detail</button>
+                        </Link>
+                        </li>
+                    ))}
+                    </ul>
+                </section>
+                )}
         </div>
         </div>
     );

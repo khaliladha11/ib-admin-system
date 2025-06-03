@@ -20,6 +20,17 @@ const DetailRequest = () => {
     const [selectedPetugasId, setSelectedPetugasId] = useState("");
     const [catatanTolak, setCatatanTolak] = useState("");
 
+    const [showGantiModal, setShowGantiModal] = useState(false);
+    const [newPetugasId, setNewPetugasId] = useState("");
+
+    const isRequestTimeout = (verifikasiAt) => {
+        if (!verifikasiAt) return false;
+        const now = new Date();
+        const verifTime = new Date(verifikasiAt);
+        const diff = (now - verifTime) / 1000 / 60; // menit
+        return diff > 30;
+        };
+
     const openVerifikasiModal = async () => {
         console.log("Memanggil modal...");
         try {
@@ -57,6 +68,20 @@ const DetailRequest = () => {
             console.error("Gagal menolak permintaan:", error);
         }
     };
+
+    const handleGantiPetugas = async () => {
+        try {
+            await axios.put(`http://localhost:5000/api/requests/${id}/ganti-petugas`, {
+            petugas_id: newPetugasId,
+            });
+            alert("Petugas berhasil diganti");
+            window.location.reload();
+        } catch (err) {
+            console.error("Gagal mengganti petugas:", err);
+            alert("Terjadi kesalahan");
+        }
+        };
+
 
     useEffect(() => {
     const fetchRequest = async () => {
@@ -103,12 +128,6 @@ const DetailRequest = () => {
         <div>
         <Navbar />
         <div className="detail-container">
-            {request.status === "Menunggu Verifikasi" && (
-                <div className="actions">
-                    <button className="verify-btn" onClick={openVerifikasiModal}>Verifikasi</button>
-                    <button className="reject-btn" onClick={() => setShowTolakModal(true)}>Tolak</button>
-                </div>
-                )}
             <div className="header">
                 <h2>Permintaan: {request.id}</h2>
                 <h2>Tanggal: {new Date(request.tanggal).toLocaleDateString()}</h2>
@@ -122,6 +141,23 @@ const DetailRequest = () => {
                     <p><strong>Nama Petugas:</strong> {request.nama_petugas}</p>
                 </section>
                 )}
+            {(request.status === "Menunggu Verifikasi" || 
+                (request.status === "Diproses" && !request.proses_at && isRequestTimeout(request.verifikasi_at))) && (
+                <div className="actions">
+                    {request.status === "Menunggu Verifikasi" && (
+                    <>
+                        <button className="verify-btn" onClick={openVerifikasiModal}>Verifikasi</button>
+                        <button className="reject-btn" onClick={() => setShowTolakModal(true)}>Tolak</button>
+                    </>
+                    )}
+                    {request.status === "Diproses" && !request.proses_at && isRequestTimeout(request.verifikasi_at) && (
+                    <button className="verify-btn" onClick={() => setShowGantiModal(true)}>
+                        Ganti Petugas
+                    </button>
+                    )}
+                </div>
+                )}
+
             <section className="section">
             <h3>Data Peternak</h3>
             <p><strong>User ID:</strong> {request.user_id}</p>
@@ -196,6 +232,31 @@ const DetailRequest = () => {
                     </div>
                 </div>
                 )}
+            
+            {/* Modal ganti petugas */}
+            {showGantiModal && (
+                <div className="modal-overlay">
+                    <div className="modal">
+                        <h3>Ganti Petugas</h3>
+                        <select value={newPetugasId} onChange={(e) => setNewPetugasId(e.target.value)}>
+                        <option value="">-- Pilih Petugas --</option>
+                        {petugasList.map(p => (
+                            <option key={p.id} value={p.id}>{p.name}</option>
+                        ))}
+                        </select>
+                        <div className="modal-actions">
+                        <button
+                            onClick={handleGantiPetugas}
+                            disabled={!newPetugasId}
+                        >
+                            Ganti
+                        </button>
+                        <button onClick={() => setShowGantiModal(false)}>Batal</button>
+                        </div>
+                    </div>
+                    </div>
+                )}
+
         </div>
     );
     

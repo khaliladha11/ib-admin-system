@@ -13,22 +13,6 @@
     margin-bottom: 20px;
 }
 
-.verify-btn {
-    float: right;
-    background-color: #2bae66;
-    color: white;
-    padding: 10px 20px;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    font-weight: bold;
-    margin-bottom: 20px;
-}
-
-.verify-btn:hover {
-    background-color: #239c5a;
-}
-
 .section {
     background-color: #eaf7f0;
     padding: 15px 20px;
@@ -121,9 +105,35 @@
 
 .verify-btn,
 .reject-btn {
-    margin-right: 10px;
-    padding: 8px 16px;
+    padding: 10px 20px;
+    font-size: 14px;
+    border-radius: 5px;
+    border: none;
+    cursor: pointer;
+    min-width: 100px;
+    text-align: center;
+    font-weight: bold;
+    }
+
+    .verify-btn {
+    background-color: #28a745; /* Hijau */
+    color: white;
+    }
+
+    .reject-btn {
+    background-color: #f8f9fa; /* Abu terang */
+    color: #212529; /* Hitam */
+    border: 1px solid #ced4da;
+    }
+
+    .verify-btn:hover {
+    background-color: #218838;
+    }
+
+    .reject-btn:hover {
+    background-color: #e2e6ea;
 }
+
 
 .status-badge {
     display: inline-block;
@@ -132,6 +142,13 @@
     font-weight: bold;
     margin-top: 8px;
     font-size: 0.9rem;
+}
+
+.actions {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
 }
 
 /* Warna berbeda sesuai status */
