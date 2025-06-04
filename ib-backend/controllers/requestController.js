@@ -168,18 +168,19 @@ exports.petugasProsesIB = async (req, res) => {
 // Petugas mengisi laporan IB
 exports.submitIBReport = async (req, res) => {
     const id = req.params.id;
-    const { isi_laporan } = req.body; // misalnya form laporan
+    const { isi_laporan } = req.body;
 
     try {
         await pool.query(`
-        UPDATE requests 
-        SET laporan_terisi = TRUE
-        WHERE id = $1
-        `, [id]);
+            UPDATE requests 
+            SET laporan_terisi = TRUE,
+                laporan_text = $1
+            WHERE id = $2
+        `, [isi_laporan, id]);
 
         await pool.query(`
-        INSERT INTO activity_logs (request_id, deskripsi, waktu)
-        VALUES ($1, $2, NOW())
+            INSERT INTO activity_logs (request_id, deskripsi, waktu)
+            VALUES ($1, $2, NOW())
         `, [id, `Petugas mengisi laporan IB: ${isi_laporan}`]);
 
         res.json({ message: 'Laporan berhasil disimpan' });
@@ -188,6 +189,7 @@ exports.submitIBReport = async (req, res) => {
         res.status(500).send('Gagal menyimpan laporan IB');
     }
 };
+
 
 exports.petugasIsiLaporan = async (req, res) => {
   // Dummy function biar nggak error
@@ -233,5 +235,48 @@ exports.gantiPetugas = async (req, res) => {
     } catch (err) {
         console.error(err);
         res.status(500).send('Gagal mengganti petugas');
+    }
+};
+
+// rendpoint untuk keterlambatan pengisian laporan petugas
+exports.getOverdueReports = async (req, res) => {
+    try {
+        const result = await pool.query(`
+                SELECT * FROM requests
+                WHERE status = 'Diproses'
+                AND laporan_terisi = FALSE
+                AND proses_at IS NOT NULL
+                AND NOW() - proses_at > INTERVAL '24 hours'
+        `);
+        res.json(result.rows);
+    } catch (err) {
+        console.error(err);
+        res.status(500).send("Gagal mengambil data laporan yang lewat waktu");
+    }
+};
+
+//checkup
+exports.assignCheckup = async (req, res) => {
+    const { id } = req.params;
+    const { petugas_id } = req.body;
+
+    try {
+        await pool.query(`
+            UPDATE requests
+            SET checkup_status = 'Ditugaskan',
+                checkup_petugas_id = $1,
+                checkup_at = NOW()
+            WHERE id = $2
+        `, [petugas_id, id]);
+
+        await pool.query(`
+            INSERT INTO activity_logs (request_id, deskripsi, waktu)
+            VALUES ($1, $2, NOW())
+        `, [id, `Petugas check-up ID ${petugas_id} ditugaskan`]);
+
+        res.json({ message: 'Check-up ditugaskan' });
+    } catch (err) {
+        console.error('Gagal menugaskan check-up:', err);
+        res.status(500).json({ error: 'Server error' });
     }
 };

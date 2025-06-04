@@ -13,15 +13,18 @@ router.get('/petugas/:id/requests', requestController.getRequestsByPetugasId);
 // daftar petugas
 router.get('/petugas/list', requestController.getAllPetugas);
 
-// aksi verifikasi dan tolak dari admin
+// aksi verifikasi dan tolak dari admin dan cchekup
 router.put('/:id/verify', requestController.verifyRequest);
 router.put('/:id/reject', requestController.rejectRequest);
 
 router.put('/:id/ganti-petugas', requestController.gantiPetugas);
 
+router.put('/:id/checkup/assign', requestController.assignCheckup);
+
 // aksi petugas
-router.put('/petugas/:id/proses', requestController.petugasProsesIB);
-router.put('/petugas/:id/laporan', requestController.petugasIsiLaporan);
+router.put('/petugas/:id/proses', requestController.startProcessIB);
+router.put('/petugas/:id/laporan', requestController.submitIBReport);
+router.get('/petugas/:id/laporan/lewat', requestController.getOverdueReports);
 router.get('/pending/timeout', requestController.getLateUnprocessedRequests);
 
 // log aktivitas

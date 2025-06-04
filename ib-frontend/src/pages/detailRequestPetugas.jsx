@@ -18,16 +18,14 @@ const DetailRequest = () => {
     const [isProsesDimulai, setIsProsesDimulai] = useState(false);
 
     const handleProsesIB = async () => {
-    try {
-        await axios.put(`http://localhost:5000/api/requests/petugas/${id}/proses`);
-        setIsProsesDimulai(true); // langsung aktifkan tampilan form laporan
-        alert("Proses IB dimulai.");
-        // update tampilan tanpa reload
-        setRequest(prev => ({ ...prev, proses_at: new Date().toISOString() }));
-    } catch (err) {
-        console.error("Gagal memulai proses IB:", err);
-        alert("Gagal memulai proses IB.");
-    }
+        try {
+            await axios.put(`http://localhost:5000/api/requests/petugas/${id}/proses`);
+            setIsProsesDimulai(true); // ini penting agar form muncul langsung
+            alert("Proses IB dimulai");
+        } catch (error) {
+            console.error("Gagal memulai proses IB:", error);
+            alert("Terjadi kesalahan");
+        }
     };
 
     const handleSubmitLaporan = async () => {
@@ -36,6 +34,8 @@ const DetailRequest = () => {
         await axios.put(`http://localhost:5000/api/requests/petugas/${id}/laporan`, {
         isi_laporan: laporan,
         });
+        const updated = await axios.get(`http://localhost:5000/api/requests/${id}`);
+        setRequest(updated.data);
         alert("Laporan berhasil dikirim");
         window.location.reload();
     } catch (err) {

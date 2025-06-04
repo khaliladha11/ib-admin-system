@@ -158,6 +158,14 @@ const DetailRequest = () => {
                 </div>
                 )}
 
+                {request.status === "Menunggu Check-up" && (
+                    <div className="actions">
+                        <button className="verify-btn" onClick={() => setShowCheckupModal(true)}>
+                        Tugaskan Petugas Check-up
+                        </button>
+                    </div>
+                    )}
+
             <section className="section">
             <h3>Data Peternak</h3>
             <p><strong>User ID:</strong> {request.user_id}</p>
@@ -193,6 +201,13 @@ const DetailRequest = () => {
                     <p>Belum ada aktivitas.</p>
                 )}
             </section>
+            {request.laporan_text && (
+                <section className="section">
+                    <h3>Laporan dari Petugas</h3>
+                    <p>{request.laporan_text}</p>
+                </section>
+                )}
+
         </div>
         {/* Modal Verifikasi */}
             {showVerifikasiModal && (
