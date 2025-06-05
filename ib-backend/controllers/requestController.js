@@ -255,28 +255,87 @@ exports.getOverdueReports = async (req, res) => {
     }
 };
 
-//checkup
+// Admin menugaskan petugas untuk checkup
 exports.assignCheckup = async (req, res) => {
-    const { id } = req.params;
-    const { petugas_id } = req.body;
+    const id = req.params.id;
 
     try {
+        // Ambil dulu petugas yang sebelumnya menangani
+        const result = await pool.query(
+            'SELECT petugas_id FROM requests WHERE id = $1',
+            [id]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ message: 'Permintaan tidak ditemukan' });
+        }
+
+        const petugasId = result.rows[0].petugas_id;
+
         await pool.query(`
             UPDATE requests
-            SET checkup_status = 'Ditugaskan',
-                checkup_petugas_id = $1,
+            SET checkup_petugas_id = $1,
+                checkup_status = 'Belum Dikonfirmasi',
                 checkup_at = NOW()
             WHERE id = $2
-        `, [petugas_id, id]);
+        `, [petugasId, id]);
 
         await pool.query(`
             INSERT INTO activity_logs (request_id, deskripsi, waktu)
             VALUES ($1, $2, NOW())
-        `, [id, `Petugas check-up ID ${petugas_id} ditugaskan`]);
+        `, [id, `Checkup ditugaskan ke petugas ID ${petugasId}`]);
 
-        res.json({ message: 'Check-up ditugaskan' });
+        res.json({ message: "Checkup berhasil ditugaskan ke petugas" });
     } catch (err) {
-        console.error('Gagal menugaskan check-up:', err);
-        res.status(500).json({ error: 'Server error' });
+        console.error("Gagal menugaskan checkup:", err);
+        res.status(500).json({ message: "Gagal menugaskan checkup" });
+    }
+};
+
+// Petugas konfirmasi checkup
+exports.konfirmasiCheckup = async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        await pool.query(`
+            UPDATE requests
+            SET checkup_status = 'Dikonfirmasi', checkup_at = NOW()
+            WHERE id = $1
+        `, [id]);
+
+        await pool.query(`
+            INSERT INTO activity_logs (request_id, deskripsi, waktu)
+            VALUES ($1, $2, NOW())
+        `, [id, 'Petugas mengkonfirmasi akan melakukan checkup']);
+
+        res.json({ message: 'Checkup berhasil dikonfirmasi' });
+    } catch (err) {
+        console.error('Gagal konfirmasi checkup:', err);
+        res.status(500).json({ error: 'Server Gagal konfirmasi checkup' });
+    }
+};
+
+// Petugas mengisi laporan checkup
+exports.submitCheckupReport = async (req, res) => {
+    const { id } = req.params;
+    const { isi_laporan_checkup } = req.body;
+
+    try {
+        await pool.query(`
+            UPDATE requests
+            SET checkup_status = 'Selesai',
+                status = 'Selesai'
+            WHERE id = $1
+        `, [id]);
+
+        await pool.query(`
+            INSERT INTO activity_logs (request_id, deskripsi, waktu)
+            VALUES ($1, $2, NOW())
+        `, [id, `Petugas menyelesaikan checkup dan mengisi laporan: ${isi_laporan_checkup}`]);
+
+        res.json({ message: 'Laporan checkup berhasil disimpan. Permintaan dinyatakan selesai.' });
+    } catch (err) {
+        console.error('Gagal menyimpan laporan checkup:', err);
+        res.status(500).json({ message: 'Gagal menyimpan laporan checkup' });
     }
 };

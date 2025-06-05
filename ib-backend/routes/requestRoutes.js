@@ -7,6 +7,9 @@ const pool = require('../config/db');
 router.get('/requests', requestController.getAllRequests);
 router.get('/', requestController.getAllRequests);
 
+router.put('/petugas/:id/checkup/konfirmasi', requestController.konfirmasiCheckup);
+router.put('/petugas/:id/checkup/submit', requestController.submitCheckupReport);
+
 // dashboard petugas
 router.get('/petugas/:id/requests', requestController.getRequestsByPetugasId);
 

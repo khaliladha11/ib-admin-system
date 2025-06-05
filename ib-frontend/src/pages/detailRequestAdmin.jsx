@@ -81,6 +81,17 @@ const DetailRequest = () => {
             alert("Terjadi kesalahan");
         }
         };
+    
+        const handleTugaskanCheckup = async () => {
+        try {
+            await axios.put(`http://localhost:5000/api/requests/${id}/checkup/assign`);
+            alert("Checkup berhasil ditugaskan ke petugas yang sama.");
+            window.location.reload();
+        } catch (error) {
+            console.error("Gagal menugaskan checkup:", error);
+            alert("Terjadi kesalahan saat menugaskan checkup.");
+        }
+    };
 
 
     useEffect(() => {
@@ -135,6 +146,12 @@ const DetailRequest = () => {
                     Status: {request.status}
                 </span>
             </div>
+            {request.laporan_terisi && request.checkup_status === 'Belum Dikonfirmasi' && (
+                <button className="verify-btn" onClick={handleTugaskanCheckup}>
+                    Tugaskan Checkup
+                </button>
+            )}
+
             {request.nama_petugas && (
                 <section className="section">
                     <h3>Petugas yang Ditugaskan</h3>

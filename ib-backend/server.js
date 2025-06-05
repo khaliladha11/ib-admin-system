@@ -5,7 +5,9 @@ const authRoutes = require('./routes/authRoutes');
 const db = require('./config/db');
 const cors = require('cors');
 const requestRoutes = require('./routes/requestRoutes');
+const bodyParser = require('body-parser');
 
+app.use(bodyParser.json()); // <--- Ini penting untuk parse JSON
 app.use(cors());
 app.use(express.json());
 app.use('/api/requests', requestRoutes);

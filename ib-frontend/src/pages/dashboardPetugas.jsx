@@ -65,6 +65,26 @@ const DashboardPetugas = () => {
         fetchTimeouts();
         }, [petugasId, requests]); // ← agar refresh setelah laporan masuk
 
+    // Petugas melakukan chekup
+    const [checkupRequests, setCheckupRequests] = useState([]);
+
+    useEffect(() => {
+    const fetchCheckupRequests = async () => {
+        try {
+        const res = await axios.get("http://localhost:5000/api/requests");
+        const data = res.data.filter(req =>
+            req.checkup_petugas_id === parseInt(petugasId) &&
+            req.checkup_status === 'Belum Dikonfirmasi'
+        );
+        setCheckupRequests(data);
+        } catch (err) {
+        console.error("Gagal mengambil permintaan checkup:", err);
+        }
+    };
+    fetchCheckupRequests();
+    }, [petugasId]);
+
+    
     // 🔍 Filter & Sort
     const filteredRequests = requests
     .filter(req => {
@@ -97,6 +117,23 @@ const DashboardPetugas = () => {
             <Navbar />
             <div className="container">
                 <h2>Permintaan IB yang Ditugaskan</h2>
+                {/* 🔔 Notifikasi checkup */}
+                {checkupRequests.length > 0 && (
+                    <section className="section">
+                        <h3>Permintaan Checkup Baru</h3>
+                        <ul>
+                        {checkupRequests.map(req => (
+                            <li key={req.id}>
+                            Permintaan #{req.id} siap untuk checkup.
+                            <Link to={`/petugas/permintaan/${req.id}`}>
+                                <button>Detail</button>
+                            </Link>
+                            </li>
+                        ))}
+                        </ul>
+                    </section>
+                    )}
+
                 {/* 🔔 Notifikasi laporan belum diisi */}
                 {overdueReports.length > 0 && (
                     <div className="warning-section">

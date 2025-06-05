@@ -61,6 +61,24 @@ const DashboardAdmin = () => {
         fetchTimeouts();
         }, []);
 
+    const [siapCheckupRequests, setSiapCheckupRequests] = useState([]);
+
+    useEffect(() => {
+        const fetchSiapCheckup = async () => {
+            try {
+                const res = await axios.get('http://localhost:5000/api/requests');
+                const filtered = res.data.filter(req =>
+                    req.laporan_terisi === true &&
+                    req.checkup_status === 'Belum Dikonfirmasi'
+                );
+                setSiapCheckupRequests(filtered);
+            } catch (err) {
+                console.error("Gagal mengambil data siap checkup:", err);
+            }
+        };
+        fetchSiapCheckup();
+    }, []);
+
 
     return (
         <div>
@@ -171,6 +189,22 @@ const DashboardAdmin = () => {
                 Next
                 </button>
             </div>
+            {/* 🔔 Notifikasi: Permintaan yang siap checkup */}
+                {siapCheckupRequests.length > 0 && (
+                    <section className="section">
+                        <h3>Permintaan Siap Checkup</h3>
+                        <ul>
+                            {siapCheckupRequests.map(req => (
+                                <li key={req.id}>
+                                    Permintaan #{req.id} oleh {req.nama_peternak} siap untuk checkup.
+                                    <Link to={`/admin/permintaan/${req.id}`}>
+                                        <button style={{ marginLeft: "10px" }}>Detail</button>
+                                    </Link>
+                                </li>
+                            ))}
+                        </ul>
+                    </section>
+                )}
 
             {/* Timeout Section */}
             {timeoutRequests.length > 0 && (
