@@ -83,15 +83,19 @@ const DetailRequest = () => {
         };
     
         const handleTugaskanCheckup = async () => {
-        try {
-            await axios.put(`http://localhost:5000/api/requests/${id}/checkup/assign`);
-            alert("Checkup berhasil ditugaskan ke petugas yang sama.");
-            window.location.reload();
-        } catch (error) {
-            console.error("Gagal menugaskan checkup:", error);
-            alert("Terjadi kesalahan saat menugaskan checkup.");
-        }
-    };
+    try {
+        await axios.put(`http://localhost:5000/api/requests/${id}/checkup/assign`);
+        alert("Checkup berhasil ditugaskan ke petugas yang sama.");
+
+        // Ambil ulang data dari backend agar checkup_at benar-benar up to date
+        const res = await axios.get(`http://localhost:5000/api/requests/${id}`);
+        setRequest(res.data);
+    } catch (error) {
+        console.error("Gagal menugaskan checkup:", error);
+        alert("Terjadi kesalahan saat menugaskan checkup.");
+    }
+};
+
 
 
     useEffect(() => {
@@ -146,8 +150,8 @@ const DetailRequest = () => {
                     Status: {request.status}
                 </span>
             </div>
-            {request.laporan_terisi && request.checkup_status === 'Belum Dikonfirmasi' && (
-                <button className="verify-btn" onClick={handleTugaskanCheckup}>
+            {request.laporan_terisi && !request.checkup_at && (
+                <button onClick={handleTugaskanCheckup} className="verify-btn">
                     Tugaskan Checkup
                 </button>
             )}
@@ -224,6 +228,12 @@ const DetailRequest = () => {
                     <p>{request.laporan_text}</p>
                 </section>
                 )}
+            {request.laporan_checkup_text && (
+            <section className="section">
+                <h3>Laporan Checkup</h3>
+                <p>{request.laporan_checkup_text}</p>
+            </section>
+            )}
 
         </div>
         {/* Modal Verifikasi */}

@@ -318,24 +318,25 @@ exports.konfirmasiCheckup = async (req, res) => {
 // Petugas mengisi laporan checkup
 exports.submitCheckupReport = async (req, res) => {
     const { id } = req.params;
-    const { isi_laporan_checkup } = req.body;
+    const { isi_laporan } = req.body;
 
     try {
         await pool.query(`
-            UPDATE requests
-            SET checkup_status = 'Selesai',
-                status = 'Selesai'
-            WHERE id = $1
-        `, [id]);
+            UPDATE requests 
+            SET checkup_status = 'Selesai', status = 'Selesai', laporan_checkup_text = $1
+            WHERE id = $2
+        `, [isi_laporan, id]);
 
         await pool.query(`
             INSERT INTO activity_logs (request_id, deskripsi, waktu)
             VALUES ($1, $2, NOW())
-        `, [id, `Petugas menyelesaikan checkup dan mengisi laporan: ${isi_laporan_checkup}`]);
+        `, [id, `Laporan checkup dikirim oleh petugas: ${isi_laporan}`]);
 
-        res.json({ message: 'Laporan checkup berhasil disimpan. Permintaan dinyatakan selesai.' });
+        res.json({ message: 'Laporan checkup berhasil dikirim' });
     } catch (err) {
-        console.error('Gagal menyimpan laporan checkup:', err);
-        res.status(500).json({ message: 'Gagal menyimpan laporan checkup' });
+        console.error(err);
+        res.status(500).send('Gagal menyimpan laporan checkup');
     }
 };
+
+

@@ -209,6 +209,18 @@ import "../styles/DetailRequest.css";
                 <p>Belum ada aktivitas.</p>
             )}
             </section>
+            {request.laporan_text && (
+                <section className="section">
+                    <h3>Laporan dari Petugas</h3>
+                    <p>{request.laporan_text}</p>
+                </section>
+                )}
+            {request.laporan_checkup_text && (
+            <section className="section">
+                <h3>Laporan Checkup</h3>
+                <p>{request.laporan_checkup_text}</p>
+            </section>
+            )}
         </div>
         </div>
     );
