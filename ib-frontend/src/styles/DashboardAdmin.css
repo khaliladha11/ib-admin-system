@@ -36,7 +36,7 @@
 
 .search-input {
     padding: 9px;
-    margin-left: 10px;
+    margin-left: auto;
     border-radius: 5px;
     border: 1px solid #ccc;
 }
@@ -82,15 +82,19 @@
 }
 
 // filter tabel
+.pagination-wrapper {
+  text-align: center; /* Menengahkan konten inline/inline-block di dalamnya */
+}
+
 .pagination {
-    margin-top: 20px;
-    display: flex;
-    gap: 5px;
     justify-content: center;
     align-items: center;
+    margin-top: 5px;
+    display: flex;
+    gap: 5px;
     }
 
-    .pagination button {
+.pagination button {
     padding: 6px 12px;
     border: 1px solid #ccc;
     background-color: #f9f9f9;
@@ -99,8 +103,8 @@
     margin: 2px;
     }
 
-    .pagination button.active-page {
+.pagination button.active-page {
     background-color: #27ae60;
     color: white;
     font-weight: bold;
-}
+    }

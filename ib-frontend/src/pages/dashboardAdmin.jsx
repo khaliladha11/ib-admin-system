@@ -109,7 +109,7 @@ const DashboardAdmin = () => {
                 type="date"
                 value={selectedDate}
                 onChange={(e) => setSelectedDate(e.target.value)}
-                className="search-input"
+                className="entry-select"
                 />
 
                 <select value={sortOrder} onChange={(e) => setSortOrder(e.target.value)}>
@@ -124,14 +124,14 @@ const DashboardAdmin = () => {
                 <option value="Selesai">Selesai</option>
                 <option value="Ditolak">Ditolak</option>
                 </select>
-
-                <input
-                type="text"
-                placeholder="Search..."
-                className="search-input"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                />
+                
+                    <input
+                    type="text"
+                    placeholder="Search..."
+                    className="search-input"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    />
             </div>
 
             {/* Table */}
@@ -167,6 +167,7 @@ const DashboardAdmin = () => {
             </table>
 
             {/* Pagination */}
+            <div class="pagination-wrapper">
             <div className="pagination">
                 <button onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))} disabled={currentPage === 1}>
                 Previous
@@ -188,6 +189,7 @@ const DashboardAdmin = () => {
                 >
                 Next
                 </button>
+            </div>
             </div>
             {/* 🔔 Notifikasi: Permintaan yang siap checkup */}
                 {siapCheckupRequests.length > 0 && (

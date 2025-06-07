@@ -173,7 +173,7 @@ const DashboardPetugas = () => {
                         type="date"
                         value={selectedDate}
                         onChange={(e) => setSelectedDate(e.target.value)}
-                        className="search-input"
+                        className="entry-select"
                     />
 
                     <select value={sortOrder} onChange={(e) => setSortOrder(e.target.value)}>
@@ -232,28 +232,30 @@ const DashboardPetugas = () => {
                         </table>
 
                         {/* Pagination */}
-                        <div className="pagination">
-                            <button onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))} disabled={currentPage === 1}>
-                            Previous
-                            </button>
+                            <div class="pagination-wrapper">
+                            <div className="pagination">
+                                <button onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))} disabled={currentPage === 1}>
+                                Previous
+                                </button>
 
-                            {[...Array(totalPages)].map((_, i) => (
-                            <button
-                                key={i}
-                                className={currentPage === i + 1 ? "active-page" : ""}
-                                onClick={() => setCurrentPage(i + 1)}
-                            >
-                                {i + 1}
-                            </button>
-                            ))}
+                                {[...Array(totalPages)].map((_, i) => (
+                                <button
+                                    key={i}
+                                    className={currentPage === i + 1 ? "active-page" : ""}
+                                    onClick={() => setCurrentPage(i + 1)}
+                                >
+                                    {i + 1}
+                                </button>
+                                ))}
 
-                            <button
-                            onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-                            disabled={currentPage === totalPages}
-                            >
-                            Next
-                            </button>
-                        </div>
+                                <button
+                                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                                disabled={currentPage === totalPages}
+                                >
+                                Next
+                                </button>
+                            </div>
+                            </div>
                     </>
                 )}
             </div>
