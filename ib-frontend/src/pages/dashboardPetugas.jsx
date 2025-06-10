@@ -32,6 +32,8 @@ const DashboardPetugas = () => {
             }
         };
         fetchRequests();
+        const interval = setInterval(fetchRequests, 10000); // polling tiap 10 detik
+        return () => clearInterval(interval);
     }, [petugasId]);
 
     // Fetch data laporan yang sudah lewat 24 jam

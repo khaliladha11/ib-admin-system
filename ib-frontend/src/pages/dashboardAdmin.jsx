@@ -46,6 +46,9 @@ const DashboardAdmin = () => {
         }
         };
         fetchData();
+
+        const interval = setInterval(fetchData, 10000); // fetch tiap 10 detik
+        return () => clearInterval(interval); // bersihkan saat unmount
     }, []);
 
     useEffect(() => {

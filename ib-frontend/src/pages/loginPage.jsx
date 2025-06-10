@@ -22,19 +22,22 @@ const handleLogin = async (e) => {
     sessionStorage.setItem('name', res.data.name);
     sessionStorage.setItem('userId', res.data.id);
     alert('Login Berhasil');
-
-    // Redirect berdasarkan role
-        if (res.data.role === 'admin') {
-            navigate('/admin/dashboard');
+    
+    // title halaman berdasarkan role
+    if (res.data.role === 'admin') {
+        document.title = 'IB Admin';
+        navigate('/admin/dashboard');
         } else if (res.data.role === 'petugas') {
-            navigate('/petugas/dashboard');
+        document.title = 'IB Petugas';
+        navigate('/petugas/dashboard');
         } else {
-            setError('Role tidak dikenali');
+        document.title = 'IB';
+        setError('Role tidak dikenali');
         }
-        } catch (err) {
+    } catch (err) {
         setError('Login gagal. Periksa kembali email dan password.');
     }
-};
+    };
 
 return (
     <div className="login-container">
