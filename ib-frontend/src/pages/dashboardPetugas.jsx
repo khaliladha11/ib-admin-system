@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import Navbar from "../components/Navbar";
 import { Link } from "react-router-dom";
-import '../styles/DashboardAdmin.css'; // Gunakan CSS yang sama agar seragam
+import '../styles/Dashboard.css';
 
 const DashboardPetugas = () => {
     const [requests, setRequests] = useState([]);
@@ -12,18 +12,19 @@ const DashboardPetugas = () => {
     const [selectedStatus, setSelectedStatus] = useState('Semua');
     const [selectedDate, setSelectedDate] = useState('');
     const [sortOrder, setSortOrder] = useState("terbaru");
-
     const [currentPage, setCurrentPage] = useState(1);
     const [entriesPerPage, setEntriesPerPage] = useState(5);
-
     const petugasId = sessionStorage.getItem("userId");
 
     const [pendingReports, setPendingReports] = useState([]);
-    // Fetch data permintaan
+    const [checkupRequests, setCheckupRequests] = useState([]);
+    const [assignedRequests, setAssignedRequests] = useState([]);
+
+    // Fetch permintaan IB untuk petugas
     useEffect(() => {
-    const fetchRequests = async () => {
+        const fetchRequests = async () => {
             try {
-                const res = await axios.get(`http://localhost:5000/api/requests/petugas/${petugasId}/requests`);
+                const res = await axios.get(`http://localhost:5000/api/requests/petugas/${petugasId}/all-requests`);
                 setRequests(res.data);
             } catch (err) {
                 console.error("Gagal mengambil data permintaan untuk petugas:", err);
@@ -32,11 +33,24 @@ const DashboardPetugas = () => {
             }
         };
         fetchRequests();
-        const interval = setInterval(fetchRequests, 10000); // polling tiap 10 detik
+        const interval = setInterval(fetchRequests, 10000);
         return () => clearInterval(interval);
     }, [petugasId]);
 
-    // Fetch data laporan yang sudah lewat 24 jam
+    //notif tugas
+    useEffect(() => {
+        const fetchAssignedUnprocessed = async () => {
+            try {
+                const res = await axios.get(`http://localhost:5000/api/requests/petugas/${petugasId}/tugas-belum-diproses`);
+                setAssignedRequests(res.data);
+            } catch (err) {
+                console.error("Gagal mengambil permintaan yang belum diproses oleh petugas:", err);
+            }
+        };
+        fetchAssignedUnprocessed();
+    }, [petugasId]);
+
+    // Fetch laporan yang lewat 24 jam
     useEffect(() => {
         const fetchOverdueReports = async () => {
             try {
@@ -49,94 +63,101 @@ const DashboardPetugas = () => {
         if (petugasId) fetchOverdueReports();
     }, [petugasId]);
 
-    //filter notifikasi laporan
+    // Notifikasi keterlambatan proses
     useEffect(() => {
         const fetchTimeouts = async () => {
             try {
-            const res = await axios.get("http://localhost:5000/api/requests/pending/timeout");
-            const data = res.data.filter(req => 
-                req.petugas_id === parseInt(petugasId) &&
-                !req.laporan_terisi // filter yang belum isi laporan
-            );
-            setPendingReports(data);
+                const res = await axios.get("http://localhost:5000/api/requests/pending/timeout");
+                const data = res.data.filter(req => 
+                    req.petugas_id === parseInt(petugasId) &&
+                    !req.laporan_terisi
+                );
+                setPendingReports(data);
             } catch (err) {
-            console.error("Gagal mengambil data keterlambatan:", err);
+                console.error("Gagal mengambil data keterlambatan:", err);
             }
         };
-
         fetchTimeouts();
-        }, [petugasId, requests]); // ← agar refresh setelah laporan masuk
+    }, [petugasId, requests]);
 
-    // Petugas melakukan chekup
-    const [checkupRequests, setCheckupRequests] = useState([]);
-
+    // Notifikasi permintaan checkup
     useEffect(() => {
-    const fetchCheckupRequests = async () => {
-        try {
-        const res = await axios.get("http://localhost:5000/api/requests");
-        const data = res.data.filter(req =>
-            req.checkup_petugas_id === parseInt(petugasId) &&
-            req.checkup_status === 'Belum Dikonfirmasi'
-        );
-        setCheckupRequests(data);
-        } catch (err) {
-        console.error("Gagal mengambil permintaan checkup:", err);
-        }
-    };
-    fetchCheckupRequests();
+        const fetchCheckupRequests = async () => {
+            try {
+                const res = await axios.get(`http://localhost:5000/api/checkups/petugas/${petugasId}/pending`);
+                setCheckupRequests(res.data);
+            } catch (err) {
+                console.error("Gagal mengambil permintaan checkup:", err);
+            }
+        };
+        fetchCheckupRequests();
     }, [petugasId]);
 
-    
-    // 🔍 Filter & Sort
     const filteredRequests = requests
-    .filter(req => {
-        const matchSearch = req.nama_peternak?.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchStatus = selectedStatus === 'Semua' || req.status === selectedStatus;
-        const matchDate = selectedDate === '' || new Date(req.tanggal).toLocaleDateString('id-ID') === new Date(selectedDate).toLocaleDateString('id-ID');
+        .filter(req => {
+            const matchSearch = req.nama_peternak?.toLowerCase().includes(searchTerm.toLowerCase());
+            const matchStatus = selectedStatus === 'Semua' || req.status === selectedStatus;
+            const matchDate = selectedDate === '' || new Date(req.tanggal).toLocaleDateString('id-ID') === new Date(selectedDate).toLocaleDateString('id-ID');
+            const isAssignedToThisPetugas =
+                parseInt(req.petugas_id) === parseInt(petugasId) ||
+                parseInt(req.checkup_petugas_id) === parseInt(petugasId);
+            return matchSearch && matchStatus && matchDate && isAssignedToThisPetugas;
+        })
+        .sort((a, b) => {
+            const dateA = new Date(a.tanggal);
+            const dateB = new Date(b.tanggal);
+            return sortOrder === 'terbaru' ? dateB - dateA : dateA - dateB;
+        });
 
-        // Petugas bisa melihat permintaan jika dia ditugaskan sebagai petugas utama atau petugas checkup
-        const isAssignedToThisPetugas =
-            parseInt(req.petugas_id) === parseInt(petugasId) ||
-            parseInt(req.checkup_petugas_id) === parseInt(petugasId);
-
-        return matchSearch && matchStatus && matchDate && isAssignedToThisPetugas;
-    })
-    .sort((a, b) => {
-        const dateA = new Date(a.tanggal);
-        const dateB = new Date(b.tanggal);
-        return sortOrder === 'terbaru' ? dateB - dateA : dateA - dateB;
-    });
-
+    if (loading) return <p>Memuat data...</p>;
+    
+    // Untuk pagination
     const indexOfLastEntry = currentPage * entriesPerPage;
     const indexOfFirstEntry = indexOfLastEntry - entriesPerPage;
     const currentEntries = filteredRequests.slice(indexOfFirstEntry, indexOfLastEntry);
     const totalPages = Math.ceil(filteredRequests.length / entriesPerPage);
-
-    if (loading) return <p>Memuat data...</p>;
 
     return (
         <div>
             <Navbar />
             <div className="container">
                 <h2>Permintaan IB yang Ditugaskan</h2>
-                {/* 🔔 Notifikasi checkup */}
+
+                {/* Notifikasi tugas */}
+
+                {assignedRequests.length > 0 && (
+                    <section className="section">
+                        <h3>Permintaan IB Baru</h3>
+                        <ul>
+                            {assignedRequests.map(req => (
+                                <li key={req.id}>
+                                    Permintaan #{req.id} oleh {req.nama_peternak} menunggu diproses.
+                                    <Link to={`/petugas/permintaan/${req.id}`}>
+                                        <button style={{ marginLeft: "10px" }}>Detail</button>
+                                    </Link>
+                                </li>
+                            ))}
+                        </ul>
+                    </section>
+                )}
+
                 {checkupRequests.length > 0 && (
                     <section className="section">
                         <h3>Permintaan Checkup Baru</h3>
                         <ul>
-                        {checkupRequests.map(req => (
-                            <li key={req.id}>
-                            Permintaan #{req.id} siap untuk checkup.
-                            <Link to={`/petugas/permintaan/${req.id}`}>
-                                <button>Detail</button>
-                            </Link>
-                            </li>
-                        ))}
+                            {checkupRequests.map(checkup => (
+                                <li key={checkup.id}>
+                                    {checkup.tipe} untuk permintaan #{checkup.request_id} dari {checkup.nama_peternak}.
+                                    <Link to={`/petugas/permintaan/${checkup.request_id}`}>
+                                        <button style={{ marginLeft: "10px" }}>Detail</button>
+                                    </Link>
+                                </li>
+                            ))}
                         </ul>
                     </section>
-                    )}
+                )}
 
-                {/* 🔔 Notifikasi laporan belum diisi */}
+                {/* Notifikasi laporan belum diisi */}
                 {overdueReports.length > 0 && (
                     <div className="warning-section">
                         <h4 style={{ color: "red" }}>⚠️ Laporan Belum Diisi:</h4>
@@ -153,6 +174,7 @@ const DashboardPetugas = () => {
                     </div>
                 )}
 
+                {/* Filter Controls */}
                 <div className="table-controls">
                     <label>
                         Show
@@ -187,6 +209,8 @@ const DashboardPetugas = () => {
                         <option value="Semua">Semua Status</option>
                         <option value="Diproses">Diproses</option>
                         <option value="Selesai">Selesai</option>
+                        <option value="Berhasil">IB Berhasil</option>
+                        <option value="Gagal">IB Gagal</option>
                     </select>
 
                     <input
@@ -198,6 +222,7 @@ const DashboardPetugas = () => {
                     />
                 </div>
 
+                {/* Tabel Permintaan */}
                 {filteredRequests.length === 0 ? (
                     <p>Tidak ada permintaan IB yang ditugaskan.</p>
                 ) : (
@@ -206,10 +231,10 @@ const DashboardPetugas = () => {
                             <thead>
                                 <tr>
                                     <th>ID</th>
-                                    <th>Nama Peternak</th>
-                                    <th>Tanggal</th>
+                                    <th>Customer</th>
+                                    <th>Date</th>
                                     <th>Status</th>
-                                    <th>Aksi</th>
+                                    <th>Action</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -232,32 +257,25 @@ const DashboardPetugas = () => {
                                 ))}
                             </tbody>
                         </table>
-
                         {/* Pagination */}
-                            <div class="pagination-wrapper">
+                        <div className="pagination-wrapper">
                             <div className="pagination">
-                                <button onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))} disabled={currentPage === 1}>
-                                Previous
-                                </button>
-
+                                <button onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))} disabled={currentPage === 1}>Previous</button>
                                 {[...Array(totalPages)].map((_, i) => (
-                                <button
-                                    key={i}
-                                    className={currentPage === i + 1 ? "active-page" : ""}
-                                    onClick={() => setCurrentPage(i + 1)}
-                                >
-                                    {i + 1}
-                                </button>
+                                    <button
+                                        key={i}
+                                        className={currentPage === i + 1 ? "active-page" : ""}
+                                        onClick={() => setCurrentPage(i + 1)}
+                                    >
+                                        {i + 1}
+                                    </button>
                                 ))}
-
                                 <button
-                                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-                                disabled={currentPage === totalPages}
-                                >
-                                Next
-                                </button>
+                                    onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                                    disabled={currentPage === totalPages}
+                                >Next</button>
                             </div>
-                            </div>
+                        </div>
                     </>
                 )}
             </div>

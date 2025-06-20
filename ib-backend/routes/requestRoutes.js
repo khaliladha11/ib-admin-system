@@ -7,8 +7,6 @@ const pool = require('../config/db');
 router.get('/requests', requestController.getAllRequests);
 router.get('/', requestController.getAllRequests);
 
-router.put('/petugas/:id/checkup/konfirmasi', requestController.konfirmasiCheckup);
-router.put('/petugas/:id/checkup/submit', requestController.submitCheckupReport);
 
 // dashboard petugas
 router.get('/petugas/:id/requests', requestController.getRequestsByPetugasId);
@@ -16,19 +14,34 @@ router.get('/petugas/:id/requests', requestController.getRequestsByPetugasId);
 // daftar petugas
 router.get('/petugas/list', requestController.getAllPetugas);
 
-// aksi verifikasi dan tolak dari admin dan cchekup
+// aksi verifikasi dan tolak dari admin
 router.put('/:id/verify', requestController.verifyRequest);
 router.put('/:id/reject', requestController.rejectRequest);
 
 router.put('/:id/ganti-petugas', requestController.gantiPetugas);
 
-router.put('/:id/checkup/assign', requestController.assignCheckup);
+router.get('/:id/checkups', requestController.getCheckupsByRequestId);
+router.post('/:id/checkup/assign', requestController.assignCheckup);
+router.get('/checkups/menunggu', requestController.getCheckupsMenungguPenugasan);
 
 // aksi petugas
 router.put('/petugas/:id/proses', requestController.startProcessIB);
 router.put('/petugas/:id/laporan', requestController.submitIBReport);
 router.get('/petugas/:id/laporan/lewat', requestController.getOverdueReports);
 router.get('/pending/timeout', requestController.getLateUnprocessedRequests);
+
+//notif tugas petugas
+router.get('/petugas/:id/tugas-belum-diproses', requestController.getUnprocessedRequestsForPetugas);
+
+// ambil semua request untuk petuags yg ditugaskan
+router.get('/petugas/:id/all-requests', requestController.getAllRequestsForPetugas);
+
+// Peternak kirim status
+router.put('/:id/keguguran', requestController.kirimKeguguran);
+router.put('/:id/kebuntingan', requestController.kirimKebuntingan);
+
+// Peternak minta checkup kelahiran
+router.post('/:id/checkup/kelahiran', requestController.kirimPermintaanKelahiran);
 
 // log aktivitas
 router.get('/:id/logs', requestController.getLogs);

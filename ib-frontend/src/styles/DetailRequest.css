@@ -1,5 +1,5 @@
 .detail-container {
-    max-width: 800px;
+    max-width: 1000px;
     margin: 40px auto;
     padding: 20px;
     background-color: #ffffff;
@@ -152,8 +152,9 @@
 }
 
 /* Warna berbeda sesuai status */
-.status-badge.menunggu-verifikasi { background-color: #f0ad4e; color: white; }
-.status-badge.diproses { background-color: #5bc0de; color: white; }
+.status-badge.menunggu-verifikasi { background-color:rgb(0, 89, 255); color: white; }
+.status-badge.diproses { background-color:#f0ad4e; color: white; }
 .status-badge.selesai { background-color: #5cb85c; color: white; }
 .status-badge.ditolak { background-color: #d9534f; color: white; }
-
+.status-badge.gagal { background-color: #d9534f; color: white; }
+.status-badge.berhasil { background-color: #5bc0de; color: white; }

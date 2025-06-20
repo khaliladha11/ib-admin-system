@@ -4,18 +4,18 @@ import axios from "axios";
 import Navbar from "../components/Navbar";
 import "../styles/DetailRequest.css";
 
-    const DetailRequest = () => {
+const DetailRequest = () => {
     const { id } = useParams();
     const [request, setRequest] = useState(null);
     const [loading, setLoading] = useState(true);
     const [logs, setLogs] = useState([]);
-    const petugasId = parseInt(sessionStorage.getItem("userId")); // ⬅️ Ubah ke integer
+    const petugasId = parseInt(sessionStorage.getItem("userId"));
 
     const [laporan, setLaporan] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isProsesDimulai, setIsProsesDimulai] = useState(false);
-
     const [laporanCheckup, setLaporanCheckup] = useState("");
+    const [checkups, setCheckups] = useState([]);
 
     const fetchDetail = async () => {
         try {
@@ -37,10 +37,33 @@ import "../styles/DetailRequest.css";
         }
     };
 
+    const fetchCheckups = async () => {
+        try {
+        const res = await axios.get(`http://localhost:5000/api/requests/${id}/checkups`);
+        setCheckups(res.data);
+        } catch (err) {
+        console.error("Gagal mengambil data checkup:", err);
+        }
+    };
+
     useEffect(() => {
         fetchDetail();
         fetchLogs();
+        fetchCheckups();
     }, [id]);
+
+    useEffect(() => {
+        const fetchCheckups = async () => {
+            try {
+                const res = await axios.get(`http://localhost:5000/api/requests/${id}/checkups`);
+                setCheckups(res.data);
+            } catch (err) {
+                console.error("Gagal mengambil data checkup:", err);
+            }
+        };
+        fetchCheckups();
+    }, [id]);
+
 
     const handleProsesIB = async () => {
         try {
@@ -70,25 +93,28 @@ import "../styles/DetailRequest.css";
         }
     };
 
-    const handleKonfirmasiCheckup = async () => {
+    const handleKonfirmasiCheckup = async (checkupId) => {
         try {
-        await axios.put(`http://localhost:5000/api/requests/petugas/${id}/checkup/konfirmasi`);
-        alert("Checkup dikonfirmasi. Silakan isi laporan checkup.");
-        fetchDetail();
-        fetchLogs();
+            await axios.put(`http://localhost:5000/api/checkups/${checkupId}/confirm`);
+            alert("Checkup dikonfirmasi");
+            fetchDetail();       // refresh request
+            fetchCheckups();     // refresh checkup
         } catch (err) {
-        console.error("Gagal konfirmasi checkup:", err);
+            console.error("Gagal konfirmasi checkup:", err);
+            alert("Gagal konfirmasi checkup");
         }
     };
 
-    const handleSubmitCheckup = async () => {
+
+    const handleSubmitCheckup = async (checkupId) => {
         try {
-        await axios.put(`http://localhost:5000/api/requests/petugas/${id}/checkup/submit`, {
-            isi_laporan: laporanCheckup,
+        await axios.put(`http://localhost:5000/api/checkups/${checkupId}/submit`, {
+            laporan: laporanCheckup,
         });
         alert("Laporan checkup berhasil dikirim");
         fetchDetail();
         fetchLogs();
+        fetchCheckups();
         } catch (err) {
         console.error("Gagal mengirim laporan checkup:", err);
         }
@@ -112,9 +138,7 @@ import "../styles/DetailRequest.css";
             {request.nama_petugas && (
             <section className="section">
                 <h3>Petugas yang Ditugaskan</h3>
-                <p>
-                <strong>Nama Petugas:</strong> {request.nama_petugas}
-                </p>
+                <p><strong>Nama Petugas:</strong> {request.nama_petugas}</p>
             </section>
             )}
 
@@ -128,8 +152,7 @@ import "../styles/DetailRequest.css";
             <h3>Detail Permintaan</h3>
             <p><strong>Jenis IB:</strong> {request.jenis_ib}</p>
             <p><strong>Jumlah Ternak:</strong> {request.jumlah_ternak}</p>
-            <p>
-                <strong>Lokasi:</strong>{" "}
+            <p><strong>Lokasi:</strong>{" "}
                 <a
                 href={`https://www.google.com/maps?q=${request.latitude},${request.longitude}`}
                 target="_blank"
@@ -140,14 +163,13 @@ import "../styles/DetailRequest.css";
             </p>
             </section>
 
-            {/* Tombol Proses IB */}
             <section className="section">
-            {request.status === "Diproses" &&
-                (!request.proses_at && !isProsesDimulai) && (
+            {/* Proses IB */}
+            {request.status === "Diproses" && (!request.proses_at && !isProsesDimulai) && (
                 <button className="verify-btn" onClick={handleProsesIB}>
-                    Mulai Proses IB
+                Mulai Proses IB
                 </button>
-                )}
+            )}
 
             {(request.proses_at || isProsesDimulai) && !request.laporan_terisi && (
                 <div>
@@ -159,7 +181,10 @@ import "../styles/DetailRequest.css";
                     value={laporan}
                     onChange={(e) => setLaporan(e.target.value)}
                 />
-                <button onClick={handleSubmitLaporan} disabled={isSubmitting || laporan.trim() === ""}>
+                <button
+                    onClick={handleSubmitLaporan}
+                    disabled={isSubmitting || laporan.trim() === ""}
+                >
                     Kirim Laporan
                 </button>
                 </div>
@@ -167,31 +192,57 @@ import "../styles/DetailRequest.css";
             </section>
 
             {/* Checkup Section */}
-            {(request.laporan_terisi && request.checkup_status === "Belum Dikonfirmasi" &&
-            request.checkup_petugas_id === petugasId) && (
+            {checkups.map((c) => (
+            <section className="section" key={c.id}>
+                <h3>Tipe: {c.tipe}</h3>
+                <p><strong>Status: </strong>{c.status}</p>
+                <p><strong>Petugas:</strong> {c.nama_petugas}</p>
+                    {c.status === "Belum Dikonfirmasi" && c.petugas_id === petugasId && (
+                        <section key={c.id} className="section">
+                            <p>Checkup: {c.jenis}</p>
+                            <button className="verify-btn" onClick={() => handleKonfirmasiCheckup(c.id)}>
+                                Konfirmasi Checkup
+                            </button>
+                        </section>
+                    )}
+                {c.petugas_id === petugasId && c.status === "Dikonfirmasi" && (
+                <div>
+                    <h4>Form Laporan Checkup</h4>
+                    <textarea
+                    value={laporanCheckup}
+                    onChange={(e) => setLaporanCheckup(e.target.value)}
+                    placeholder="Isi laporan checkup..."
+                    rows={4}
+                    style={{ width: "100%", padding: "10px" }}
+                    />
+                    <button
+                    onClick={() => handleSubmitCheckup(c.id)}
+                    disabled={!laporanCheckup.trim()}
+                    >
+                    Kirim Laporan Checkup
+                    </button>
+                </div>
+                )}
+                    {c.laporan && (
+                        <section className="section">
+                            <h3>Laporan: {c.tipe}</h3>
+                            <p>{c.laporan}</p>
+                        </section>
+                    )}
+            </section>
+            ))}
+
+            {request.laporan_ib_text && (
             <section className="section">
-                <button className="verify-btn" onClick={handleKonfirmasiCheckup}>
-                Konfirmasi Checkup
-                </button>
+                <h3>Laporan Proses IB (oleh Petugas)</h3>
+                <p>{request.laporan_ib_text}</p>
             </section>
             )}
 
-            {(request.checkup_status === "Dikonfirmasi" && request.checkup_petugas_id === petugasId) && (
+            {request.laporan_peternak_text && (
             <section className="section">
-                <h3>Form Laporan Checkup</h3>
-                <textarea
-                value={laporanCheckup}
-                onChange={(e) => setLaporanCheckup(e.target.value)}
-                placeholder="Isi laporan checkup..."
-                rows={4}
-                style={{ width: "100%", padding: "10px" }}
-                />
-                <button
-                onClick={handleSubmitCheckup}
-                disabled={!laporanCheckup.trim()}
-                >
-                Kirim Laporan Checkup
-                </button>
+                <h3>Laporan Peternak (Kebuntingan/Keguguran)</h3>
+                <p>{request.laporan_peternak_text}</p>
             </section>
             )}
 
@@ -209,21 +260,9 @@ import "../styles/DetailRequest.css";
                 <p>Belum ada aktivitas.</p>
             )}
             </section>
-            {request.laporan_text && (
-                <section className="section">
-                    <h3>Laporan dari Petugas</h3>
-                    <p>{request.laporan_text}</p>
-                </section>
-                )}
-            {request.laporan_checkup_text && (
-            <section className="section">
-                <h3>Laporan Checkup</h3>
-                <p>{request.laporan_checkup_text}</p>
-            </section>
-            )}
         </div>
         </div>
     );
-    };
+};
 
 export default DetailRequest;

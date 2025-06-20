@@ -5,187 +5,228 @@ import Navbar from "../components/Navbar";
 import "../styles/DetailRequest.css";
 
 const DetailRequest = () => {
-
     const { id } = useParams();
     const [request, setRequest] = useState(null);
     const [loading, setLoading] = useState(true);
-    
-    //log aktivitas
     const [logs, setLogs] = useState([]);
+    const [checkups, setCheckups] = useState([]);
 
-    //untuk vitur verifikasi
     const [showVerifikasiModal, setShowVerifikasiModal] = useState(false);
     const [showTolakModal, setShowTolakModal] = useState(false);
     const [petugasList, setPetugasList] = useState([]);
     const [selectedPetugasId, setSelectedPetugasId] = useState("");
     const [catatanTolak, setCatatanTolak] = useState("");
-
     const [showGantiModal, setShowGantiModal] = useState(false);
     const [newPetugasId, setNewPetugasId] = useState("");
+
+    const [showCheckupModal, setShowCheckupModal] = useState(false);
+    const [selectedCheckupType, setSelectedCheckupType] = useState('');
+    const [selectedCheckupPetugas, setSelectedCheckupPetugas] = useState('');
+
 
     const isRequestTimeout = (verifikasiAt) => {
         if (!verifikasiAt) return false;
         const now = new Date();
         const verifTime = new Date(verifikasiAt);
-        const diff = (now - verifTime) / 1000 / 60; // menit
+        const diff = (now - verifTime) / 1000 / 60;
         return diff > 30;
-        };
+    };
 
     const openVerifikasiModal = async () => {
-        console.log("Memanggil modal...");
         try {
-            const res = await axios.get("http://localhost:5000/api/requests/petugas/list");
-            console.log("Data petugas:", res.data);
-            setPetugasList(res.data);
-            setShowVerifikasiModal(true);
+        const res = await axios.get("http://localhost:5000/api/requests/petugas/list");
+        setPetugasList(res.data);
+        setShowVerifikasiModal(true);
         } catch (error) {
-            console.error("Gagal mengambil daftar petugas:", error);
+        console.error("Gagal mengambil daftar petugas:", error);
         }
-        };
+    };
 
     const handleVerifikasi = async () => {
         try {
-            await axios.put(`http://localhost:5000/api/requests/${id}/verify`, {
-                petugas_id: selectedPetugasId,
-            });
-            alert("Permintaan berhasil diverifikasi");
-            window.location.reload();
+        await axios.put(`http://localhost:5000/api/requests/${id}/verify`, {
+            petugas_id: selectedPetugasId,
+        });
+        alert("Permintaan berhasil diverifikasi");
+        window.location.reload();
         } catch (err) {
-            console.error("Gagal verifikasi permintaan:", err);
-            alert("Terjadi kesalahan saat verifikasi");
+        console.error("Gagal verifikasi permintaan:", err);
+        alert("Terjadi kesalahan saat verifikasi");
         }
     };
 
     const handleTolak = async () => {
         try {
-            await axios.put(`http://localhost:5000/api/requests/${id}/reject`, {
-                catatan: catatanTolak,
-            });
-            alert("Permintaan ditolak");
-            setShowTolakModal(false);
-            window.location.reload();
+        await axios.put(`http://localhost:5000/api/requests/${id}/reject`, {
+            catatan: catatanTolak,
+        });
+        alert("Permintaan ditolak");
+        setShowTolakModal(false);
+        window.location.reload();
         } catch (error) {
-            console.error("Gagal menolak permintaan:", error);
+        console.error("Gagal menolak permintaan:", error);
         }
     };
 
     const handleGantiPetugas = async () => {
         try {
-            await axios.put(`http://localhost:5000/api/requests/${id}/ganti-petugas`, {
+        await axios.put(`http://localhost:5000/api/requests/${id}/ganti-petugas`, {
             petugas_id: newPetugasId,
-            });
-            alert("Petugas berhasil diganti");
-            window.location.reload();
+        });
+        alert("Petugas berhasil diganti");
+        window.location.reload();
         } catch (err) {
-            console.error("Gagal mengganti petugas:", err);
-            alert("Terjadi kesalahan");
+        console.error("Gagal mengganti petugas:", err);
+        alert("Terjadi kesalahan");
         }
-        };
-    
-        const handleTugaskanCheckup = async () => {
-    try {
-        await axios.put(`http://localhost:5000/api/requests/${id}/checkup/assign`);
-        alert("Checkup berhasil ditugaskan ke petugas yang sama.");
+    };
 
-        // Ambil ulang data dari backend agar checkup_at benar-benar up to date
-        const res = await axios.get(`http://localhost:5000/api/requests/${id}`);
-        setRequest(res.data);
-    } catch (error) {
-        console.error("Gagal menugaskan checkup:", error);
-        alert("Terjadi kesalahan saat menugaskan checkup.");
-    }
-};
+    const handleTugaskanCheckup = (tipe) => {
+        setSelectedCheckupType(tipe);
+        setShowCheckupModal(true);
+    };
 
+    const submitCheckupAssignment = async () => {
+        if (!selectedCheckupPetugas || !selectedCheckupType) {
+            alert("Pilih petugas dan tipe checkup terlebih dahulu.");
+            return;
+        }
 
+        try {
+            const res = await axios.post(`http://localhost:5000/api/requests/${id}/checkup/assign`, {
+                tipe: selectedCheckupType,
+                petugas_id: selectedCheckupPetugas
+            });
+
+            if (res.status === 200 || res.status === 201) {
+                alert("Checkup berhasil ditugaskan.");
+                setShowCheckupModal(false);
+                setSelectedCheckupPetugas('');
+                setSelectedCheckupType('');
+            } else {
+                throw new Error("Respon tidak berhasil");
+            }
+        } catch (err) {
+            console.error("Gagal menugaskan checkup:", err);
+            alert("Gagal menugaskan checkup.");
+        }
+        try {
+            await fetchCheckups();
+        } catch (fetchErr) {
+            console.warn("Gagal refresh data checkup (tidak fatal):", fetchErr);
+        }
+    };
 
     useEffect(() => {
-    const fetchRequest = async () => {
-            try {
-                const res = await axios.get(`http://localhost:5000/api/requests/${id}`);
-                setRequest(res.data);
-                setLoading(false);
-            } catch (error) {
-                console.error("Gagal mengambil detail permintaan:", error);
-            }
+        const fetchRequest = async () => {
+        try {
+            const res = await axios.get(`http://localhost:5000/api/requests/${id}`);
+            setRequest(res.data);
+            setLoading(false);
+        } catch (error) {
+            console.error("Gagal mengambil detail permintaan:", error);
+        }
         };
 
         const fetchPetugas = async () => {
-            try {
-                const res = await axios.get(`http://localhost:5000/api/requests/petugas/list`);
-                setPetugasList(res.data);
-            } catch (err) {
-                console.error("Gagal mengambil daftar petugas:", err);
-            }
+        try {
+            const res = await axios.get(`http://localhost:5000/api/requests/petugas/list`);
+            setPetugasList(res.data);
+        } catch (err) {
+            console.error("Gagal mengambil daftar petugas:", err);
+        }
         };
 
         fetchRequest();
         fetchPetugas();
-        }, [id]);
+    }, [id]);
 
-        //log aktivitas
-        useEffect(() => {
-            const fetchLogs = async () => {
-                try {
-                    const res = await axios.get(`http://localhost:5000/api/requests/${id}/logs`);
-                    setLogs(res.data);
-                } catch (err) {
-                    console.error("Gagal mengambil log aktivitas:", err);
-                }
-            };
-            fetchLogs();
-        }, [id]);
+    useEffect(() => {
+        const fetchCheckups = async () => {
+        try {
+            const res = await axios.get(`http://localhost:5000/api/requests/${id}/checkups`);
+            setCheckups(res.data);
+        } catch (err) {
+            console.error("Gagal mengambil data checkup:", err);
+        }
+        };
+
+        fetchCheckups();
+    }, [id]);
+
+    useEffect(() => {
+        const fetchLogs = async () => {
+        try {
+            const res = await axios.get(`http://localhost:5000/api/requests/${id}/logs`);
+            setLogs(res.data);
+        } catch (err) {
+            console.error("Gagal mengambil log aktivitas:", err);
+        }
+        };
+        fetchLogs();
+    }, [id]);
 
     if (loading) return <p>Loading...</p>;
     if (!request) return <p>Data tidak ditemukan</p>;
-    
-    
+
     return (
         <div>
         <Navbar />
         <div className="detail-container">
             <div className="header">
-                <h2>Permintaan: {request.id}</h2>
-                <h2>Tanggal: {new Date(request.tanggal).toLocaleDateString()}</h2>
-                <span className={`status-badge ${request.status.toLowerCase().replace(/\s+/g, '-')}`}>
-                    Status: {request.status}
-                </span>
+            <h2>Permintaan: {request.id}</h2>
+            <h2>Tanggal: {new Date(request.tanggal).toLocaleDateString()}</h2>
+            <span className={`status-badge ${request.status.toLowerCase().replace(/\s+/g, '-')}`}>
+                Status: {request.status}
+            </span>
             </div>
-            {request.laporan_terisi && !request.checkup_at && (
-                <button onClick={handleTugaskanCheckup} className="verify-btn">
-                    Tugaskan Checkup
-                </button>
+
+            {checkups.length > 0 && (
+            <section className="section">
+                <h3>Riwayat Checkup</h3>
+                {checkups.map(c => (
+                <div key={c.id} className="checkup-box">
+                    <p><strong>Tipe:</strong> {c.tipe}</p>
+                    <p><strong>Petugas:</strong> {c.nama_petugas || 'Belum ditugaskan'}</p>
+                    <p><strong>Status:</strong> {c.status}</p>
+                    
+                    {(c.petugas_id == null && c.status === "Menunggu Penugasan") && (
+                        <button className="verify-btn" onClick={() => handleTugaskanCheckup(c.tipe)}>
+                            Tugaskan Checkup
+                        </button>
+                    )}
+                    {c.laporan && (
+                        <section className="section">
+                            <h3>Laporan: {c.tipe}</h3>
+                            <p>{c.laporan}</p>
+                        </section>
+                    )}
+                </div>
+                ))}
+            </section>
             )}
 
             {request.nama_petugas && (
-                <section className="section">
-                    <h3>Petugas yang Ditugaskan</h3>
-                    <p><strong>Nama Petugas:</strong> {request.nama_petugas}</p>
-                </section>
-                )}
-            {(request.status === "Menunggu Verifikasi" || 
-                (request.status === "Diproses" && !request.proses_at && isRequestTimeout(request.verifikasi_at))) && (
-                <div className="actions">
-                    {request.status === "Menunggu Verifikasi" && (
-                    <>
-                        <button className="verify-btn" onClick={openVerifikasiModal}>Verifikasi</button>
-                        <button className="reject-btn" onClick={() => setShowTolakModal(true)}>Tolak</button>
-                    </>
-                    )}
-                    {request.status === "Diproses" && !request.proses_at && isRequestTimeout(request.verifikasi_at) && (
-                    <button className="verify-btn" onClick={() => setShowGantiModal(true)}>
-                        Ganti Petugas
-                    </button>
-                    )}
-                </div>
-                )}
+            <section className="section">
+                <h3>Petugas yang Ditugaskan</h3>
+                <p><strong>Nama Petugas:</strong> {request.nama_petugas}</p>
+            </section>
+            )}
 
-                {request.status === "Menunggu Check-up" && (
-                    <div className="actions">
-                        <button className="verify-btn" onClick={() => setShowCheckupModal(true)}>
-                        Tugaskan Petugas Check-up
-                        </button>
-                    </div>
-                    )}
+            {(request.status === "Menunggu Verifikasi" ||
+            (request.status === "Diproses" && !request.proses_at && isRequestTimeout(request.verifikasi_at))) && (
+            <div className="actions">
+                {request.status === "Menunggu Verifikasi" && (
+                <>
+                    <button className="verify-btn" onClick={openVerifikasiModal}>Verifikasi</button>
+                    <button className="reject-btn" onClick={() => setShowTolakModal(true)}>Tolak</button>
+                </>
+                )}
+                {request.status === "Diproses" && !request.proses_at && isRequestTimeout(request.verifikasi_at) && (
+                <button className="verify-btn" onClick={() => setShowGantiModal(true)}>Ganti Petugas</button>
+                )}
+            </div>
+            )}
 
             <section className="section">
             <h3>Data Peternak</h3>
@@ -198,111 +239,119 @@ const DetailRequest = () => {
             <p><strong>Jenis IB:</strong> {request.jenis_ib}</p>
             <p><strong>Jumlah Ternak:</strong> {request.jumlah_ternak}</p>
             <p>
-                <strong>Lokasi:</strong>{" "}
-                <a
-                href={`https://www.google.com/maps?q=${request.latitude},${request.longitude}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                >
-                Lihat di Google Maps
-                </a>
+                <strong>Lokasi:</strong> <a href={`https://www.google.com/maps?q=${request.latitude},${request.longitude}`} target="_blank" rel="noopener noreferrer">Lihat di Google Maps</a>
             </p>
             </section>
+
+            {request.laporan_ib_text && (
             <section className="section">
-                <h3>Log Aktivitas</h3>
-                {logs.length > 0 ? (
-                    <ul>
-                    {logs.map((log) => (
-                        <li key={log.id}>
-                        <strong>{new Date(log.waktu).toLocaleString('id-ID')}</strong>: {log.deskripsi}
-                        </li>
-                    ))}
-                    </ul>
-                ) : (
-                    <p>Belum ada aktivitas.</p>
-                )}
-            </section>
-            {request.laporan_text && (
-                <section className="section">
-                    <h3>Laporan dari Petugas</h3>
-                    <p>{request.laporan_text}</p>
-                </section>
-                )}
-            {request.laporan_checkup_text && (
-            <section className="section">
-                <h3>Laporan Checkup</h3>
-                <p>{request.laporan_checkup_text}</p>
+                <h3>Laporan Proses IB (oleh Petugas)</h3>
+                <p>{request.laporan_ib_text}</p>
             </section>
             )}
 
+            {request.laporan_peternak_text && (
+            <section className="section">
+                <h3>Laporan Peternak (Kebuntingan/Keguguran)</h3>
+                <p>{request.laporan_peternak_text}</p>
+            </section>
+            )}
+
+            <section className="section">
+            <h3>Log Aktivitas</h3>
+            {logs.length > 0 ? (
+                <ul>
+                {logs.map((log) => (
+                    <li key={log.id}>
+                    <strong>{new Date(log.waktu).toLocaleString('id-ID')}</strong>: {log.deskripsi}
+                    </li>
+                ))}
+                </ul>
+            ) : (
+                <p>Belum ada aktivitas.</p>
+            )}
+            </section>
         </div>
+
         {/* Modal Verifikasi */}
-            {showVerifikasiModal && (
+        {showVerifikasiModal && (
             <div className="modal-overlay">
-                <div className="modal">
-                    <h3>Pilih Petugas</h3>
-                    <select value={selectedPetugasId} onChange={(e) => setSelectedPetugasId(e.target.value)}>
-                        <option value="">-- Pilih Petugas --</option>
-                        {petugasList.map(p => (
-                            <option key={p.id} value={p.id}>{p.name}</option>
-                        ))}
-                    </select>
-                    <div className="modal-actions">
-                        <button onClick={handleVerifikasi} disabled={!selectedPetugasId}>Verifikasi</button>
-                        <button onClick={() => setShowVerifikasiModal(false)}>Batal</button>
-                    </div>
+            <div className="modal">
+                <h3>Pilih Petugas</h3>
+                <select value={selectedPetugasId} onChange={(e) => setSelectedPetugasId(e.target.value)}>
+                <option value="">-- Pilih Petugas --</option>
+                {petugasList.map(p => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+                </select>
+                <div className="modal-actions">
+                <button onClick={handleVerifikasi} disabled={!selectedPetugasId}>Verifikasi</button>
+                <button onClick={() => setShowVerifikasiModal(false)}>Batal</button>
                 </div>
             </div>
-            )}
+            </div>
+        )}
 
-            {/* Modal Tolak */}
-                {showTolakModal && (
-                <div className="modal-overlay">
-                    <div className="modal">
-                    <h3>Alasan Penolakan</h3>
-                    <textarea
-                        value={catatanTolak}
-                        onChange={(e) => setCatatanTolak(e.target.value)}
-                        placeholder="Tulis catatan untuk peternak..."
-                        rows={4}
-                        style={{ width: "100%", padding: "10px", marginBottom: "15px" }}
-                    />
-                    <div className="modal-actions">
-                        <button onClick={handleTolak}>Tolak</button>
-                        <button onClick={() => setShowTolakModal(false)}>Batal</button>
-                    </div>
-                    </div>
+        {/* Modal Tolak */}
+        {showTolakModal && (
+            <div className="modal-overlay">
+            <div className="modal">
+                <h3>Alasan Penolakan</h3>
+                <textarea
+                value={catatanTolak}
+                onChange={(e) => setCatatanTolak(e.target.value)}
+                placeholder="Tulis catatan untuk peternak..."
+                rows={4}
+                style={{ width: "100%", padding: "10px", marginBottom: "15px" }}
+                />
+                <div className="modal-actions">
+                <button onClick={handleTolak}>Tolak</button>
+                <button onClick={() => setShowTolakModal(false)}>Batal</button>
                 </div>
-                )}
-            
-            {/* Modal ganti petugas */}
-            {showGantiModal && (
-                <div className="modal-overlay">
-                    <div className="modal">
-                        <h3>Ganti Petugas</h3>
-                        <select value={newPetugasId} onChange={(e) => setNewPetugasId(e.target.value)}>
-                        <option value="">-- Pilih Petugas --</option>
-                        {petugasList.map(p => (
-                            <option key={p.id} value={p.id}>{p.name}</option>
-                        ))}
-                        </select>
-                        <div className="modal-actions">
-                        <button
-                            onClick={handleGantiPetugas}
-                            disabled={!newPetugasId}
-                        >
-                            Ganti
-                        </button>
-                        <button onClick={() => setShowGantiModal(false)}>Batal</button>
-                        </div>
-                    </div>
-                    </div>
-                )}
+            </div>
+            </div>
+        )}
+
+        {/* Modal Ganti Petugas */}
+        {showGantiModal && (
+            <div className="modal-overlay">
+            <div className="modal">
+                <h3>Ganti Petugas</h3>
+                <select value={newPetugasId} onChange={(e) => setNewPetugasId(e.target.value)}>
+                <option value="">-- Pilih Petugas --</option>
+                {petugasList.map(p => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+                </select>
+                <div className="modal-actions">
+                <button onClick={handleGantiPetugas} disabled={!newPetugasId}>Ganti</button>
+                <button onClick={() => setShowGantiModal(false)}>Batal</button>
+                </div>
+            </div>
+            </div>
+        )}
+
+        {/* Modal pilih petugas checkup */}
+        {showCheckupModal && (
+        <div className="modal-overlay">
+            <div className="modal">
+            <h3>Tugaskan Petugas untuk Checkup: {selectedCheckupType}</h3>
+            <select value={selectedCheckupPetugas} onChange={(e) => setSelectedCheckupPetugas(e.target.value)}>
+                <option value="">-- Pilih Petugas --</option>
+                {petugasList.map(p => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+            </select>
+            <div className="modal-actions">
+                <button onClick={submitCheckupAssignment} disabled={!selectedCheckupPetugas}>Tugaskan</button>
+                <button onClick={() => setShowCheckupModal(false)}>Batal</button>
+            </div>
+            </div>
+        </div>
+        )}
 
         </div>
     );
-    
 };
-
 
 export default DetailRequest;
