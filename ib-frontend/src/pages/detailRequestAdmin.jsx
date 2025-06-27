@@ -117,6 +117,19 @@ const DetailRequest = () => {
         }
     };
 
+    //reminder
+    const kirimReminder = async (jenis) => {
+        try {
+            await axios.post(`http://localhost:5000/api/requests/${id}/reminder`, { jenis });
+            alert(`Reminder laporan ${jenis} telah dikirim ke peternak.`);
+            fetchLogs(); // untuk refresh log aktivitas
+        } catch (err) {
+            console.error("Gagal mengirim reminder:", err);
+            alert("Gagal mengirim reminder.");
+        }
+    };
+
+
     useEffect(() => {
         const fetchRequest = async () => {
         try {
@@ -181,6 +194,35 @@ const DetailRequest = () => {
             </span>
             </div>
 
+            {/* button reminder */}
+            {request.flag_laporan_ib && (
+                <div className="warning-section">
+                    ⚠️ Peternak belum mengirimkan laporan hasil IB awal.
+                    <button className="reminder-btn" onClick={() => kirimReminder("IB")}>
+                        Ingatkan Peternak: Laporan IB
+                    </button>
+                </div>
+                )}
+
+                {request.flag_laporan_kebuntingan && (
+                <div className="warning-section">
+                    ⚠️ Peternak belum mengirimkan laporan kebuntingan/keguguran.
+                    <button className="reminder-btn" onClick={() => kirimReminder("Kebuntingan")}>
+                        Ingatkan Peternak: Laporan Kebuntingan
+                    </button>
+                </div>
+                )}
+
+                {request.flag_laporan_kelahiran && (
+                <div className="warning-section">
+                    ⚠️ Peternak belum mengirimkan laporan kelahiran.
+                    <button className="reminder-btn" onClick={() => kirimReminder("Kelahiran")}>
+                        Ingatkan Peternak: Laporan Kelahiran
+                    </button>
+                </div>
+                )}
+
+
             {checkups.length > 0 && (
             <section className="section">
                 <h3>Riwayat Checkup</h3>
@@ -244,18 +286,34 @@ const DetailRequest = () => {
             </section>
 
             {request.laporan_ib_text && (
-            <section className="section">
-                <h3>Laporan Proses IB (oleh Petugas)</h3>
-                <p>{request.laporan_ib_text}</p>
-            </section>
+                <section className="section">
+                    <h3>Laporan Proses IB (oleh Petugas)</h3>
+                    <p>{request.laporan_ib_text}</p>
+                    <p><span className="status-badge selesai">Tahap IB Awal Selesai</span></p>
+                </section>
             )}
 
-            {request.laporan_peternak_text && (
-            <section className="section">
-                <h3>Laporan Peternak (Kebuntingan/Keguguran)</h3>
-                <p>{request.laporan_peternak_text}</p>
-            </section>
+            {request.laporan_ib_status && (
+                <section className="section">
+                    <h3>Laporan Keberhasilan / Gagal IB dari Peternak</h3>
+                    <p><strong>Status:</strong> {request.laporan_ib_status}</p>
+                    <p>{request.laporan_ib_text}</p>
+                </section>
             )}
+
+            {request.status === "Gagal" && request.laporan_peternak_text && (
+                <section className="section">
+                    <h3>Laporan Keguguran dari Peternak</h3>
+                    <p>{request.laporan_peternak_keguguran}</p>
+                </section>
+            )}
+
+                {request.laporan_peternak_kelahiran && (
+                <section className="section">
+                    <h3>Laporan Kehamilan dari Peternak</h3>
+                    <p>{request.laporan_peternak_kelahiran}</p>
+                </section>
+                )}
 
             <section className="section">
             <h3>Log Aktivitas</h3>

@@ -2,7 +2,12 @@ const pool = require('../config/db');
 
 exports.getAllRequests = async (req, res) => {
     try {
-        const result = await pool.query('SELECT * FROM requests ORDER BY tanggal DESC');
+        const result = await pool.query(`
+            SELECT * FROM requests
+            ORDER BY 
+                (flag_laporan_ib OR flag_laporan_kelahiran) DESC,
+                tanggal DESC
+        `);
         res.json(result.rows);
     } catch (err) {
         console.error(err.message);
@@ -189,28 +194,36 @@ exports.petugasProsesIB = async (req, res) => {
 
 // Petugas mengisi laporan IB
 exports.submitIBReport = async (req, res) => {
-    const id = req.params.id;
+    const { id } = req.params;
     const { isi_laporan } = req.body;
-
     try {
-        await pool.query(`
-            UPDATE requests 
-            SET laporan_terisi = TRUE,
-                laporan_ib_text = $1
+        // Set deadline 3 bulan ke depan sejak submit
+        const result = await pool.query(
+            `
+            UPDATE requests
+            SET laporan_terisi = true,
+                laporan_ib_text = $1,
+                status = 'Diproses',
+                proses_at = NOW(),
+                deadline_laporan_ib = NOW() + INTERVAL '3 months'
             WHERE id = $2
-        `, [isi_laporan, id]);
+            RETURNING *
+            `, [isi_laporan, id]
+        );
 
-        await pool.query(`
-            INSERT INTO activity_logs (request_id, deskripsi, waktu)
-            VALUES ($1, $2, NOW())
-        `, [id, `Petugas mengisi laporan IB: ${isi_laporan}`]);
+        await pool.query(
+            `INSERT INTO activity_logs (request_id, deskripsi, waktu) VALUES ($1, $2, NOW())`,
+            [id, 'Petugas submit laporan IB dan permintaan selesai tahap IB.']
+        );
 
-        res.json({ message: 'Laporan berhasil disimpan' });
-    } catch (err) {
-        console.error(err);
-        res.status(500).send('Gagal menyimpan laporan IB');
+        res.status(200).json({ message: "Laporan IB berhasil dikirim", request: result.rows[0] });
+
+    } catch (error) {
+        console.error(error.message);
+        res.status(500).json({ error: "Gagal submit laporan IB" });
     }
 };
+
 
 
 exports.petugasIsiLaporan = async (req, res) => {
@@ -325,21 +338,24 @@ exports.kirimKeguguran = async (req, res) => {
     try {
         await pool.query(`
             UPDATE requests
-            SET status = 'Gagal', laporan_peternak_text = $1
+            SET status = 'Gagal',
+                laporan_peternak_keguguran = $1
             WHERE id = $2
         `, [laporan, id]);
 
         await pool.query(`
             INSERT INTO activity_logs (request_id, deskripsi, waktu)
-            VALUES ($1, 'Peternak mengirim laporan keguguran', NOW())
-        `, [id]);
+            VALUES ($1, $2, NOW())
+        `, [id, `Peternak mengirim laporan keguguran: ${laporan}`]);
 
-        res.json({ message: 'Laporan keguguran berhasil disimpan' });
+        res.status(200).json({ message: 'Laporan keguguran berhasil disimpan' });
     } catch (err) {
         console.error("Gagal kirim laporan keguguran:", err);
         res.status(500).json({ error: 'Server error' });
     }
 };
+
+
 
 //kebuntingan
 exports.kirimKebuntingan = async (req, res) => {
@@ -373,29 +389,48 @@ exports.kirimKebuntingan = async (req, res) => {
 };
 
 // POST /:id/checkup/kelahiran
+// Peternak membuat permintaan checkup kelahiran sekaligus menonaktifkan flag
 exports.kirimPermintaanKelahiran = async (req, res) => {
     const { id } = req.params;
-    const { catatan } = req.body;
+    const { catatan } = req.body; // Ini bisa diisi laporan kelahiran peternak
 
     try {
-        // Tambahkan entri ke tabel checkups
-        await pool.query(`
+        // 1. Tambahkan entri ke tabel checkups
+        await pool.query(
+            `
             INSERT INTO checkups (request_id, tipe, status, laporan, created_at)
             VALUES ($1, 'Checkup Kelahiran', 'Menunggu Penugasan', $2, NOW())
-        `, [id, catatan]);
+            `,
+            [id, catatan]
+        );
 
-        // Catat ke log aktivitas
-        await pool.query(`
+        // 2. Catat ke log aktivitas
+        await pool.query(
+            `
             INSERT INTO activity_logs (request_id, deskripsi, waktu)
             VALUES ($1, 'Peternak mengirim permintaan checkup kelahiran', NOW())
-        `, [id]);
+            `,
+            [id]
+        );
 
-        res.status(201).json({ message: 'Permintaan checkup kelahiran berhasil ditambahkan' });
+        // 3. Matikan flag_laporan_kelahiran dan simpan laporan_peternak_kelahiran
+        await pool.query(
+            `
+            UPDATE requests
+            SET flag_laporan_kelahiran = false,
+                laporan_peternak_kelahiran = $1
+            WHERE id = $2
+            `,
+            [catatan, id]
+        );
+
+        res.status(201).json({ message: 'Permintaan checkup kelahiran dan laporan kelahiran berhasil disimpan' });
     } catch (err) {
-        console.error("Gagal membuat permintaan checkup kelahiran:", err);
+        console.error('Gagal membuat permintaan checkup kelahiran:', err.message);
         res.status(500).json({ error: 'Server error' });
     }
 };
+
 
 // menunggu penugasan
 exports.getCheckupsMenungguPenugasan = async (req, res) => {
@@ -444,4 +479,134 @@ exports.assignCheckup = async (req, res) => {
     }
 };
 
+// Fungsi untuk memperbarui flag jemput bola jika sudah melewati deadline
+exports.updateFlagsIfNeeded = async (req, res) => {
+    try {
+        const now = new Date();
+        console.log("[updateFlagsIfNeeded] Sekarang:", now); 
 
+        // ✅ 1. Nyalakan flag_laporan_ib bila sudah terlewat dan petugas sudah membuat laporan awal IB
+        const resultIb = await pool.query(`
+            UPDATE requests
+            SET flag_laporan_ib = true
+            WHERE laporan_terisi = true
+            AND deadline_laporan_ib IS NOT NULL
+            AND deadline_laporan_ib < $1
+            AND (laporan_ib_status IS NULL OR laporan_ib_status = '')
+            RETURNING id
+        `, [now]);
+        console.log("[updateFlagsIfNeeded] ID terupdate (IB):", resultIb.rows.map(r => r.id));
+        
+        // ✅ 2. Matikan flag_laporan_ib bila peternak sudah mengisi laporan keberhasilan/kegagalan IB
+        const resultIbClear = await pool.query(`
+            UPDATE requests
+            SET flag_laporan_ib = false
+            WHERE laporan_ib_status IS NOT NULL
+            AND laporan_ib_status <> ''
+            AND flag_laporan_ib = true
+            RETURNING id
+        `);
+        if (resultIbClear.rows.length > 0) {
+            console.log("[updateFlagsIfNeeded] ID di-clear (IB):", resultIbClear.rows.map(r => r.id));
+        }
+
+        // ✅ 3. Nyalakan flag_laporan_kelahiran bila sudah terlewat dan status berhasil
+        await pool.query(`
+            UPDATE requests
+            SET flag_laporan_kelahiran = true
+            WHERE status = 'Berhasil'
+            AND deadline_kelahiran IS NOT NULL
+            AND deadline_kelahiran < $1
+            AND (laporan_peternak_kelahiran IS NULL OR laporan_peternak_kelahiran = '')
+            AND (laporan_peternak_keguguran IS NULL OR laporan_peternak_keguguran = '')
+        `, [now]);
+
+        // ✅ 4. Matikan flag_laporan_kelahiran bila peternak sudah melaporkan kelahiran atau keguguran
+        await pool.query(`
+            UPDATE requests
+            SET flag_laporan_kelahiran = false
+            WHERE (laporan_peternak_kelahiran IS NOT NULL AND laporan_peternak_kelahiran <> '')
+            OR (laporan_peternak_keguguran IS NOT NULL AND laporan_peternak_keguguran <> '')
+            AND flag_laporan_kelahiran = true
+        `);
+
+        res.status(200).json({ message: 'Flags updated successfully' });
+    } catch (err) {
+        console.error("[updateFlagsIfNeeded] Error:", err.message);
+        res.status(500).send('Gagal update flags');
+    }
+};
+
+
+// kirim reminder
+exports.kirimReminder = async (req, res) => {
+    const { id } = req.params;
+    const { jenis } = req.body;
+
+    try {
+        // Simulasi pengiriman notifikasi ke peternak, bisa disesuaikan dengan sistem pesan/email nanti
+        await pool.query(`
+            INSERT INTO activity_logs (request_id, deskripsi, waktu)
+            VALUES ($1, $2, NOW())
+        `, [id, `Admin mengingatkan peternak untuk mengirim laporan ${jenis}`]);
+
+        res.status(200).json({ message: `Reminder untuk laporan ${jenis} berhasil dikirim.` });
+    } catch (err) {
+        console.error("Gagal mengirim reminder:", err);
+        res.status(500).send("Gagal mengirim reminder.");
+    }
+};
+
+// peternak kirim laporan IB gagal/berhasil
+exports.kirimLaporanIB = async (req, res) => {
+    const { id } = req.params;
+    const { status_ib, isi_laporan } = req.body;
+
+    if (!['Berhasil', 'Gagal'].includes(status_ib)) {
+        return res.status(400).json({ error: 'Status IB harus Berhasil atau Gagal' });
+    }
+
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+
+        // Update laporan dan status
+        await client.query(`
+            UPDATE requests
+            SET 
+                laporan_ib_status = $1,
+                laporan_ib_text = $2,
+                status = $3
+            WHERE id = $4
+        `, [status_ib, isi_laporan, status_ib === 'Gagal' ? 'Gagal' : 'Berhasil', id]);
+
+        // Tambahkan ke log aktivitas
+        await client.query(`
+            INSERT INTO activity_logs (request_id, deskripsi, waktu)
+            VALUES ($1, $2, NOW())
+        `, [id, `Peternak mengirimkan laporan IB: ${status_ib}. Catatan: ${isi_laporan}`]);
+
+        // Jika berhasil → buat entri checkup kebuntingan
+        if (status_ib === 'Berhasil') {
+            await client.query(`
+                INSERT INTO checkups (request_id, tipe, status)
+                VALUES ($1, 'Checkup Kebuntingan', 'Menunggu Penugasan')
+            `, [id]);
+
+            await client.query(`
+                INSERT INTO activity_logs (request_id, deskripsi, waktu)
+                VALUES ($1, 'Checkup Kebuntingan dijadwalkan', NOW())
+            `, [id]);
+        }
+
+        await client.query('COMMIT');
+        res.status(200).json({ message: 'Laporan IB berhasil dikirim' });
+
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error("Gagal kirim laporan IB:", err);
+        res.status(500).send('Gagal kirim laporan IB');
+    } finally {
+        client.release();
+    }
+};

@@ -19,34 +19,51 @@ const DashboardAdmin = () => {
     const [entriesPerPage, setEntriesPerPage] = useState(5);
     const [currentPage, setCurrentPage] = useState(1);
 
-    // Filter berdasarkan nama peternak, date, dan status
-    const filteredRequests = [...requests]
-        .filter(req => {
-            const matchesSearch = req.nama_peternak.toLowerCase().includes(searchTerm.toLowerCase());
-            const matchesStatus = selectedStatus === 'Semua' || req.status === selectedStatus;
-            const matchesDate = !selectedDate || new Date(req.tanggal).toDateString() === new Date(selectedDate).toDateString();
-            return matchesSearch && matchesStatus && matchesDate;
-        })
-        .sort((a, b) => {
-            const dateA = new Date(a.tanggal);
-            const dateB = new Date(b.tanggal);
-            return sortOrder === 'terbaru' ? dateB - dateA : dateA - dateB;
-        });
+    // Filter berdasarkan prioritas flag (updated)
+    const filteredRequests = requests
+    .filter((req) => {
+        const matchSearch = req.nama_peternak?.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchStatus = selectedStatus === 'Semua' || req.status === selectedStatus;
+        const matchDate = selectedDate === '' || new Date(req.tanggal).toLocaleDateString('id-ID') === new Date(selectedDate).toLocaleDateString('id-ID');
+        return matchSearch && matchStatus && matchDate;
+    })
+    .sort((a, b) => {
+        const aPrioritas = a.flag_laporan_ib || a.flag_laporan_kebuntingan || a.flag_laporan_kelahiran;
+        const bPrioritas = b.flag_laporan_ib || b.flag_laporan_kebuntingan || b.flag_laporan_kelahiran;
 
-    // Fetch data dari backend
+        // Prioritaskan yang memiliki flag jemput bola
+        if (aPrioritas && !bPrioritas) return -1;
+        if (!aPrioritas && bPrioritas) return 1;
+
+        // Kalau dua-duanya sama-sama penting atau sama-sama tidak penting, urutkan berdasarkan tanggal
+        const dateA = new Date(a.tanggal);
+        const dateB = new Date(b.tanggal);
+        return sortOrder === 'terbaru' ? dateB - dateA : dateA - dateB;
+    });
+    
+    // section prioritas
+    const priorityRequests = requests.filter(
+    (req) =>
+        req.flag_laporan_ib ||
+        req.flag_laporan_kebuntingan ||
+        req.flag_laporan_kelahiran
+    );
+
+    // useEffect untuk update flags dan fetch data secara berurutan
     useEffect(() => {
-        const fetchData = async () => {
+        const updateFlagsThenFetch = async () => {
             try {
+                await axios.post("http://localhost:5000/api/requests/update-flags");
                 const res = await axios.get("http://localhost:5000/api/requests");
                 setRequests(res.data);
             } catch (err) {
-                console.error("Gagal mengambil data permintaan:", err.message);
+                console.error("Gagal update flag atau fetch data:", err);
             }
         };
-        fetchData();
-        const interval = setInterval(fetchData, 10000); // fetch tiap 10 detik
-        return () => clearInterval(interval); // bersihkan saat unmount
+        updateFlagsThenFetch();
     }, []);
+
+    // Fetch data dari backend
 
     useEffect(() => {
         const fetchTimeouts = async () => {
@@ -102,6 +119,28 @@ const DashboardAdmin = () => {
             <Navbar />
             <div className="container">
                 <h2>Daftar Permintaan</h2>
+                {/* section prioritas */}
+                {priorityRequests.length > 0 && (
+                    <section className="section warning-section">
+                        <h3>⚠️ Permintaan Prioritas (Menunggu Laporan Peternak)</h3>
+                        <ul>
+                            {priorityRequests.map((req) => (
+                                <li key={req.id}>
+                                    Permintaan #{req.id} oleh {req.nama_peternak} &nbsp;
+
+                                    {/* Tampilkan jenis flag yang aktif */}
+                                    {req.flag_laporan_ib && <span className="badge alert-badge">Butuh Laporan IB</span>}
+                                    {req.flag_laporan_kebuntingan && <span className="badge alert-badge">Butuh Laporan Kebuntingan</span>}
+                                    {req.flag_laporan_kelahiran && <span className="badge alert-badge">Butuh Laporan Kelahiran</span>}
+
+                                    <Link to={`/admin/permintaan/${req.id}`}>
+                                        <button style={{ marginLeft: "10px" }}>Detail</button>
+                                    </Link>
+                                </li>
+                            ))}
+                        </ul>
+                    </section>
+                )}
 
                 {pendingCheckups.length > 0 && (
                     <section className="section">
@@ -179,21 +218,28 @@ const DashboardAdmin = () => {
                         </tr>
                     </thead>
                     <tbody>
-                        {currentEntries.map((req, index) => (
-                            <tr key={index}>
-                                <td>#{req.id}</td>
-                                <td>{req.nama_peternak}</td>
-                                <td>{new Date(req.tanggal).toLocaleDateString("id-ID")}</td>
-                                <td>
-                                    <span className={`status-badge ${req.status.replace(/\s+/g, '-').toLowerCase()}`}>
-                                        {req.status}
-                                    </span>
+                        {currentEntries.map((req) => (
+                            <tr key={req.id} className={
+                                req.flag_laporan_ib || req.flag_laporan_kebuntingan || req.flag_laporan_kelahiran
+                                    ? "flag-alert"
+                                    : ""
+                            }>
+                            <td>#{req.id}</td>
+                            <td>{req.nama_peternak}</td>
+                            <td>{new Date(req.tanggal).toLocaleDateString("id-ID")}</td>
+                            <td>
+                                <span className={`status-badge ${req.status.toLowerCase().replace(/\s+/g, '-')}`}>
+                                    {req.status}
+                                </span>
+                                {(req.flag_laporan_ib || req.flag_laporan_kebuntingan || req.flag_laporan_kelahiran) && (
+                                    <span style={{ color: 'red', marginLeft: '5px' }}>⚠️</span>
+                                )}
                                 </td>
-                                <td>
-                                    <Link to={`/admin/permintaan/${req.id}`}>
-                                        <button className="detail-btn">Detail</button>
-                                    </Link>
-                                </td>
+                            <td>
+                                <Link to={`/admin/permintaan/${req.id}`}>
+                                <button className="detail-btn">Detail</button>
+                                </Link>
+                            </td>
                             </tr>
                         ))}
                     </tbody>

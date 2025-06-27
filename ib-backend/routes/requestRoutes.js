@@ -7,7 +7,6 @@ const pool = require('../config/db');
 router.get('/requests', requestController.getAllRequests);
 router.get('/', requestController.getAllRequests);
 
-
 // dashboard petugas
 router.get('/petugas/:id/requests', requestController.getRequestsByPetugasId);
 
@@ -24,6 +23,12 @@ router.get('/:id/checkups', requestController.getCheckupsByRequestId);
 router.post('/:id/checkup/assign', requestController.assignCheckup);
 router.get('/checkups/menunggu', requestController.getCheckupsMenungguPenugasan);
 
+//kirim reminder ke peternak
+router.post('/:id/reminder', requestController.kirimReminder);
+
+//update flag otamatis
+router.post('/update-flags', requestController.updateFlagsIfNeeded);
+
 // aksi petugas
 router.put('/petugas/:id/proses', requestController.startProcessIB);
 router.put('/petugas/:id/laporan', requestController.submitIBReport);
@@ -39,6 +44,9 @@ router.get('/petugas/:id/all-requests', requestController.getAllRequestsForPetug
 // Peternak kirim status
 router.put('/:id/keguguran', requestController.kirimKeguguran);
 router.put('/:id/kebuntingan', requestController.kirimKebuntingan);
+
+//peternak kirim laporan IB gagal/berhasil
+router.post('/:id/laporan-ib', requestController.kirimLaporanIB);
 
 // Peternak minta checkup kelahiran
 router.post('/:id/checkup/kelahiran', requestController.kirimPermintaanKelahiran);

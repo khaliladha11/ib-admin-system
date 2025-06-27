@@ -131,7 +131,7 @@ const DashboardPetugas = () => {
                         <ul>
                             {assignedRequests.map(req => (
                                 <li key={req.id}>
-                                    Permintaan #{req.id} oleh {req.nama_peternak} menunggu diproses.
+                                    Permintaan #{req.id} menunggu diproses.
                                     <Link to={`/petugas/permintaan/${req.id}`}>
                                         <button style={{ marginLeft: "10px" }}>Detail</button>
                                     </Link>

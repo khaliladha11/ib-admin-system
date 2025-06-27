@@ -32,6 +32,7 @@
     justify-content: start;
     align-items: center;
     margin-bottom: 10px;
+    margin-top: 5px;
 }
 
 .search-input {
@@ -108,3 +109,49 @@
     color: white;
     font-weight: bold;
     }
+
+//style flag
+
+.flag-alert {
+    background-color: #fff3cd; /* warna kuning lembut */
+    border-left: 6px solid #ffc107; /* garis tepi kuning */
+    font-weight: bold;
+}
+.flag-alert td {
+    color: #856404;
+}
+
+
+.urgent-flag.ib {
+    background-color: #fff3cd; /* kuning muda */
+}
+
+.urgent-flag.kebuntingan {
+    background-color: #d1ecf1; /* biru muda */
+}
+
+.urgent-flag.kelahiran {
+    background-color: #f8d7da; /* merah muda */
+}
+
+// warning untuk laporan
+.warning-section {
+    background-color: #fff4e5;
+    border: 1px solid #ffa500;
+    color: #cc5500;
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 5px;
+    font-weight: bold;
+}
+
+.badge.alert-badge {
+    background-color: #ff6666;
+    color: white;
+    padding: 3px 8px;
+    margin-right: 6px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+}
+
+
