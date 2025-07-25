@@ -3,6 +3,7 @@ import axios from "axios";
 import Navbar from "../components/Navbar";
 import { Link } from "react-router-dom";
 import '../styles/Dashboard.css';
+import { FcAnswers, FcExpired, FcMediumPriority, FcEmptyFilter, FcDocument } from "react-icons/fc";
 
 const DashboardPetugas = () => {
     const [requests, setRequests] = useState([]);
@@ -121,41 +122,47 @@ const DashboardPetugas = () => {
         <div>
             <Navbar />
             <div className="container">
-                <h2>Permintaan IB yang Ditugaskan</h2>
+                <h2><FcAnswers />Permintaan IB yang Ditugaskan</h2>
 
-                {/* Notifikasi tugas */}
+                <div className="priority-checkup-container">
+                    {/* ✅ Section: Permintaan IB Baru */}
+                    {assignedRequests.length > 0 && (
+                        <section className="section warning-section">
+                            <h3>
+                                <FcDocument /> Permintaan IB Baru
+                            </h3>
+                            <ul>
+                                {assignedRequests.map(req => (
+                                    <li style={{ margin: "5px" }} key={req.id}>
+                                        Permintaan #{req.id} menunggu diproses
+                                        <Link to={`/petugas/permintaan/${req.id}`}>
+                                            <button className="detail-btnflag">Detail</button>
+                                        </Link>
+                                    </li>
+                                ))}
+                            </ul>
+                        </section>
+                    )}
 
-                {assignedRequests.length > 0 && (
-                    <section className="section">
-                        <h3>Permintaan IB Baru</h3>
-                        <ul>
-                            {assignedRequests.map(req => (
-                                <li key={req.id}>
-                                    Permintaan #{req.id} menunggu diproses.
-                                    <Link to={`/petugas/permintaan/${req.id}`}>
-                                        <button style={{ marginLeft: "10px" }}>Detail</button>
-                                    </Link>
-                                </li>
-                            ))}
-                        </ul>
-                    </section>
-                )}
-
-                {checkupRequests.length > 0 && (
-                    <section className="section">
-                        <h3>Permintaan Checkup Baru</h3>
-                        <ul>
-                            {checkupRequests.map(checkup => (
-                                <li key={checkup.id}>
-                                    {checkup.tipe} untuk permintaan #{checkup.request_id} dari {checkup.nama_peternak}.
-                                    <Link to={`/petugas/permintaan/${checkup.request_id}`}>
-                                        <button style={{ marginLeft: "10px" }}>Detail</button>
-                                    </Link>
-                                </li>
-                            ))}
-                        </ul>
-                    </section>
-                )}
+                    {/* ✅ Section: Permintaan Checkup Baru */}
+                    {checkupRequests.length > 0 && (
+                        <section className="section warning-section">
+                            <h3>
+                                <FcMediumPriority /> Permintaan Checkup Baru
+                            </h3>
+                            <ul>
+                                {checkupRequests.map(checkup => (
+                                    <li style={{ margin: "5px" }} key={checkup.id}>
+                                        {checkup.tipe} untuk permintaan #{checkup.request_id} dari {checkup.nama_peternak}
+                                        <Link to={`/petugas/permintaan/${checkup.request_id}`}>
+                                            <button className="detail-btnflag">Detail</button>
+                                        </Link>
+                                    </li>
+                                ))}
+                            </ul>
+                        </section>
+                    )}
+                </div>
 
                 {/* Notifikasi laporan belum diisi */}
                 {overdueReports.length > 0 && (
@@ -163,10 +170,10 @@ const DashboardPetugas = () => {
                         <h4 style={{ color: "red" }}>⚠️ Laporan Belum Diisi:</h4>
                         <ul>
                             {overdueReports.map(req => (
-                                <li key={req.id}>
+                                <li style={{ margin: "5px" }} key={req.id}>
                                     Permintaan #{req.id} oleh {req.nama_peternak}
                                     <Link to={`/petugas/permintaan/${req.id}`}>
-                                        <button style={{ marginLeft: "10px" }}>Isi Laporan</button>
+                                        <button className="detail-btnflag">Isi Laporan</button>
                                     </Link>
                                 </li>
                             ))}
@@ -174,52 +181,72 @@ const DashboardPetugas = () => {
                     </div>
                 )}
 
-                {/* Filter Controls */}
+            {/* ✅ Kontrol Tabel */}
                 <div className="table-controls">
-                    <label>
-                        Show
-                        <select
+                    <div className="table-control-group">
+                        <label>
+                            <FcEmptyFilter style={{ marginRight: "4px" }} />
+                            Show
+                            <select
+                                className="entry-select"
+                                value={entriesPerPage}
+                                onChange={(e) => {
+                                    setEntriesPerPage(Number(e.target.value));
+                                    setCurrentPage(1);
+                                }}
+                            >
+                                <option value="5">5</option>
+                                <option value="10">10</option>
+                                <option value="20">20</option>
+                            </select>
+                            entries
+                        </label>
+                    </div>
+
+                    <div className="table-control-group">
+                        <input
+                            type="date"
+                            value={selectedDate}
+                            onChange={(e) => setSelectedDate(e.target.value)}
                             className="entry-select"
-                            value={entriesPerPage}
-                            onChange={(e) => {
-                                setEntriesPerPage(Number(e.target.value));
-                                setCurrentPage(1);
-                            }}
+                        />
+                    </div>
+
+                    <div className="table-control-group">
+                        <select
+                            value={sortOrder}
+                            onChange={(e) => setSortOrder(e.target.value)}
+                            className="entry-select"
                         >
-                            <option value="5">5</option>
-                            <option value="10">10</option>
-                            <option value="20">20</option>
+                            <option value="terbaru">Terbaru</option>
+                            <option value="terlama">Terlama</option>
                         </select>
-                        entries
-                    </label>
+                    </div>
 
-                    <input
-                        type="date"
-                        value={selectedDate}
-                        onChange={(e) => setSelectedDate(e.target.value)}
-                        className="entry-select"
-                    />
+                    <div className="table-control-group">
+                        <select
+                            value={selectedStatus}
+                            onChange={(e) => setSelectedStatus(e.target.value)}
+                            className="entry-select"
+                        >
+                            <option value="Semua">Semua Status</option>
+                            <option value="Menunggu Verifikasi">Menunggu Verifikasi</option>
+                            <option value="Diproses">Sedang Diproses</option>
+                            <option value="Selesai">Selesai</option>
+                            <option value="Berhasil">IB Berhasil</option>
+                            <option value="Gagal">IB Gagal</option>
+                        </select>
+                    </div>
 
-                    <select value={sortOrder} onChange={(e) => setSortOrder(e.target.value)}>
-                        <option value="terbaru">Terbaru</option>
-                        <option value="terlama">Terlama</option>
-                    </select>
-
-                    <select value={selectedStatus} onChange={(e) => setSelectedStatus(e.target.value)}>
-                        <option value="Semua">Semua Status</option>
-                        <option value="Diproses">Diproses</option>
-                        <option value="Selesai">Selesai</option>
-                        <option value="Berhasil">IB Berhasil</option>
-                        <option value="Gagal">IB Gagal</option>
-                    </select>
-
-                    <input
-                        type="text"
-                        placeholder="Cari nama peternak..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="search-input"
-                    />
+                    <div className="table-control-group">
+                        <input
+                            type="text"
+                            placeholder="Search..."
+                            className="search-input"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
                 </div>
 
                 {/* Tabel Permintaan */}
@@ -250,7 +277,7 @@ const DashboardPetugas = () => {
                                         </td>
                                         <td>
                                             <Link to={`/petugas/permintaan/${req.id}`}>
-                                                <button className="detail-btn">Detail</button>
+                                                <button className="detail-btn"><FcDocument/>Detail</button>
                                             </Link>
                                         </td>
                                     </tr>

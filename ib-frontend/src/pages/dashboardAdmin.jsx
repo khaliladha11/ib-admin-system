@@ -3,6 +3,7 @@ import axios from "axios";
 import Navbar from "../components/Navbar";
 import '../styles/Dashboard.css';
 import { Link } from 'react-router-dom';
+import { FcAnswers, FcExpired, FcMediumPriority, FcEmptyFilter, FcDocument } from "react-icons/fc";
 
 const DashboardAdmin = () => {
     const [requests, setRequests] = useState([]);
@@ -114,99 +115,133 @@ const DashboardAdmin = () => {
     const currentEntries = filteredRequests.slice(indexOfFirstEntry, indexOfLastEntry);
     const totalPages = Math.ceil(filteredRequests.length / entriesPerPage);
 
+    const [showPriority, setShowPriority] = useState(true);
+    const [showCheckup, setShowCheckup] = useState(true);
+    const [showSiapCheckup, setShowSiapCheckup] = useState(false);
+    const [showTimeout, setShowTimeout] = useState(false);
+
     return (
         <div>
             <Navbar />
             <div className="container">
-                <h2>Daftar Permintaan</h2>
-                {/* section prioritas */}
+                <h2> <FcAnswers /> Daftar Permintaan</h2>
+                
+                <div className="priority-checkup-container">
+                {/* ✅ Section: Permintaan Prioritas */}
                 {priorityRequests.length > 0 && (
                     <section className="section warning-section">
-                        <h3>⚠️ Permintaan Prioritas (Menunggu Laporan Peternak)</h3>
-                        <ul>
-                            {priorityRequests.map((req) => (
-                                <li key={req.id}>
-                                    Permintaan #{req.id} oleh {req.nama_peternak} &nbsp;
-
-                                    {/* Tampilkan jenis flag yang aktif */}
-                                    {req.flag_laporan_ib && <span className="badge alert-badge">Butuh Laporan IB</span>}
-                                    {req.flag_laporan_kebuntingan && <span className="badge alert-badge">Butuh Laporan Kebuntingan</span>}
-                                    {req.flag_laporan_kelahiran && <span className="badge alert-badge">Butuh Laporan Kelahiran</span>}
-
-                                    <Link to={`/admin/permintaan/${req.id}`}>
-                                        <button style={{ marginLeft: "10px" }}>Detail</button>
-                                    </Link>
-                                </li>
-                            ))}
-                        </ul>
+                        <h3 onClick={() => setShowPriority(!showPriority)} style={{ cursor: 'pointer' }}>
+                            <FcExpired/> Permintaan Prioritas (Menunggu Laporan Peternak)
+                        </h3>
+                        {showPriority && (
+                            <ul>
+                                {priorityRequests.map((req) => (
+                                    <li style={{ margin: "5px" }} key={req.id}>
+                                        Permintaan #{req.id} oleh {req.nama_peternak} &nbsp;
+                                        {req.flag_laporan_ib && <span className="badge alert-badge">Butuh Laporan IB</span>}
+                                        {req.flag_laporan_kelahiran && <span className="badge alert-badge">Butuh Laporan Kelahiran</span>}
+                                        <Link to={`/admin/permintaan/${req.id}`}>
+                                            <button className="detail-btnflag">Detail</button>
+                                        </Link>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
                     </section>
                 )}
 
+                {/* ✅ Section: Permintaan Checkup */}
                 {pendingCheckups.length > 0 && (
-                    <section className="section">
-                        <h3>Permintaan Checkup Menunggu Penugasan</h3>
-                        <ul>
-                            {pendingCheckups.map(checkup => (
-                                <li key={checkup.id}>
-                                    {checkup.tipe} untuk permintaan #{checkup.request_id} dari {checkup.nama_peternak}.
-                                    <Link to={`/admin/permintaan/${checkup.request_id}`}>
-                                        <button style={{ marginLeft: "10px" }}>Detail</button>
-                                    </Link>
-                                </li>
-                            ))}
-                        </ul>
+                    <section className="section warning-section">
+                        <h3 onClick={() => setShowCheckup(!showCheckup)} style={{ cursor: 'pointer' }}>
+                            <FcMediumPriority/> Permintaan Checkup Menunggu Penugasan
+                        </h3>
+                        {showCheckup && (
+                            <ul>
+                                {pendingCheckups.map(checkup => (
+                                    <li style={{ margin: "5px" }} key={checkup.id}>
+                                        {checkup.tipe} untuk permintaan #{checkup.request_id} dari {checkup.nama_peternak}
+                                        <Link to={`/admin/permintaan/${checkup.request_id}`}>
+                                            <button className="detail-btnflag">Detail</button>
+                                        </Link>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
                     </section>
                 )}
+            </div>
 
+                {/* ✅ Kontrol Tabel */}
                 <div className="table-controls">
-                    <label>
-                        Show
-                        <select
+                    <div className="table-control-group">
+                        <label>
+                            <FcEmptyFilter style={{ marginRight: "4px" }} />
+                            Show
+                            <select
+                                className="entry-select"
+                                value={entriesPerPage}
+                                onChange={(e) => {
+                                    setEntriesPerPage(Number(e.target.value));
+                                    setCurrentPage(1);
+                                }}
+                            >
+                                <option value="5">5</option>
+                                <option value="10">10</option>
+                                <option value="20">20</option>
+                            </select>
+                            entries
+                        </label>
+                    </div>
+
+                    <div className="table-control-group">
+                        <input
+                            type="date"
+                            value={selectedDate}
+                            onChange={(e) => setSelectedDate(e.target.value)}
                             className="entry-select"
-                            value={entriesPerPage}
-                            onChange={(e) => {
-                                setEntriesPerPage(Number(e.target.value));
-                                setCurrentPage(1);
-                            }}
+                        />
+                    </div>
+
+                    <div className="table-control-group">
+                        <select
+                            value={sortOrder}
+                            onChange={(e) => setSortOrder(e.target.value)}
+                            className="entry-select"
                         >
-                            <option value="5">5</option>
-                            <option value="10">10</option>
-                            <option value="20">20</option>
+                            <option value="terbaru">Terbaru</option>
+                            <option value="terlama">Terlama</option>
                         </select>
-                        entries
-                    </label>
+                    </div>
 
-                    <input
-                        type="date"
-                        value={selectedDate}
-                        onChange={(e) => setSelectedDate(e.target.value)}
-                        className="entry-select"
-                    />
+                    <div className="table-control-group">
+                        <select
+                            value={selectedStatus}
+                            onChange={(e) => setSelectedStatus(e.target.value)}
+                            className="entry-select"
+                        >
+                            <option value="Semua">Semua Status</option>
+                            <option value="Menunggu Verifikasi">Menunggu Verifikasi</option>
+                            <option value="Diproses">Sedang Diproses</option>
+                            <option value="Selesai">Selesai</option>
+                            <option value="Ditolak">Ditolak</option>
+                            <option value="Berhasil">IB Berhasil</option>
+                            <option value="Gagal">IB Gagal</option>
+                        </select>
+                    </div>
 
-                    <select value={sortOrder} onChange={(e) => setSortOrder(e.target.value)}>
-                        <option value="terbaru">Terbaru</option>
-                        <option value="terlama">Terlama</option>
-                    </select>
-
-                    <select value={selectedStatus} onChange={(e) => setSelectedStatus(e.target.value)}>
-                        <option value="Semua">Semua Status</option>
-                        <option value="Menunggu Verifikasi">Menunggu Verifikasi</option>
-                        <option value="Diproses">Sedang Diproses</option>
-                        <option value="Selesai">Selesai</option>
-                        <option value="Ditolak">Ditolak</option>
-                        <option value="Berhasil">IB Berhasil</option>
-                        <option value="Gagal">IB Gagal</option>
-                    </select>
-
-                    <input
-                        type="text"
-                        placeholder="Search..."
-                        className="search-input"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
+                    <div className="table-control-group">
+                        <input
+                            type="text"
+                            placeholder="Search..."
+                            className="search-input"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
                 </div>
 
+                {/* ✅ Tabel Permintaan */}
                 <table className="request-table">
                     <thead>
                         <tr>
@@ -220,32 +255,32 @@ const DashboardAdmin = () => {
                     <tbody>
                         {currentEntries.map((req) => (
                             <tr key={req.id} className={
-                                req.flag_laporan_ib || req.flag_laporan_kebuntingan || req.flag_laporan_kelahiran
+                                req.flag_laporan_ib || req.flag_laporan_kelahiran
                                     ? "flag-alert"
                                     : ""
                             }>
-                            <td>#{req.id}</td>
-                            <td>{req.nama_peternak}</td>
-                            <td>{new Date(req.tanggal).toLocaleDateString("id-ID")}</td>
-                            <td>
-                                <span className={`status-badge ${req.status.toLowerCase().replace(/\s+/g, '-')}`}>
-                                    {req.status}
-                                </span>
-                                {(req.flag_laporan_ib || req.flag_laporan_kebuntingan || req.flag_laporan_kelahiran) && (
-                                    <span style={{ color: 'red', marginLeft: '5px' }}>⚠️</span>
-                                )}
+                                <td>#{req.id}</td>
+                                <td>{req.nama_peternak}</td>
+                                <td>{new Date(req.tanggal).toLocaleDateString("id-ID")}</td>
+                                <td>
+                                    <span className={`status-badge ${req.status.toLowerCase().replace(/\s+/g, '-')}`}>
+                                        {req.status}
+                                    </span>
+                                    {(req.flag_laporan_ib || req.flag_laporan_kelahiran) && (
+                                        <span style={{ color: 'red', marginLeft: '5px' }}>⚠️</span>
+                                    )}
                                 </td>
-                            <td>
-                                <Link to={`/admin/permintaan/${req.id}`}>
-                                <button className="detail-btn">Detail</button>
-                                </Link>
-                            </td>
+                                <td>
+                                    <Link to={`/admin/permintaan/${req.id}`}>
+                                        <button className="detail-btn"><FcDocument/>Detail</button>
+                                    </Link>
+                                </td>
                             </tr>
                         ))}
                     </tbody>
                 </table>
-                
-                {/* Pagination */}
+
+                {/* ✅ Pagination */}
                 <div className="pagination-wrapper">
                     <div className="pagination">
                         <button onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))} disabled={currentPage === 1}>Previous</button>
@@ -265,35 +300,45 @@ const DashboardAdmin = () => {
                     </div>
                 </div>
 
+                {/* ✅ Permintaan Siap Checkup */}
                 {siapCheckupRequests.length > 0 && (
                     <section className="section">
-                        <h3>Permintaan Siap Checkup</h3>
-                        <ul>
-                            {siapCheckupRequests.map(req => (
-                                <li key={req.id}>
-                                    Permintaan #{req.id} oleh {req.nama_peternak} siap untuk checkup.
-                                    <Link to={`/admin/permintaan/${req.id}`}>
-                                        <button style={{ marginLeft: "10px" }}>Detail</button>
-                                    </Link>
-                                </li>
-                            ))}
-                        </ul>
+                        <h3 onClick={() => setShowSiapCheckup(!showSiapCheckup)} style={{ cursor: 'pointer' }}>
+                            🟢 Permintaan Siap Checkup 
+                        </h3>
+                        {showSiapCheckup && (
+                            <ul>
+                                {siapCheckupRequests.map(req => (
+                                    <li key={req.id}>
+                                        Permintaan #{req.id} oleh {req.nama_peternak} siap untuk checkup.
+                                        <Link to={`/admin/permintaan/${req.id}`}>
+                                            <button style={{ marginLeft: "10px" }}>Detail</button>
+                                        </Link>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
                     </section>
                 )}
 
+                {/* ✅ Permintaan Timeout */}
                 {timeoutRequests.length > 0 && (
                     <section className="section">
-                        <h3>Permintaan IB Belum Diproses (lebih dari 30 menit)</h3>
-                        <ul>
-                            {timeoutRequests.map((req) => (
-                                <li key={req.id}>
-                                    Permintaan #{req.id} oleh {req.nama_peternak} belum diproses.
-                                    <Link to={`/admin/permintaan/${req.id}`}>
-                                        <button>Detail</button>
-                                    </Link>
-                                </li>
-                            ))}
-                        </ul>
+                        <h3 onClick={() => setShowTimeout(!showTimeout)} style={{ cursor: 'pointer' }}>
+                            ⏰ Permintaan IB Belum Diproses (lebih dari 30 menit)
+                        </h3>
+                        {showTimeout && (
+                            <ul>
+                                {timeoutRequests.map((req) => (
+                                    <li key={req.id}>
+                                        Permintaan #{req.id} oleh {req.nama_peternak} belum diproses.
+                                        <Link to={`/admin/permintaan/${req.id}`}>
+                                            <button className="detail-btnflag">Detail</button>
+                                        </Link>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
                     </section>
                 )}
             </div>

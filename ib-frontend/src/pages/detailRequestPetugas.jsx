@@ -3,6 +3,8 @@ import { useParams } from "react-router-dom";
 import axios from "axios";
 import Navbar from "../components/Navbar";
 import "../styles/DetailRequest.css";
+import Swal from 'sweetalert2';
+import { FcSurvey, FcManager, FcViewDetails, FcVoicePresentation, FcInfo } from "react-icons/fc";
 
 const DetailRequest = () => {
     const { id } = useParams();
@@ -67,58 +69,92 @@ const DetailRequest = () => {
 
     const handleProsesIB = async () => {
         try {
-        await axios.put(`http://localhost:5000/api/requests/petugas/${id}/proses`);
-        setIsProsesDimulai(true);
-        alert("Proses IB dimulai");
-        fetchDetail();
+            await axios.put(`http://localhost:5000/api/requests/petugas/${id}/proses`);
+            setIsProsesDimulai(true);
+            Swal.fire({
+                icon: 'success',
+                title: 'Proses IB Dimulai',
+                text: 'Proses IB sudah dimulai.'
+            });
+            fetchDetail();
         } catch (error) {
-        console.error("Gagal memulai proses IB:", error);
+            console.error("Gagal memulai proses IB:", error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Gagal',
+                text: 'Tidak dapat memulai proses IB.'
+            });
         }
     };
 
     const handleSubmitLaporan = async () => {
         setIsSubmitting(true);
         try {
-        await axios.put(`http://localhost:5000/api/requests/petugas/${id}/laporan`, {
-            isi_laporan: laporan,
-        });
-        alert("Laporan berhasil dikirim");
-        fetchDetail();
-        fetchLogs();
+            await axios.put(`http://localhost:5000/api/requests/petugas/${id}/laporan`, {
+                isi_laporan: laporan,
+            });
+            Swal.fire({
+                icon: 'success',
+                title: 'Laporan Terkirim',
+                text: 'Laporan berhasil dikirim.'
+            });
+            fetchDetail();
+            fetchLogs();
         } catch (err) {
-        console.error("Gagal mengirim laporan:", err);
-        alert("Terjadi kesalahan saat mengirim laporan");
+            console.error("Gagal mengirim laporan:", err);
+            Swal.fire({
+                icon: 'error',
+                title: 'Gagal',
+                text: 'Terjadi kesalahan saat mengirim laporan.'
+            });
         } finally {
-        setIsSubmitting(false);
+            setIsSubmitting(false);
         }
     };
 
     const handleKonfirmasiCheckup = async (checkupId) => {
         try {
             await axios.put(`http://localhost:5000/api/checkups/${checkupId}/confirm`);
-            alert("Checkup dikonfirmasi");
-            fetchDetail();       // refresh request
-            fetchCheckups();     // refresh checkup
+            Swal.fire({
+                icon: 'success',
+                title: 'Checkup Dikonfirmasi',
+                text: 'Checkup telah berhasil dikonfirmasi.'
+            });
+            fetchDetail();
+            fetchCheckups();
         } catch (err) {
             console.error("Gagal konfirmasi checkup:", err);
-            alert("Gagal konfirmasi checkup");
+            Swal.fire({
+                icon: 'error',
+                title: 'Gagal',
+                text: 'Gagal mengkonfirmasi checkup.'
+            });
         }
     };
-
 
     const handleSubmitCheckup = async (checkupId) => {
         try {
-        await axios.put(`http://localhost:5000/api/checkups/${checkupId}/submit`, {
-            laporan: laporanCheckup,
-        });
-        alert("Laporan checkup berhasil dikirim");
-        fetchDetail();
-        fetchLogs();
-        fetchCheckups();
+            await axios.put(`http://localhost:5000/api/checkups/${checkupId}/submit`, {
+                laporan: laporanCheckup,
+            });
+            Swal.fire({
+                icon: 'success',
+                title: 'Laporan Checkup',
+                text: 'Laporan checkup berhasil dikirim.'
+            });
+            fetchDetail();
+            fetchLogs();
+            fetchCheckups();
         } catch (err) {
-        console.error("Gagal mengirim laporan checkup:", err);
+            console.error("Gagal mengirim laporan checkup:", err);
+            Swal.fire({
+                icon: 'error',
+                title: 'Gagal',
+                text: 'Terjadi kesalahan saat mengirim laporan checkup.'
+            });
         }
     };
+
 
     if (loading) return <p>Loading...</p>;
     if (!request) return <p>Data tidak ditemukan</p>;
@@ -137,19 +173,19 @@ const DetailRequest = () => {
 
             {request.nama_petugas && (
             <section className="section">
-                <h3>Petugas yang Ditugaskan</h3>
+                <h3><FcManager/> Petugas yang Ditugaskan</h3>
                 <p><strong>Nama Petugas:</strong> {request.nama_petugas}</p>
             </section>
             )}
 
             <section className="section">
-            <h3>Data Peternak</h3>
+            <h3><FcViewDetails/> Data Peternak</h3>
             <p><strong>User ID:</strong> {request.user_id}</p>
             <p><strong>Nama Peternak:</strong> {request.nama_peternak}</p>
             </section>
 
             <section className="section">
-            <h3>Detail Permintaan</h3>
+            <h3><FcViewDetails/> Detail Permintaan</h3>
             <p><strong>Jenis IB:</strong> {request.jenis_ib}</p>
             <p><strong>Jumlah Ternak:</strong> {request.jumlah_ternak}</p>
             <p><strong>Lokasi:</strong>{" "}
@@ -173,7 +209,7 @@ const DetailRequest = () => {
 
             {(request.proses_at || isProsesDimulai) && !request.laporan_terisi && (
                 <div>
-                <h3>Form Laporan IB</h3>
+                <h3><FcManager/> Form Laporan IB</h3>
                 <textarea
                     placeholder="Isi laporan IB..."
                     rows={4}
@@ -184,6 +220,7 @@ const DetailRequest = () => {
                 <button
                     onClick={handleSubmitLaporan}
                     disabled={isSubmitting || laporan.trim() === ""}
+                    className="detail-btnflag"
                 >
                     Kirim Laporan
                 </button>
@@ -194,7 +231,7 @@ const DetailRequest = () => {
             {/* Checkup Section */}
             {checkups.map((c) => (
             <section className="section" key={c.id}>
-                <h3>Tipe: {c.tipe}</h3>
+                <h3><FcSurvey/> {c.tipe}</h3>
                 <p><strong>Status: </strong>{c.status}</p>
                 <p><strong>Petugas:</strong> {c.nama_petugas}</p>
                     {c.status === "Belum Dikonfirmasi" && c.petugas_id === petugasId && (
@@ -207,7 +244,7 @@ const DetailRequest = () => {
                     )}
                 {c.petugas_id === petugasId && c.status === "Dikonfirmasi" && (
                 <div>
-                    <h4>Form Laporan Checkup</h4>
+                    <h4><FcManager/> Form Laporan Checkup</h4>
                     <textarea
                     value={laporanCheckup}
                     onChange={(e) => setLaporanCheckup(e.target.value)}
@@ -234,7 +271,7 @@ const DetailRequest = () => {
 
             {request.laporan_ib_text && (
                 <section className="section">
-                    <h3>Laporan Proses IB (oleh Petugas)</h3>
+                    <h3><FcManager/> Laporan Proses IB (oleh Petugas)</h3>
                     <p>{request.laporan_ib_text}</p>
                     <p><span className="status-badge selesai">Tahap IB Awal Selesai</span></p>
                 </section>
@@ -242,7 +279,7 @@ const DetailRequest = () => {
 
             {request.laporan_ib_status && (
                 <section className="section">
-                    <h3>Laporan Keberhasilan / Gagal IB dari Peternak</h3>
+                    <h3><FcVoicePresentation/> Laporan Keberhasilan / Gagal IB dari Peternak</h3>
                     <p><strong>Status:</strong> {request.laporan_ib_status}</p>
                     <p>{request.laporan_ib_text}</p>
                 </section>
@@ -250,20 +287,20 @@ const DetailRequest = () => {
 
             {request.status === "Gagal" && request.laporan_peternak_text && (
                 <section className="section">
-                    <h3>Laporan Keguguran dari Peternak</h3>
+                    <h3><FcVoicePresentation/> Laporan Keguguran dari Peternak</h3>
                     <p>{request.laporan_peternak_keguguran}</p>
                 </section>
             )}
 
                 {request.laporan_peternak_kelahiran && (
                 <section className="section">
-                    <h3>Laporan Kehamilan dari Peternak</h3>
+                    <h3><FcVoicePresentation/> Laporan Kehamilan dari Peternak</h3>
                     <p>{request.laporan_peternak_kelahiran}</p>
                 </section>
             )}
 
             <section className="section">
-            <h3>Log Aktivitas</h3>
+            <h3><FcInfo/> Log Aktivitas</h3>
             {logs.length > 0 ? (
                 <ul>
                 {logs.map((log) => (

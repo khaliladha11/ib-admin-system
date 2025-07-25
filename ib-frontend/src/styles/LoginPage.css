@@ -1,7 +1,9 @@
 :root {
-    --color-primary: #2bae66;
+    --color-primary:rgb(187, 1, 13);
+    --color-primaryhover: rgb(136, 1, 10);
+    --color-primarybg:rgb(255, 241, 241);
     --color-border: #e0e0e0;
-    --color-bg: #ffffff;
+    --color-bg: #f7f6f1; //F7F6F1
     --color-text: #212121;
     --color-placeholder: #aaa;
 }
@@ -70,7 +72,7 @@ label {
 }
 
 .submit-button:hover {
-    background-color: #219e5a;
+    background-color: var(--color-primaryhover);
 }
 
 .error-message {

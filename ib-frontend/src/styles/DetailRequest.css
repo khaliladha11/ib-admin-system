@@ -1,6 +1,6 @@
 .detail-container {
-    max-width: 1000px;
-    margin: 40px auto;
+    max-width: 1080px;
+    margin: 20px auto;
     padding: 20px;
     background-color: #ffffff;
     border-radius: 10px;
@@ -14,14 +14,14 @@
 }
 
 .section {
-    background-color: #eaf7f0;
-    padding: 15px 20px;
+    background-color:var(--color-primarybg);
+    padding: 10px 20px;
     margin-top: 20px;
     border-radius: 8px;
 }
 
 .section h3 {
-    background-color: #2bae66;
+    background-color: var(--color-primary);
     color: white;
     padding: 10px;
     margin: -15px -20px 10px -20px;
@@ -62,7 +62,7 @@
 }
 
 .modal-actions button:first-child {
-    background-color: #2bae66;
+    background-color:var(--color-primary);
     color: white;
 }
 
@@ -103,6 +103,17 @@
     justify-content: space-between;
 }
 
+.detail-btnflag {
+    background-color: var(--color-bg);
+    color: var(--color-primaryhover);
+    padding: 2px 8px;
+    margin: 2px;
+    margin-left: 5px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
 .verify-btn,
 .reject-btn {
     padding: 10px 20px;
@@ -116,18 +127,18 @@
     }
 
     .verify-btn {
-    background-color: #28a745; /* Hijau */
+    background-color: var(--color-primary); 
     color: white;
     }
 
     .reject-btn {
-    background-color: #f8f9fa; /* Abu terang */
-    color: #212529; /* Hitam */
+    background-color: #f8f9fa; 
+    color: #212529; 
     border: 1px solid #ced4da;
     }
 
     .verify-btn:hover {
-    background-color: #218838;
+    background-color: var(--color-primaryhover);
     }
 
     .reject-btn:hover {
@@ -147,7 +158,7 @@
 .actions {
     display: flex;
     gap: 10px;
-    margin-bottom: 20px;
+    margin: 10px;
     flex-wrap: wrap;
 }
 

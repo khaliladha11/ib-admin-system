@@ -3,6 +3,8 @@ import { useParams } from "react-router-dom";
 import axios from "axios";
 import Navbar from "../components/Navbar";
 import "../styles/DetailRequest.css";
+import { FcSurvey, FcManager, FcViewDetails, FcVoicePresentation, FcInfo } from "react-icons/fc";
+import Swal from 'sweetalert2';
 
 const DetailRequest = () => {
     const { id } = useParams();
@@ -42,44 +44,76 @@ const DetailRequest = () => {
         }
     };
 
-    const handleVerifikasi = async () => {
-        try {
+const handleVerifikasi = async () => {
+    try {
         await axios.put(`http://localhost:5000/api/requests/${id}/verify`, {
             petugas_id: selectedPetugasId,
         });
-        alert("Permintaan berhasil diverifikasi");
-        window.location.reload();
-        } catch (err) {
+        Swal.fire({
+            icon: 'success',
+            title: 'Berhasil Diverifikasi',
+            text: 'Permintaan berhasil diverifikasi',
+        }).then(() => {
+            // reload hanya setelah user klik OK
+            window.location.reload();
+        });
+    } catch (err) {
         console.error("Gagal verifikasi permintaan:", err);
-        alert("Terjadi kesalahan saat verifikasi");
-        }
-    };
+        Swal.fire({
+            icon: 'error',
+            title: 'Oops...',
+            text: 'Terjadi kesalahan saat verifikasi',
+        });
+    }
+};
+
 
     const handleTolak = async () => {
         try {
-        await axios.put(`http://localhost:5000/api/requests/${id}/reject`, {
-            catatan: catatanTolak,
-        });
-        alert("Permintaan ditolak");
-        setShowTolakModal(false);
-        window.location.reload();
+            await axios.put(`http://localhost:5000/api/requests/${id}/reject`, {
+                catatan: catatanTolak,
+            });
+            Swal.fire({
+                icon: 'success',
+                title: 'Permintaan Ditolak',
+                text: 'Permintaan berhasil ditolak.',
+            }).then(() => {
+                setShowTolakModal(false);
+                window.location.reload();
+            });
         } catch (error) {
-        console.error("Gagal menolak permintaan:", error);
+            console.error("Gagal menolak permintaan:", error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Oops...',
+                text: 'Terjadi kesalahan saat menolak permintaan.',
+            });
         }
     };
 
+
     const handleGantiPetugas = async () => {
         try {
-        await axios.put(`http://localhost:5000/api/requests/${id}/ganti-petugas`, {
-            petugas_id: newPetugasId,
-        });
-        alert("Petugas berhasil diganti");
-        window.location.reload();
+            await axios.put(`http://localhost:5000/api/requests/${id}/ganti-petugas`, {
+                petugas_id: newPetugasId,
+            });
+            Swal.fire({
+                icon: 'success',
+                title: 'Petugas Diganti',
+                text: 'Petugas berhasil diganti.',
+            }).then(() => {
+                window.location.reload();
+            });
         } catch (err) {
-        console.error("Gagal mengganti petugas:", err);
-        alert("Terjadi kesalahan");
+            console.error("Gagal mengganti petugas:", err);
+            Swal.fire({
+                icon: 'error',
+                title: 'Oops...',
+                text: 'Terjadi kesalahan saat mengganti petugas.',
+            });
         }
     };
+
 
     const handleTugaskanCheckup = (tipe) => {
         setSelectedCheckupType(tipe);
@@ -88,27 +122,38 @@ const DetailRequest = () => {
 
     const submitCheckupAssignment = async () => {
         if (!selectedCheckupPetugas || !selectedCheckupType) {
-            alert("Pilih petugas dan tipe checkup terlebih dahulu.");
+            Swal.fire({
+                icon: 'warning',
+                title: 'Data Tidak Lengkap',
+                text: 'Pilih petugas dan tipe checkup terlebih dahulu.'
+            });
             return;
         }
-
         try {
             const res = await axios.post(`http://localhost:5000/api/requests/${id}/checkup/assign`, {
                 tipe: selectedCheckupType,
                 petugas_id: selectedCheckupPetugas
             });
-
-            if (res.status === 200 || res.status === 201) {
-                alert("Checkup berhasil ditugaskan.");
-                setShowCheckupModal(false);
-                setSelectedCheckupPetugas('');
-                setSelectedCheckupType('');
-            } else {
+        if (res.status === 200 || res.status === 201) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Checkup Ditugaskan',
+                    text: 'Checkup berhasil ditugaskan.'
+                }).then(() => {
+                    setShowCheckupModal(false);
+                    setSelectedCheckupPetugas('');
+                    setSelectedCheckupType('');
+                });
+        } else {
                 throw new Error("Respon tidak berhasil");
             }
         } catch (err) {
             console.error("Gagal menugaskan checkup:", err);
-            alert("Gagal menugaskan checkup.");
+            Swal.fire({
+                icon: 'error',
+                title: 'Gagal',
+                text: 'Gagal menugaskan checkup.'
+            });
         }
         try {
             await fetchCheckups();
@@ -117,15 +162,24 @@ const DetailRequest = () => {
         }
     };
 
+
     //reminder
     const kirimReminder = async (jenis) => {
         try {
             await axios.post(`http://localhost:5000/api/requests/${id}/reminder`, { jenis });
-            alert(`Reminder laporan ${jenis} telah dikirim ke peternak.`);
-            fetchLogs(); // untuk refresh log aktivitas
+            Swal.fire({
+                icon: 'success',
+                title: 'Berhasil!',
+                text: `Reminder laporan ${jenis} telah dikirim ke peternak.`,
+                confirmButtonColor: '#3085d6'
+            });
         } catch (err) {
             console.error("Gagal mengirim reminder:", err);
-            alert("Gagal mengirim reminder.");
+            Swal.fire({
+                icon: 'error',
+                title: 'Oops...',
+                text: 'Gagal mengirim reminder.'
+            });
         }
     };
 
@@ -198,17 +252,8 @@ const DetailRequest = () => {
             {request.flag_laporan_ib && (
                 <div className="warning-section">
                     ⚠️ Peternak belum mengirimkan laporan hasil IB awal.
-                    <button className="reminder-btn" onClick={() => kirimReminder("IB")}>
+                    <button className="detail-btnflag" onClick={() => kirimReminder("IB")}>
                         Ingatkan Peternak: Laporan IB
-                    </button>
-                </div>
-                )}
-
-                {request.flag_laporan_kebuntingan && (
-                <div className="warning-section">
-                    ⚠️ Peternak belum mengirimkan laporan kebuntingan/keguguran.
-                    <button className="reminder-btn" onClick={() => kirimReminder("Kebuntingan")}>
-                        Ingatkan Peternak: Laporan Kebuntingan
                     </button>
                 </div>
                 )}
@@ -216,7 +261,7 @@ const DetailRequest = () => {
                 {request.flag_laporan_kelahiran && (
                 <div className="warning-section">
                     ⚠️ Peternak belum mengirimkan laporan kelahiran.
-                    <button className="reminder-btn" onClick={() => kirimReminder("Kelahiran")}>
+                    <button className="detail-btnflag" onClick={() => kirimReminder("Kelahiran")}>
                         Ingatkan Peternak: Laporan Kelahiran
                     </button>
                 </div>
@@ -225,7 +270,7 @@ const DetailRequest = () => {
 
             {checkups.length > 0 && (
             <section className="section">
-                <h3>Riwayat Checkup</h3>
+                <h3><FcSurvey /> Riwayat Checkup</h3>
                 {checkups.map(c => (
                 <div key={c.id} className="checkup-box">
                     <p><strong>Tipe:</strong> {c.tipe}</p>
@@ -250,7 +295,7 @@ const DetailRequest = () => {
 
             {request.nama_petugas && (
             <section className="section">
-                <h3>Petugas yang Ditugaskan</h3>
+                <h3><FcManager /> Petugas yang Ditugaskan</h3>
                 <p><strong>Nama Petugas:</strong> {request.nama_petugas}</p>
             </section>
             )}
@@ -265,19 +310,19 @@ const DetailRequest = () => {
                 </>
                 )}
                 {request.status === "Diproses" && !request.proses_at && isRequestTimeout(request.verifikasi_at) && (
-                <button className="verify-btn" onClick={() => setShowGantiModal(true)}>Ganti Petugas</button>
+                <button className="verify-btn" onClick={() => setShowGantiModal(true)}>Ganti Petugas Belum Merespon</button>
                 )}
             </div>
             )}
 
             <section className="section">
-            <h3>Data Peternak</h3>
+            <h3><FcViewDetails/> Data Peternak</h3>
             <p><strong>User ID:</strong> {request.user_id}</p>
             <p><strong>Nama Peternak:</strong> {request.nama_peternak}</p>
             </section>
 
             <section className="section">
-            <h3>Detail Permintaan</h3>
+            <h3><FcViewDetails/> Detail Permintaan</h3>
             <p><strong>Jenis IB:</strong> {request.jenis_ib}</p>
             <p><strong>Jumlah Ternak:</strong> {request.jumlah_ternak}</p>
             <p>
@@ -287,7 +332,7 @@ const DetailRequest = () => {
 
             {request.laporan_ib_text && (
                 <section className="section">
-                    <h3>Laporan Proses IB (oleh Petugas)</h3>
+                    <h3> <FcSurvey /> Laporan Proses IB (oleh Petugas)</h3>
                     <p>{request.laporan_ib_text}</p>
                     <p><span className="status-badge selesai">Tahap IB Awal Selesai</span></p>
                 </section>
@@ -295,7 +340,7 @@ const DetailRequest = () => {
 
             {request.laporan_ib_status && (
                 <section className="section">
-                    <h3>Laporan Keberhasilan / Gagal IB dari Peternak</h3>
+                    <h3><FcVoicePresentation/> Laporan Keberhasilan / Gagal IB dari Peternak</h3>
                     <p><strong>Status:</strong> {request.laporan_ib_status}</p>
                     <p>{request.laporan_ib_text}</p>
                 </section>
@@ -303,20 +348,20 @@ const DetailRequest = () => {
 
             {request.status === "Gagal" && request.laporan_peternak_text && (
                 <section className="section">
-                    <h3>Laporan Keguguran dari Peternak</h3>
+                    <h3><FcVoicePresentation/> Laporan Keguguran dari Peternak</h3>
                     <p>{request.laporan_peternak_keguguran}</p>
                 </section>
             )}
 
                 {request.laporan_peternak_kelahiran && (
                 <section className="section">
-                    <h3>Laporan Kehamilan dari Peternak</h3>
+                    <h3><FcVoicePresentation/> Laporan Kehamilan dari Peternak</h3>
                     <p>{request.laporan_peternak_kelahiran}</p>
                 </section>
                 )}
 
             <section className="section">
-            <h3>Log Aktivitas</h3>
+            <h3><FcInfo/> Log Aktivitas</h3>
             {logs.length > 0 ? (
                 <ul>
                 {logs.map((log) => (
