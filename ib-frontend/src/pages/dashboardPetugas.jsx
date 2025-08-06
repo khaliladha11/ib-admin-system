@@ -127,42 +127,39 @@ const DashboardPetugas = () => {
                 <div className="priority-checkup-container">
                     {/* ✅ Section: Permintaan IB Baru */}
                     {assignedRequests.length > 0 && (
-                        <section className="section warning-section">
-                            <h3>
-                                <FcDocument /> Permintaan IB Baru
-                            </h3>
-                            <ul>
-                                {assignedRequests.map(req => (
-                                    <li style={{ margin: "5px" }} key={req.id}>
-                                        Permintaan #{req.id} menunggu diproses
-                                        <Link to={`/petugas/permintaan/${req.id}`}>
-                                            <button className="detail-btnflag">Detail</button>
-                                        </Link>
-                                    </li>
-                                ))}
-                            </ul>
+                        <section className="section checkup-section">
+                        <h2>
+                            <FcDocument /> Permintaan IB Baru
+                        </h2>
+                        <ul>
+                            {assignedRequests.map((req) => (
+                            <li style={{ margin: "5px" }} key={req.id}>
+                                Permintaan #{req.id} menunggu diproses &nbsp;
+                                <Link to={`/petugas/permintaan/${req.id}`} className="link-flag">Lihat Detail</Link>
+                            </li>
+                            ))}
+                        </ul>
                         </section>
                     )}
 
                     {/* ✅ Section: Permintaan Checkup Baru */}
                     {checkupRequests.length > 0 && (
-                        <section className="section warning-section">
-                            <h3>
-                                <FcMediumPriority /> Permintaan Checkup Baru
-                            </h3>
-                            <ul>
-                                {checkupRequests.map(checkup => (
-                                    <li style={{ margin: "5px" }} key={checkup.id}>
-                                        {checkup.tipe} untuk permintaan #{checkup.request_id} dari {checkup.nama_peternak}
-                                        <Link to={`/petugas/permintaan/${checkup.request_id}`}>
-                                            <button className="detail-btnflag">Detail</button>
-                                        </Link>
-                                    </li>
-                                ))}
-                            </ul>
+                        <section className="section checkup-section">
+                        <h2>
+                            <FcMediumPriority /> Permintaan Checkup Baru
+                        </h2>
+                        <ul>
+                            {checkupRequests.map((checkup) => (
+                            <li style={{ margin: "5px" }} key={checkup.id}>
+                                {checkup.tipe} untuk permintaan #{checkup.request_id} dari {checkup.nama_peternak} &nbsp;
+                                <Link to={`/petugas/permintaan/${checkup.request_id}`} className="link-flag">Lihat Detail</Link>
+                            </li>
+                            ))}
+                        </ul>
                         </section>
                     )}
-                </div>
+                    </div>
+
 
                 {/* Notifikasi laporan belum diisi */}
                 {overdueReports.length > 0 && (
@@ -172,8 +169,8 @@ const DashboardPetugas = () => {
                             {overdueReports.map(req => (
                                 <li style={{ margin: "5px" }} key={req.id}>
                                     Permintaan #{req.id} oleh {req.nama_peternak}
-                                    <Link to={`/petugas/permintaan/${req.id}`}>
-                                        <button className="detail-btnflag">Isi Laporan</button>
+                                    <Link to={`/petugas/permintaan/${req.id}`} className="link-flag">
+                                        Isi Laporan
                                     </Link>
                                 </li>
                             ))}

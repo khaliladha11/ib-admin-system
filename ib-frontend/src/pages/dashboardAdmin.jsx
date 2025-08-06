@@ -128,49 +128,45 @@ const DashboardAdmin = () => {
                 
                 <div className="priority-checkup-container">
                 {/* ✅ Section: Permintaan Prioritas */}
-                {priorityRequests.length > 0 && (
-                    <section className="section warning-section">
-                        <h3 onClick={() => setShowPriority(!showPriority)} style={{ cursor: 'pointer' }}>
-                            <FcExpired/> Permintaan Prioritas (Menunggu Laporan Peternak)
-                        </h3>
+                    {priorityRequests.length > 0 && (
+                    <section className="section priority-section">
+                        <h2 onClick={() => setShowPriority(!showPriority)} style={{ cursor: 'pointer' }}>
+                        <FcExpired /> Permintaan Prioritas (Menunggu Laporan Peternak)
+                        </h2>
                         {showPriority && (
-                            <ul>
-                                {priorityRequests.map((req) => (
-                                    <li style={{ margin: "5px" }} key={req.id}>
-                                        Permintaan #{req.id} oleh {req.nama_peternak} &nbsp;
-                                        {req.flag_laporan_ib && <span className="badge alert-badge">Butuh Laporan IB</span>}
-                                        {req.flag_laporan_kelahiran && <span className="badge alert-badge">Butuh Laporan Kelahiran</span>}
-                                        <Link to={`/admin/permintaan/${req.id}`}>
-                                            <button className="detail-btnflag">Detail</button>
-                                        </Link>
-                                    </li>
-                                ))}
-                            </ul>
+                        <ul>
+                            {priorityRequests.map((req) => (
+                            <li style={{ margin: "5px" }} key={req.id}>
+                                Permintaan #{req.id} oleh {req.nama_peternak} &nbsp;
+                                {req.flag_laporan_ib && <span className="badge alert-badge">Butuh Laporan IB</span>}
+                                {req.flag_laporan_kelahiran && <span className="badge alert-badge">Butuh Laporan Kelahiran</span>}
+                                <Link to={`/admin/permintaan/${req.id}`} className="link-flag">Lihat Detail</Link>
+                            </li>
+                            ))}
+                        </ul>
                         )}
                     </section>
-                )}
+                    )}
 
-                {/* ✅ Section: Permintaan Checkup */}
-                {pendingCheckups.length > 0 && (
-                    <section className="section warning-section">
-                        <h3 onClick={() => setShowCheckup(!showCheckup)} style={{ cursor: 'pointer' }}>
-                            <FcMediumPriority/> Permintaan Checkup Menunggu Penugasan
-                        </h3>
+                    {/* ✅ Section: Permintaan Checkup */}
+                    {pendingCheckups.length > 0 && (
+                    <section className="section checkup-section">
+                        <h2 onClick={() => setShowCheckup(!showCheckup)} style={{ cursor: 'pointer' }}>
+                        <FcMediumPriority /> Permintaan Checkup Menunggu Penugasan
+                        </h2>
                         {showCheckup && (
-                            <ul>
-                                {pendingCheckups.map(checkup => (
-                                    <li style={{ margin: "5px" }} key={checkup.id}>
-                                        {checkup.tipe} untuk permintaan #{checkup.request_id} dari {checkup.nama_peternak}
-                                        <Link to={`/admin/permintaan/${checkup.request_id}`}>
-                                            <button className="detail-btnflag">Detail</button>
-                                        </Link>
-                                    </li>
-                                ))}
-                            </ul>
+                        <ul>
+                            {pendingCheckups.map((checkup) => (
+                            <li style={{ margin: "5px" }} key={checkup.id}>
+                                {checkup.tipe} untuk permintaan #{checkup.request_id} dari {checkup.nama_peternak}
+                                <Link to={`/admin/permintaan/${checkup.request_id}`} className="link-flag">Lihat Detail</Link>
+                            </li>
+                            ))}
+                        </ul>
                         )}
                     </section>
-                )}
-            </div>
+                    )}
+                </div>
 
                 {/* ✅ Kontrol Tabel */}
                 <div className="table-controls">

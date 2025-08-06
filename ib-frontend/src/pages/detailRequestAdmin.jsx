@@ -13,6 +13,7 @@ const DetailRequest = () => {
     const [logs, setLogs] = useState([]);
     const [checkups, setCheckups] = useState([]);
 
+    // state untuk modal dan data
     const [showVerifikasiModal, setShowVerifikasiModal] = useState(false);
     const [showTolakModal, setShowTolakModal] = useState(false);
     const [petugasList, setPetugasList] = useState([]);
@@ -20,7 +21,6 @@ const DetailRequest = () => {
     const [catatanTolak, setCatatanTolak] = useState("");
     const [showGantiModal, setShowGantiModal] = useState(false);
     const [newPetugasId, setNewPetugasId] = useState("");
-
     const [showCheckupModal, setShowCheckupModal] = useState(false);
     const [selectedCheckupType, setSelectedCheckupType] = useState('');
     const [selectedCheckupPetugas, setSelectedCheckupPetugas] = useState('');
@@ -240,219 +240,206 @@ const handleVerifikasi = async () => {
         <div>
         <Navbar />
         <div className="detail-container">
+            {/* Header Utama */}
             <div className="header">
-            <h2>Permintaan: {request.id}</h2>
-            <h2>Tanggal: {new Date(request.tanggal).toLocaleDateString()}</h2>
-            <span className={`status-badge ${request.status.toLowerCase().replace(/\s+/g, '-')}`}>
-                Status: {request.status}
-            </span>
-            </div>
-
-            {/* button reminder */}
-            {request.flag_laporan_ib && (
-                <div className="warning-section">
-                    ⚠️ Peternak belum mengirimkan laporan hasil IB awal.
-                    <button className="detail-btnflag" onClick={() => kirimReminder("IB")}>
-                        Ingatkan Peternak: Laporan IB
-                    </button>
+                    <div className="header-info">
+                        <h2>Detail Permintaan #{request.id}</h2>
+                        <p>Tanggal Pengajuan: {new Date(request.tanggal).toLocaleDateString('id-ID')}</p>
+                    </div>
+                    <span className={`status-badge ${request.status.toLowerCase().replace(/\s+/g, '-')}`}>
+                        {request.status}
+                    </span>
                 </div>
-                )}
 
-                {request.flag_laporan_kelahiran && (
-                <div className="warning-section">
-                    ⚠️ Peternak belum mengirimkan laporan kelahiran.
-                    <button className="detail-btnflag" onClick={() => kirimReminder("Kelahiran")}>
-                        Ingatkan Peternak: Laporan Kelahiran
-                    </button>
-                </div>
-                )}
-
-
-            {checkups.length > 0 && (
-            <section className="section">
-                <h3><FcSurvey /> Riwayat Checkup</h3>
-                {checkups.map(c => (
-                <div key={c.id} className="checkup-box">
-                    <p><strong>Tipe:</strong> {c.tipe}</p>
-                    <p><strong>Petugas:</strong> {c.nama_petugas || 'Belum ditugaskan'}</p>
-                    <p><strong>Status:</strong> {c.status}</p>
-                    
-                    {(c.petugas_id == null && c.status === "Menunggu Penugasan") && (
-                        <button className="verify-btn" onClick={() => handleTugaskanCheckup(c.tipe)}>
-                            Tugaskan Checkup
-                        </button>
-                    )}
-                    {c.laporan && (
-                        <section className="section">
-                            <h3>Laporan: {c.tipe}</h3>
-                            <p>{c.laporan}</p>
-                        </section>
-                    )}
-                </div>
-                ))}
-            </section>
-            )}
-
-            {request.nama_petugas && (
-            <section className="section">
-                <h3><FcManager /> Petugas yang Ditugaskan</h3>
-                <p><strong>Nama Petugas:</strong> {request.nama_petugas}</p>
-            </section>
-            )}
-
-            {(request.status === "Menunggu Verifikasi" ||
-            (request.status === "Diproses" && !request.proses_at && isRequestTimeout(request.verifikasi_at))) && (
-            <div className="actions">
+            {/* Aksi Utama Admin */}
                 {request.status === "Menunggu Verifikasi" && (
-                <>
-                    <button className="verify-btn" onClick={openVerifikasiModal}>Verifikasi</button>
-                    <button className="reject-btn" onClick={() => setShowTolakModal(true)}>Tolak</button>
-                </>
+                    <div className="actions-panel">
+                        <button className="verify-btn" onClick={openVerifikasiModal}>Verifikasi & Tugaskan</button>
+                        <button className="reject-btn" onClick={() => setShowTolakModal(true)}>Tolak Permintaan</button>
+                    </div>
                 )}
-                {request.status === "Diproses" && !request.proses_at && isRequestTimeout(request.verifikasi_at) && (
-                <button className="verify-btn" onClick={() => setShowGantiModal(true)}>Ganti Petugas Belum Merespon</button>
-                )}
-            </div>
-            )}
-
-            <section className="section">
-            <h3><FcViewDetails/> Data Peternak</h3>
-            <p><strong>User ID:</strong> {request.user_id}</p>
-            <p><strong>Nama Peternak:</strong> {request.nama_peternak}</p>
-            </section>
-
-            <section className="section">
-            <h3><FcViewDetails/> Detail Permintaan</h3>
-            <p><strong>Jenis IB:</strong> {request.jenis_ib}</p>
-            <p><strong>Jumlah Ternak:</strong> {request.jumlah_ternak}</p>
-            <p>
-                <strong>Lokasi:</strong> <a href={`https://www.google.com/maps?q=${request.latitude},${request.longitude}`} target="_blank" rel="noopener noreferrer">Lihat di Google Maps</a>
-            </p>
-            </section>
-
-            {request.laporan_ib_text && (
-                <section className="section">
-                    <h3> <FcSurvey /> Laporan Proses IB (oleh Petugas)</h3>
-                    <p>{request.laporan_ib_text}</p>
-                    <p><span className="status-badge selesai">Tahap IB Awal Selesai</span></p>
-                </section>
-            )}
-
-            {request.laporan_ib_status && (
-                <section className="section">
-                    <h3><FcVoicePresentation/> Laporan Keberhasilan / Gagal IB dari Peternak</h3>
-                    <p><strong>Status:</strong> {request.laporan_ib_status}</p>
-                    <p>{request.laporan_ib_text}</p>
-                </section>
-            )}
-
-            {request.status === "Gagal" && request.laporan_peternak_text && (
-                <section className="section">
-                    <h3><FcVoicePresentation/> Laporan Keguguran dari Peternak</h3>
-                    <p>{request.laporan_peternak_keguguran}</p>
-                </section>
-            )}
-
-                {request.laporan_peternak_kelahiran && (
-                <section className="section">
-                    <h3><FcVoicePresentation/> Laporan Kehamilan dari Peternak</h3>
-                    <p>{request.laporan_peternak_kelahiran}</p>
-                </section>
+                    {request.status === "Diproses" && !request.proses_at && isRequestTimeout(request.verifikasi_at) && (
+                    <div className="actions-panel">
+                        <button className="verify-btn" onClick={() => setShowGantiModal(true)}>Ganti Petugas (Belum Merespon)</button>
+                    </div>
                 )}
 
-            <section className="section">
-            <h3><FcInfo/> Log Aktivitas</h3>
-            {logs.length > 0 ? (
-                <ul>
-                {logs.map((log) => (
-                    <li key={log.id}>
-                    <strong>{new Date(log.waktu).toLocaleString('id-ID')}</strong>: {log.deskripsi}
-                    </li>
-                ))}
-                </ul>
-            ) : (
-                <p>Belum ada aktivitas.</p>
+                {/* Notifikasi Reminder */}
+                {request.flag_laporan_ib && (
+                    <div className="warning-section">
+                        ⚠️ Peternak belum mengirimkan laporan hasil IB awal.
+                        <button className="detail-btnflag" onClick={() => kirimReminder("IB")}>
+                            Ingatkan Peternak
+                        </button>
+                    </div>
+                )}
+                {request.flag_laporan_kelahiran && (
+                    <div className="warning-section">
+                        ⚠️ Peternak belum mengirimkan laporan kelahiran.
+                        <button className="detail-btnflag" onClick={() => kirimReminder("Kelahiran")}>
+                            Ingatkan Peternak
+                        </button>
+                    </div>
+                )}
+
+                {/* Grid untuk Informasi */}
+                <div className="info-grid">
+                    {/* Kolom Kiri */}
+                    <div className="info-column">
+                        <section className="section">
+                            <h3><FcViewDetails /> Data Peternak</h3>
+                            <p><strong>User ID:</strong> {request.user_id}</p>
+                            <p><strong>Nama Peternak:</strong> {request.nama_peternak}</p>
+                        </section>
+
+                        <section className="section">
+                            <h3><FcViewDetails /> Detail Permintaan</h3>
+                            <p><strong>Jenis IB:</strong> {request.jenis_ib}</p>
+                            <p><strong>Jumlah Ternak:</strong> {request.jumlah_ternak}</p>
+                            <p><strong>Lokasi:</strong> <a href={`https://www.google.com/maps?q=${request.latitude},${request.longitude}`} target="_blank" rel="noopener noreferrer">Lihat di Google Maps</a></p>
+                        </section>
+
+                        {request.nama_petugas && (
+                            <section className="section">
+                                <h3><FcManager /> Petugas IB Awal</h3>
+                                <p><strong>Nama Petugas:</strong> {request.nama_petugas}</p>
+                            </section>
+                        )}
+                    </div>
+
+                    {/* Kolom Kanan */}
+                    <div className="info-column">
+                        {request.laporan_ib_text && (
+                            <section className="section">
+                                <h3><FcSurvey /> Laporan Proses IB (oleh Petugas)</h3>
+                                <p>{request.laporan_ib_text}</p>
+                            </section>
+                        )}
+
+                        {request.laporan_ib_status && (
+                            <section className="section">
+                                <h3><FcVoicePresentation /> Laporan Hasil IB (dari Peternak)</h3>
+                                <p><strong>Status:</strong> {request.laporan_ib_status}</p>
+                                <p>{request.laporan_ib_text}</p>
+                            </section>
+                        )}
+
+                        {request.laporan_peternak_kelahiran && (
+                            <section className="section">
+                                <h3><FcVoicePresentation /> Laporan Kelahiran (dari Peternak)</h3>
+                                <p>{request.laporan_peternak_kelahiran}</p>
+                            </section>
+                        )}
+
+                        {request.status === "Gagal" && request.laporan_peternak_keguguran && (
+                                <section className="section">
+                                <h3><FcVoicePresentation /> Laporan Keguguran (dari Peternak)</h3>
+                                <p>{request.laporan_peternak_keguguran}</p>
+                            </section>
+                        )}
+
+                        {request.status === "Gagal" && request.laporan_peternak_kematian && (
+                        <section className="section">
+                            <h3><FcVoicePresentation /> Laporan Kematian Anak Sapi (dari Peternak)</h3>
+                            <p>{request.laporan_peternak_kematian}</p>
+                        </section>
+                        )}
+                    </div>
+                </div>
+
+                {/* Riwayat Checkup */}
+                {checkups.length > 0 && (
+                    <section className="section section-full-width">
+                        <h3><FcSurvey /> Riwayat Checkup</h3>
+                        <div className="checkup-container">
+                            {checkups.map(c => (
+                                <div key={c.id} className="checkup-box">
+                                    <h4>{c.tipe}</h4>
+                                    <p><strong>Petugas:</strong> {c.nama_petugas || 'Belum ditugaskan'}</p>
+                                    <p><strong>Status:</strong> {c.status}</p>
+                                    {c.laporan && <p className="laporan-text"><strong>Laporan:</strong> {c.laporan}</p>}
+                                    {(c.petugas_id == null && c.status === "Menunggu Penugasan") && (
+                                        <button className="verify-btn" onClick={() => handleTugaskanCheckup(c.tipe)}>
+                                            Tugaskan Petugas
+                                        </button>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </section>
+                )}
+
+                {/* Log Aktivitas */}
+                <section className="section section-full-width">
+                    <h3><FcInfo /> Log Aktivitas</h3>
+                    <ul className="log-list">
+                        {logs.length > 0 ? logs.map((log) => (
+                            <li key={log.id}>
+                                <strong>{new Date(log.waktu).toLocaleString('id-ID')}</strong>: {log.deskripsi}
+                            </li>
+                        )) : <p>Belum ada aktivitas.</p>}
+                    </ul>
+                </section>
+            </div>
+
+            {/* Modals */}
+            {showVerifikasiModal && (
+                <div className="modal-overlay">
+                    <div className="modal">
+                        <h3>Pilih Petugas</h3>
+                        <select value={selectedPetugasId} onChange={(e) => setSelectedPetugasId(e.target.value)}>
+                            <option value="">-- Pilih Petugas --</option>
+                            {petugasList.map(p => (<option key={p.id} value={p.id}>{p.name}</option>))}
+                        </select>
+                        <div className="modal-actions">
+                            <button onClick={handleVerifikasi} disabled={!selectedPetugasId}>Verifikasi</button>
+                            <button onClick={() => setShowVerifikasiModal(false)}>Batal</button>
+                        </div>
+                    </div>
+                </div>
             )}
-            </section>
-        </div>
-
-        {/* Modal Verifikasi */}
-        {showVerifikasiModal && (
-            <div className="modal-overlay">
-            <div className="modal">
-                <h3>Pilih Petugas</h3>
-                <select value={selectedPetugasId} onChange={(e) => setSelectedPetugasId(e.target.value)}>
-                <option value="">-- Pilih Petugas --</option>
-                {petugasList.map(p => (
-                    <option key={p.id} value={p.id}>{p.name}</option>
-                ))}
-                </select>
-                <div className="modal-actions">
-                <button onClick={handleVerifikasi} disabled={!selectedPetugasId}>Verifikasi</button>
-                <button onClick={() => setShowVerifikasiModal(false)}>Batal</button>
+            {showTolakModal && (
+                 <div className="modal-overlay">
+                    <div className="modal">
+                        <h3>Alasan Penolakan</h3>
+                        <textarea value={catatanTolak} onChange={(e) => setCatatanTolak(e.target.value)} placeholder="Tulis catatan untuk peternak..." rows={4}/>
+                        <div className="modal-actions">
+                            <button onClick={handleTolak}>Tolak</button>
+                            <button onClick={() => setShowTolakModal(false)}>Batal</button>
+                        </div>
+                    </div>
                 </div>
-            </div>
-            </div>
-        )}
-
-        {/* Modal Tolak */}
-        {showTolakModal && (
-            <div className="modal-overlay">
-            <div className="modal">
-                <h3>Alasan Penolakan</h3>
-                <textarea
-                value={catatanTolak}
-                onChange={(e) => setCatatanTolak(e.target.value)}
-                placeholder="Tulis catatan untuk peternak..."
-                rows={4}
-                style={{ width: "100%", padding: "10px", marginBottom: "15px" }}
-                />
-                <div className="modal-actions">
-                <button onClick={handleTolak}>Tolak</button>
-                <button onClick={() => setShowTolakModal(false)}>Batal</button>
+            )}
+            {showGantiModal && (
+                <div className="modal-overlay">
+                    <div className="modal">
+                        <h3>Ganti Petugas</h3>
+                        <select value={newPetugasId} onChange={(e) => setNewPetugasId(e.target.value)}>
+                            <option value="">-- Pilih Petugas --</option>
+                            {petugasList.map(p => (<option key={p.id} value={p.id}>{p.name}</option>))}
+                        </select>
+                        <div className="modal-actions">
+                            <button onClick={handleGantiPetugas} disabled={!newPetugasId}>Ganti</button>
+                            <button onClick={() => setShowGantiModal(false)}>Batal</button>
+                        </div>
+                    </div>
                 </div>
-            </div>
-            </div>
-        )}
-
-        {/* Modal Ganti Petugas */}
-        {showGantiModal && (
-            <div className="modal-overlay">
-            <div className="modal">
-                <h3>Ganti Petugas</h3>
-                <select value={newPetugasId} onChange={(e) => setNewPetugasId(e.target.value)}>
-                <option value="">-- Pilih Petugas --</option>
-                {petugasList.map(p => (
-                    <option key={p.id} value={p.id}>{p.name}</option>
-                ))}
-                </select>
-                <div className="modal-actions">
-                <button onClick={handleGantiPetugas} disabled={!newPetugasId}>Ganti</button>
-                <button onClick={() => setShowGantiModal(false)}>Batal</button>
+            )}
+            {showCheckupModal && (
+                <div className="modal-overlay">
+                    <div className="modal">
+                        <h3>Tugaskan Petugas untuk {selectedCheckupType}</h3>
+                        <select value={selectedCheckupPetugas} onChange={(e) => setSelectedCheckupPetugas(e.target.value)}>
+                            <option value="">-- Pilih Petugas --</option>
+                            {petugasList.map(p => (<option key={p.id} value={p.id}>{p.name}</option>))}
+                        </select>
+                        <div className="modal-actions">
+                            <button onClick={submitCheckupAssignment} disabled={!selectedCheckupPetugas}>Tugaskan</button>
+                            <button onClick={() => setShowCheckupModal(false)}>Batal</button>
+                        </div>
+                    </div>
                 </div>
-            </div>
-            </div>
-        )}
-
-        {/* Modal pilih petugas checkup */}
-        {showCheckupModal && (
-        <div className="modal-overlay">
-            <div className="modal">
-            <h3>Tugaskan Petugas untuk Checkup: {selectedCheckupType}</h3>
-            <select value={selectedCheckupPetugas} onChange={(e) => setSelectedCheckupPetugas(e.target.value)}>
-                <option value="">-- Pilih Petugas --</option>
-                {petugasList.map(p => (
-                <option key={p.id} value={p.id}>{p.name}</option>
-                ))}
-            </select>
-            <div className="modal-actions">
-                <button onClick={submitCheckupAssignment} disabled={!selectedCheckupPetugas}>Tugaskan</button>
-                <button onClick={() => setShowCheckupModal(false)}>Batal</button>
-            </div>
-            </div>
-        </div>
-        )}
-
+            )}
         </div>
     );
 };

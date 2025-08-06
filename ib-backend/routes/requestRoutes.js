@@ -3,6 +3,7 @@ const router = express.Router();
 const requestController = require('../controllers/requestController');
 const pool = require('../config/db');
 
+
 // Get all requests
 router.get('/requests', requestController.getAllRequests);
 router.get('/', requestController.getAllRequests);
@@ -80,6 +81,54 @@ router.post('/', async (req, res) => {
     }
 });
 
+// routes/requestRoutes.js Penanganan anak sapi mati
+router.post("/laporan-kematian/:id", async (req, res) => {
+    const { id } = req.params;
+    const { laporan } = req.body;
+
+    try {
+        // 1. Cek apakah request ditemukan dan statusnya "Selesai"
+        const result = await pool.query(
+            `SELECT * FROM requests WHERE id = $1`,
+            [id]
+        );
+
+        if (result.rowCount === 0) {
+            return res.status(404).json({ message: "Request tidak ditemukan" });
+        }
+
+        const request = result.rows[0];
+        if (request.status !== "Selesai") {
+            return res.status(400).json({ message: "Status bukan 'Selesai'" });
+        }
+
+        // 2. Update status request jadi "Gagal" dan isi laporan
+        await pool.query(
+                `UPDATE requests 
+                SET laporan_peternak_kematian = $1, 
+                laporan_kematian_at = NOW(), 
+                status = 'Gagal',
+                laporan_ib_status = 'Gagal'
+                WHERE id = $2`,
+            [laporan, id]
+        );
+
+        // 3. Tambahkan ke log aktivitas
+        await pool.query(
+                `INSERT INTO activity_logs (request_id, deskripsi, waktu) 
+                VALUES ($1, $2, NOW())`,
+                [id, "Laporan kematian anak sapi dari peternak"]
+        );
+
+        res.status(200).json({ message: "Laporan kematian berhasil dikirim dan status diubah" });
+
+    } catch (err) {
+        console.error("Error laporan kematian:", err.message);
+        res.status(500).json({ error: "Terjadi kesalahan server" });
+    }
+});
+
+
 // GET detail request by ID — taruh PALING BAWAH
 router.get('/:id', async (req, res) => {
     const id = req.params.id;
@@ -101,5 +150,6 @@ router.get('/:id', async (req, res) => {
         res.status(500).send('Server error');
     }
 });
+
 
 module.exports = router;
