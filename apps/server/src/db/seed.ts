@@ -50,6 +50,8 @@ export interface SeedData {
   events: AnimalEvent[];
   assignments: Assignment[];
   auditLogs: AuditLog[];
+  /** Skenario per id sapi betina dewasa (untuk tes; tidak disimpan ke database). */
+  scenarios: Record<string, Scenario>;
 }
 
 /** Skenario riwayat sapi betina, dipakai bergiliran. Nama = status yang diharapkan di 1.3. */
@@ -165,6 +167,7 @@ export function buildSeedData(now: number = Date.now(), seed = 20_251_125): Seed
     events: [],
     assignments: [],
     auditLogs: [],
+    scenarios: {},
   };
 
   // --- Wilayah -----------------------------------------------------------
@@ -412,7 +415,7 @@ export function buildSeedData(now: number = Date.now(), seed = 20_251_125): Seed
         bb(30 + j, rng.int(280, 360));
         break;
       case 'birahi':
-        bh(1 + (j % 3));
+        bh(1 + (j % 2)); // masih dalam ESTRUS_ACTIVE_DAYS
         break;
       case 'menunggu_pkb':
         bh(41 + j);
@@ -539,6 +542,7 @@ export function buildSeedData(now: number = Date.now(), seed = 20_251_125): Seed
         break;
       }
     }
+    data.scenarios[cow.id] = scenario;
     cows.push(refs);
   }
 
@@ -808,7 +812,11 @@ if (import.meta.filename === process.argv[1]) {
   }, {});
   console.log(`Data contoh tersimpan di ${sqlite.name}`);
   console.table(
-    Object.fromEntries(Object.entries(data).map(([k, v]) => [k, (v as unknown[]).length])),
+    Object.fromEntries(
+      Object.entries(data)
+        .filter(([k]) => k !== 'scenarios')
+        .map(([k, v]) => [k, (v as unknown[]).length]),
+    ),
   );
   console.log('Event per jenis:', eventsByType);
   sqlite.close();
