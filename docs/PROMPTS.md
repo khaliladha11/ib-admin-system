@@ -176,7 +176,7 @@ Di `packages/shared/src/domain/`, buat logika murni (tanpa database, tanpa UI) u
 Tulis tes dulu (TDD) yang mencakup alur normal dan alur gagal, lalu implementasinya. Tunjukkan daftar kasus uji sebelum menulis kode.
 ```
 
-- [ ] **1.4 API, login, dan peran**
+- [x] **1.4 API, login, dan peran**
 
 ```text
 Bangun API di `apps/server` memakai skema dan logika dari `packages/shared`:

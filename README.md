@@ -10,7 +10,7 @@ Permintaan Inseminasi Buatan (IB) Berbasis Web Guna Mendukung Koordinasi
 Stakeholder"* (Muhammad Khalil Adha, Ilmu Komputer IPB, 2025). Versi skripsi
 diarsipkan di [`legacy/`](legacy/README.md) dan tag git `v3.1-legacy`.
 
-> **Status:** Fase 1, kerangka monorepo. Belum siap dipakai.
+> **Status:** Fase 1 (API & logika domain) selesai; antarmuka web dikerjakan di Fase 2.
 > Roadmap: [`docs/PLAN.md`](docs/PLAN.md).
 
 ## Menjalankan
@@ -26,6 +26,16 @@ pnpm dev
 
 Buka `http://localhost:5173`. Web memanggil server di `http://localhost:3000`
 lewat proxy `/api`. Konfigurasi opsional: salin `.env.example` menjadi `.env`.
+
+Dokumentasi API: `http://localhost:3000/api/docs`. Akun data contoh (fiktif),
+semuanya dengan password `contoh123`:
+
+| Peran | Login |
+| --- | --- |
+| Admin dinas | `admin.dinas@contoh.test` |
+| Admin kelompok | `admin.ktt01@contoh.test`, `admin.ktt02@contoh.test` |
+| Inseminator | `081200000201`, `081200000202`, `081200000203` |
+| Peternak | `081200000100`, `081200000103`, `081200000106` |
 
 Port 5173 juga dipakai versi skripsi di Docker, jadi jangan jalankan keduanya
 bersamaan.

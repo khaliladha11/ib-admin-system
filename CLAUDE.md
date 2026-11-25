@@ -21,8 +21,9 @@ inseminator, dan admin kelompok/dinas.
 
 ## Status saat ini
 - Fase 0 selesai (tag `v3.1-legacy` masih perlu dibuat manual di GitHub).
-- Fase 1: 1.1 kerangka monorepo, 1.2 model data & database, dan 1.3 mesin status
-  reproduksi selesai. Langkah berikutnya: 1.4 API, login, dan peran.
+- Fase 1 selesai: 1.1 monorepo, 1.2 model data, 1.3 mesin status reproduksi, 1.4 API
+  (login, peran, CRUD, event, permintaan layanan, pengingat, OpenAPI di `/api/docs`).
+  Langkah berikutnya: 2.0 lapisan data lokal di web. Setelah Fase 1 di-merge: tag `v0.1.0`.
 
 ## Prinsip
 1. Offline-first: semua pencatatan harus bisa tanpa internet; sinkron menyusul.
@@ -87,6 +88,9 @@ inseminator, dan admin kelompok/dinas.
 - `pnpm db:migrate` — jalankan migrasi (`DATABASE_URL`, bawaan `apps/server/data/ib.sqlite`)
 - `pnpm db:seed` — isi data contoh fiktif; `pnpm db:seed --reset` untuk mengisi ulang
 - `pnpm db:generate` — buat file migrasi baru setelah mengubah `apps/server/src/db/schema.ts`
+- API: `http://localhost:3000/api/docs` (Swagger UI) dan `/api/openapi.json`. Akun seed:
+  `admin.dinas@contoh.test`, `admin.ktt01@contoh.test`, petugas `081200000201`–`203`,
+  peternak `081200000100`; password `contoh123`.
 
 ## Keputusan teknis
 - pnpm 10 (`packageManager`), Node 22 (`.nvmrc`); versi bersama lewat `catalog:`
@@ -108,6 +112,15 @@ inseminator, dan admin kelompok/dinas.
 - Hitung baris dengan `countRows()` (`apps/server/src/db/client.ts`), bukan
   `db.$count()` yang mengembalikan builder async.
 - Zod 4: opsi pesan di `.refine()` memakai `error`, bukan `message`.
+- API (`apps/server/src/routes/`): Hono + `@hono/zod-openapi`. Skema dari `@ib/shared`
+  dibungkus `z.object(x.shape)` dengan `z` dari `@hono/zod-openapi` sebelum `.openapi()`.
+  Error selalu `{ error: { code, message, details? } }` (`http/errors.ts`).
+- Login: argon2id (`@node-rs/argon2`), sesi di tabel `sessions` (id = SHA-256 token),
+  cookie `ib_session` httpOnly SameSite=Lax. Cakupan akses di `auth/scope.ts`; data di
+  luar cakupan dijawab 404. Peternak tidak bisa mencatat IB/PKB.
+- Event via API wajib lolos `validateNextEvent`: error → 422, peringatan → 409 sampai
+  dikirim ulang dengan `confirmWarnings: true`. LH dengan anak hidup mendaftarkan anaknya.
+- Swagger UI disajikan dari `swagger-ui-dist` (bukan CDN) agar jalan offline.
 - Logika reproduksi di `packages/shared/src/domain/`: `deriveReproStatus`,
   `validateNextEvent`, `computeSchedule` memakai satu mesin status (`replay`).
   Semua angka hari di `domain/constants.ts`. Pengingat 9 bulan = lewat konsepsi +
