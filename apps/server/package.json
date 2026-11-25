@@ -6,15 +6,26 @@
   "scripts": {
     "dev": "tsx watch --env-file-if-exists=../../.env src/index.ts",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx --env-file-if-exists=../../.env src/db/migrate.ts",
+    "db:seed": "tsx --env-file-if-exists=../../.env src/db/seed.ts"
   },
   "dependencies": {
     "@hono/node-server": "^2.1.11",
+    "@hono/zod-openapi": "^1.6.3",
     "@ib/shared": "workspace:*",
-    "hono": "^4.13.22"
+    "@node-rs/argon2": "^2.2.2",
+    "better-sqlite3": "^13.2.0",
+    "drizzle-orm": "^0.45.4",
+    "hono": "^4.13.22",
+    "swagger-ui-dist": "^5.36.0",
+    "zod": "catalog:"
   },
   "devDependencies": {
+    "@types/better-sqlite3": "^9.6.0",
     "@types/node": "catalog:",
+    "drizzle-kit": "^0.31.11",
     "tsx": "^4.23.15",
     "typescript": "catalog:",
     "vitest": "catalog:"

@@ -152,7 +152,7 @@ Baca CLAUDE.md dan docs/PLAN.md. Buat kerangka monorepo baru di root repo (janga
 Tunjukkan struktur folder dan daftar dependensi dulu, tunggu persetujuan saya, baru kerjakan. Di akhir jalankan semua skrip dan laporkan hasilnya.
 ```
 
-- [ ] **1.2 Model data & database** \[Rencana dulu\]
+- [x] **1.2 Model data & database** \[Rencana dulu\]
 
 ```text
 Baca CLAUDE.md, docs/PLAN.md bagian "Model data inti", dan docs/legacy/DOMAIN.md.
@@ -164,7 +164,7 @@ Rancang skema baru yang berpusat pada ternak memakai Drizzle ORM + SQLite di `ap
 Tunjukkan rancangan tabel (diagram Mermaid ER) dan contoh payload tiap jenis event dulu. Tunggu persetujuan saya.
 ```
 
-- [ ] **1.3 Mesin status reproduksi** \[Rencana dulu\]
+- [x] **1.3 Mesin status reproduksi** \[Rencana dulu\]
 
 ```text
 Di `packages/shared/src/domain/`, buat logika murni (tanpa database, tanpa UI) untuk menghitung status reproduksi seekor sapi dari daftar event-nya.
@@ -176,7 +176,7 @@ Di `packages/shared/src/domain/`, buat logika murni (tanpa database, tanpa UI) u
 Tulis tes dulu (TDD) yang mencakup alur normal dan alur gagal, lalu implementasinya. Tunjukkan daftar kasus uji sebelum menulis kode.
 ```
 
-- [ ] **1.4 API, login, dan peran**
+- [x] **1.4 API, login, dan peran**
 
 ```text
 Bangun API di `apps/server` memakai skema dan logika dari `packages/shared`:

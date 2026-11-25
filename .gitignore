@@ -15,3 +15,6 @@ coverage/
 .vscode/*
 !.vscode/extensions.json
 .idea/
+
+# Database SQLite lokal
+apps/server/data/

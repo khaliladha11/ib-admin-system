@@ -7,7 +7,9 @@ catalog:
   typescript: ~6.0.3
   vitest: ^5.1.1
   '@types/node': ^22.20.5
+  zod: ^4.6.7
 
 # Paket yang boleh menjalankan script install (pnpm 10 memblokir default).
 onlyBuiltDependencies:
   - esbuild
+  - better-sqlite3
