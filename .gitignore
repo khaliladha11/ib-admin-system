@@ -1,6 +1,17 @@
-# Ignore environment files
+# Environment files (salin dari .env.example)
+.env
 *.env
+.env.*
+!.env.example
 
-# Ignore Node dependencies
+# Dependencies & build output
 node_modules/
 dist/
+coverage/
+*.tsbuildinfo
+
+# Editor & OS
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+.idea/
