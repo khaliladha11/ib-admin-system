@@ -121,7 +121,9 @@ Buat `docs/legacy/DOMAIN.md` berisi:
 Tunjukkan rencana struktur dokumen dulu dan tunggu persetujuan saya.
 ```
 
-- [ ] **0.3 (Opsional, nostalgia) Jalankan lagi versi lama**
+- [x] **0.3 (Opsional, nostalgia) Jalankan lagi versi lama**
+
+  > Selesai: `legacy/docker-compose.yml` + `legacy/seed/seed.sql`; perubahan kode lama dicatat di `legacy/README.md`.
 
 ```text
 Saya ingin menjalankan versi skripsi di `legacy/` sekali lagi untuk dokumentasi.

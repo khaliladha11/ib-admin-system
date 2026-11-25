@@ -182,7 +182,7 @@ Nomor langkah = nomor prompt di [`docs/PROMPTS.md`](PROMPTS.md).
 
 | Fase | Langkah | Selesai bila |
 | --- | --- | --- |
-| **0. Arsip skripsi** | 0.1 arsip ke `legacy/` ✅ · 0.2 ekstrak domain ✅ · 0.3 jalankan versi lama via Docker (opsional) | Tag `v3.1-skripsi` terlihat di GitHub; DOMAIN.md sudah direview |
+| **0. Arsip skripsi** | 0.1 arsip ke `legacy/` ✅ · 0.2 ekstrak domain ✅ · 0.3 jalankan versi lama via Docker ✅ | Tag `v3.1-skripsi` terlihat di GitHub; DOMAIN.md sudah direview |
 | **1. Inti data & logika** | 1.1 kerangka monorepo + CI · 1.2 model data & DB · 1.3 mesin status (TDD) · 1.4 API, login, peran | Alur IB → PKB → lahir bisa dicatat lewat API dan lulus tes integrasi |
 | **2. UI & dashboard** | 2.0 lapisan data lokal Dexie · 2.1 sistem desain · 2.2 layar HP · 2.3 dashboard admin · 2.4 review UI | Screenshot 360×740 dan 1280×800 di `docs/screenshots/` |
 | **3. Identitas QR/tag** | 3.1 kode QR & cetak label · 3.2 pemindai QR | Scan → IB tercatat ≤ 30 detik, offline, diuji di HP sungguhan |

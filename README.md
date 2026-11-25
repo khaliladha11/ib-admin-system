@@ -30,12 +30,14 @@ Inseminasi Buatan (IB) Berbasis Web Guna Mendukung Koordinasi Stakeholder"*
 - Cara menjalankan versi skripsi: [`legacy/README.md`](legacy/README.md)
 - Abstrak dan naskah: [`docs/skripsi/README.md`](docs/skripsi/README.md)
 
-Contoh akun demo versi skripsi (fiktif, buat dulu di database lokal):
+Menjalankan versi skripsi dengan data contoh fiktif:
 
-| Role    | Email             | Password   |
-| ------- | ----------------- | ---------- |
-| Admin   | admin@gmail.com   | admin123   |
-| Petugas | petugas@gmail.com | petugas123 |
+```bash
+cd legacy && docker compose up
+```
+
+Lalu buka `http://localhost:5173` dan masuk dengan `admin@ib.test` / `admin123`
+atau `petugas1@ib.test` / `petugas123`.
 
 ## 📄 Lisensi
 

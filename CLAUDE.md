@@ -5,7 +5,9 @@ Proyek ini berasal dari skripsi Muhammad Khalil Adha (Ilmu Komputer IPB, 2025):
 "Pengembangan Sistem Informasi Permintaan Inseminasi Buatan (IB) Berbasis Web
 Guna Mendukung Koordinasi Stakeholder". Versi skripsi diarsipkan di folder
 `legacy/` dan tag git `v3.1-skripsi`. Folder `legacy/` hanya referensi logika
-bisnis: JANGAN diubah, JANGAN diimpor oleh kode baru.
+bisnis: JANGAN diubah, JANGAN diimpor oleh kode baru. Pengecualian yang sudah
+disetujui: konfigurasi lewat environment variable untuk Docker, dicatat di
+`legacy/README.md`.
 
 Tujuan rebuild: aplikasi open-source, offline-first, mobile-first untuk
 mencatat siklus reproduksi sapi (birahi, IB, PKB, kelahiran) bagi peternak,
@@ -18,8 +20,9 @@ inseminator, dan admin kelompok/dinas.
   aturan bisnis, daftar masalah S*/B*/I*). Rujuk ID masalahnya saat relevan.
 
 ## Status saat ini
-- Fase 0 (arsip skripsi) selesai, kecuali tag `v3.1-skripsi` yang belum ada di
-  GitHub. Monorepo belum dibuat; langkah berikutnya: 1.1 kerangka monorepo.
+- Fase 0 (arsip skripsi) selesai, termasuk 0.3 (`cd legacy && docker compose up`),
+  kecuali tag `v3.1-skripsi` yang belum ada di GitHub. Monorepo belum dibuat;
+  langkah berikutnya: 1.1 kerangka monorepo.
 
 ## Prinsip
 1. Offline-first: semua pencatatan harus bisa tanpa internet; sinkron menyusul.
@@ -83,8 +86,11 @@ Belum ada; dibuat di langkah 1.1. Yang direncanakan:
 - `pnpm test` / `pnpm typecheck` / `pnpm lint`
 - `pnpm db:migrate` / `pnpm db:seed`
 
-Versi skripsi (cara menjalankan): `legacy/README.md`.
+Versi skripsi: `cd legacy && docker compose up` (detail di `legacy/README.md`).
 
 ## Catatan lingkungan
 - Di sesi cloud Claude Code, push tag git ditolak (403); push branch bisa.
   Tag dibuat manual oleh pemilik repo di GitHub.
+- Docker bisa dipakai di sesi cloud setelah `dockerd` dijalankan, tetapi container
+  butuh override jaringan host + CA proxy untuk `npm ci`. Override itu khusus
+  sandbox dan JANGAN di-commit.

@@ -1,0 +1,78 @@
+# Menjalankan versi skripsi (V3.1) untuk dokumentasi/nostalgia.
+# Cara pakai dan catatan perubahan: legacy/README.md
+#
+#   cd legacy
+#   docker compose up
+#
+# Web: http://localhost:5173   API: http://localhost:5000/api
+# Data contoh fiktif dari seed/seed.sql (akun ada di README).
+#
+# Kode sumber di-mount read-only lalu disalin ke dalam container, sehingga
+# npm install dan penyesuaian di dalam container tidak mengubah file di repo.
+
+name: ib-legacy
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres # hanya untuk lokal
+      POSTGRES_DB: postgres
+    volumes:
+      # Dijalankan berurutan oleh image postgres saat volume masih kosong
+      - ../docs/legacy/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./seed/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5433:5432" # opsional, untuk membuka DB dari host (psql -h localhost -p 5433)
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  backend:
+    image: node:20-bookworm-slim
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PORT: "5000"
+      JWT_SECRET: ${LEGACY_JWT_SECRET:-hanya-untuk-lokal-ganti-saya}
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: postgres
+    volumes:
+      - ./backend:/src:ro
+    working_dir: /app
+    command: >
+      sh -c "cp -r /src/. /app &&
+             npm ci --no-audit --no-fund &&
+             node server.js"
+    ports:
+      - "5000:5000"
+
+  frontend:
+    image: node:20-bookworm-slim
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend:/src:ro
+    working_dir: /app
+    # Alias huruf besar/kecil hanya di dalam container: import di kode lama
+    # (`./pages/DetailRequestPetugas`, `../components/Navbar`) tidak cocok dengan
+    # nama file, sehingga gagal di Linux. Lihat docs/legacy/DOMAIN.md, B11.
+    command: >
+      sh -c "cp -r /src/. /app &&
+             ln -sf detailRequestPetugas.jsx src/pages/DetailRequestPetugas.jsx &&
+             ln -sf navbar.jsx src/components/Navbar.jsx &&
+             npm ci --no-audit --no-fund &&
+             npx vite --host 0.0.0.0 --port 5173 --strictPort"
+    ports:
+      - "5173:5173"
+
+volumes:
+  pgdata:
