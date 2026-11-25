@@ -1,0 +1,13 @@
+packages:
+  - apps/*
+  - packages/*
+
+# Satu versi untuk dependensi yang dipakai di lebih dari satu paket.
+catalog:
+  typescript: ~6.0.3
+  vitest: ^5.1.1
+  '@types/node': ^22.20.5
+
+# Paket yang boleh menjalankan script install (pnpm 10 memblokir default).
+onlyBuiltDependencies:
+  - esbuild
