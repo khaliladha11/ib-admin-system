@@ -208,7 +208,7 @@ Di `apps/web`, buat lapisan data local-first memakai Dexie (IndexedDB):
 Jelaskan arsitekturnya dengan diagram singkat dulu dan tunggu persetujuan saya.
 ```
 
-- [ ] **2.1 Sistem desain & kerangka layout**
+- [x] **2.1 Sistem desain & kerangka layout**
 
 ```text
 Buat sistem desain kecil untuk `apps/web` dengan Tailwind + shadcn/ui:

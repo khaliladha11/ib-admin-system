@@ -25,7 +25,8 @@ inseminator, dan admin kelompok/dinas.
   (login, peran, CRUD, event, permintaan layanan, pengingat, OpenAPI di `/api/docs`).
   Tag `v0.1.0` (commit merge Fase 1) masih perlu dibuat manual di GitHub.
 - Fase 2: 2.0 lapisan data lokal selesai (Dexie + outbox + hook + sinkron sederhana).
-  Langkah berikutnya: 2.1 sistem desain.
+  2.1 sistem desain selesai (`docs/DESIGN.md`, review di `/dev/komponen`).
+  Langkah berikutnya: 2.2 layar HP.
 
 ## Prinsip
 1. Offline-first: semua pencatatan harus bisa tanpa internet; sinkron menyusul.
@@ -135,6 +136,15 @@ inseminator, dan admin kelompok/dinas.
   `GET /api/sync/changes?since=` tidak menimpa baris yang masih pending. Konflik penuh: Fase 4.
 - Data lokal milik satu akun (`meta.owner`); akun lain yang masuk menghapusnya, dan
   ditolak bila masih ada perubahan belum terkirim.
+- Desain: lihat `docs/DESIGN.md`. Warna hanya lewat token di `apps/web/src/index.css`
+  (ditulis `#rrggbb`); `design/contrast.test.ts` memeriksa WCAG AA untuk mode terang dan
+  kontras tinggi (`<html data-contrast="high">`). Tepi pakai `border-(length:--bw)`.
+  Huruf Atkinson Hyperlegible Next dari `@fontsource-variable` (lokal, bukan CDN).
+- Status reproduksi di UI selalu lewat `StatusBadge` (ikon + teks), lintasan siklus `CycleTrack`.
+  Fungsi non-komponen ditaruh di file `.ts` terpisah (`describe-*.ts`, `cycle.ts`) agar
+  Fast Refresh tidak memberi peringatan.
+- Rute: TanStack Router berbasis kode di `apps/web/src/router.tsx` (tanpa plugin Vite).
+  Kerangka `layout/app-shell.tsx`: navigasi bawah di HP, sidebar di ≥ 1024px.
 - Tes web memakai `fake-indexeddb` (di `src/test/setup.ts`) dan fixture
   `src/test/data-fixtures.ts` (DB baru per tes, fetch tiruan).
 - Logika reproduksi di `packages/shared/src/domain/`: `deriveReproStatus`,
