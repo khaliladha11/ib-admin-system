@@ -41,6 +41,7 @@ describe('migrasi', () => {
         'locations',
         'semen_stock',
         'service_requests',
+        'sessions',
         'users',
       ].sort(),
     );
