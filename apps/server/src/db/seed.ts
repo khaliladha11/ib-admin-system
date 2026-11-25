@@ -33,6 +33,7 @@ import {
 } from '@ib/shared';
 import { sql } from 'drizzle-orm';
 
+import { hashPassword } from '../auth/password';
 import { countRows, createDb, type Db } from './client';
 import { runMigrations } from './migrate';
 import * as t from './schema';
@@ -779,6 +780,15 @@ export function insertSeedData(db: Db, data: SeedData) {
   });
 }
 
+/** Password semua akun contoh (fiktif, hanya untuk pengembangan). */
+export const SEED_PASSWORD = 'contoh123';
+
+/** Isi password akun contoh. Satu hash dipakai bersama agar seed tetap cepat. */
+export async function setSeedPasswords(db: Db, password = SEED_PASSWORD) {
+  const passwordHash = await hashPassword(password);
+  db.update(t.users).set({ passwordHash }).run();
+}
+
 export function clearAllData(db: Db) {
   db.transaction((tx) => {
     tx.run(sql`PRAGMA defer_foreign_keys = ON`);
@@ -805,6 +815,7 @@ if (import.meta.filename === process.argv[1]) {
 
   const data = buildSeedData();
   insertSeedData(db, data);
+  await setSeedPasswords(db);
 
   const eventsByType = data.events.reduce<Record<string, number>>((acc, e) => {
     acc[e.type] = (acc[e.type] ?? 0) + 1;
@@ -819,5 +830,6 @@ if (import.meta.filename === process.argv[1]) {
     ),
   );
   console.log('Event per jenis:', eventsByType);
+  console.log(`Semua akun contoh memakai password: ${SEED_PASSWORD}`);
   sqlite.close();
 }

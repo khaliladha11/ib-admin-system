@@ -286,8 +286,25 @@ export const auditLogs = sqliteTable(
   ],
 );
 
+/**
+ * Sesi login (cookie httpOnly). `id` adalah hash SHA-256 dari token di cookie,
+ * sehingga isi tabel ini tidak bisa dipakai untuk login bila bocor.
+ */
+export const sessions = sqliteTable(
+  'sessions',
+  {
+    ...baseColumns,
+    userId: text()
+      .notNull()
+      .references(() => users.id),
+    expiresAt: integer().notNull(),
+  },
+  (t) => [index('sessions_user_idx').on(t.userId)],
+);
+
 /** Urutan tabel untuk menghapus data (anak sebelum induk). */
 export const allTables = [
+  sessions,
   auditLogs,
   assignments,
   events,

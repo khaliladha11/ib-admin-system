@@ -13,10 +13,14 @@
   },
   "dependencies": {
     "@hono/node-server": "^2.1.11",
+    "@hono/zod-openapi": "^1.6.3",
     "@ib/shared": "workspace:*",
+    "@node-rs/argon2": "^2.2.2",
     "better-sqlite3": "^13.2.0",
     "drizzle-orm": "^0.45.4",
-    "hono": "^4.13.22"
+    "hono": "^4.13.22",
+    "swagger-ui-dist": "^5.36.0",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^9.6.0",
