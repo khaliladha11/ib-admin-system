@@ -19,6 +19,8 @@ Prasyarat: Node.js 22 (lihat `.nvmrc`) dan pnpm 10.
 
 ```bash
 pnpm install
+pnpm db:migrate
+pnpm db:seed
 pnpm dev
 ```
 
@@ -38,6 +40,9 @@ bersamaan.
 | `pnpm lint` | ESLint + cek format Prettier |
 | `pnpm format` | Rapikan format dengan Prettier |
 | `pnpm build` | Build produksi web |
+| `pnpm db:migrate` | Buat/perbarui database SQLite (`apps/server/data/ib.sqlite`) |
+| `pnpm db:seed` | Isi data contoh fiktif (`--reset` untuk mengisi ulang) |
+| `pnpm db:generate` | Buat migrasi baru setelah skema diubah |
 
 ## Struktur
 

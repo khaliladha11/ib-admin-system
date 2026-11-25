@@ -152,7 +152,7 @@ Baca CLAUDE.md dan docs/PLAN.md. Buat kerangka monorepo baru di root repo (janga
 Tunjukkan struktur folder dan daftar dependensi dulu, tunggu persetujuan saya, baru kerjakan. Di akhir jalankan semua skrip dan laporkan hasilnya.
 ```
 
-- [ ] **1.2 Model data & database** \[Rencana dulu\]
+- [x] **1.2 Model data & database** \[Rencana dulu\]
 
 ```text
 Baca CLAUDE.md, docs/PLAN.md bagian "Model data inti", dan docs/legacy/DOMAIN.md.
