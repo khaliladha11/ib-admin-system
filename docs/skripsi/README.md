@@ -6,7 +6,7 @@ Guna Mendukung Koordinasi Stakeholder**
 Muhammad Khalil Adha — Ilmu Komputer, IPB University, 2025.
 Pembimbing: Lailan Sahrina Hasibuan.
 
-Kode versi skripsi: folder [`legacy/`](../../legacy/README.md) dan tag git `v3.1-skripsi`.
+Kode versi skripsi: folder [`legacy/`](../../legacy/README.md) dan tag git `v3.1-legacy`.
 
 ## Naskah lengkap (PDF)
 

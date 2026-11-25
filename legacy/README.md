@@ -6,11 +6,11 @@
 - **Penulis:** Muhammad Khalil Adha
 - **Program studi:** Ilmu Komputer, IPB University — lulus November 2025
 - **Pembimbing:** Lailan Sahrina Hasibuan
-- **Tag git:** `v3.1-skripsi`
+- **Tag git:** `v3.1-legacy`
 - **Abstrak & naskah:** [`docs/skripsi/README.md`](../docs/skripsi/README.md)
 
 Folder ini adalah arsip kode seperti saat skripsi (kode persisnya ada di tag
-`v3.1-skripsi`). Satu-satunya perubahan sesudahnya adalah konfigurasi koneksi
+`v3.1-legacy`). Satu-satunya perubahan sesudahnya adalah konfigurasi koneksi
 database lewat environment variable agar bisa dijalankan dengan Docker; lihat
 [Catatan perubahan untuk Docker](#catatan-perubahan-untuk-docker). Isinya hanya
 menjadi referensi logika bisnis untuk rebuild: **jangan diubah dan jangan

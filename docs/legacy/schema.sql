@@ -2,7 +2,7 @@
 -- Rekonstruksi skema database IB Admin System versi skripsi (V3.1)
 -- =====================================================================
 -- BUKAN dump asli. Skema ini disusun ulang dari query SQL di
--- legacy/backend (tag git v3.1-skripsi), karena repo tidak menyertakan
+-- legacy/backend (tag git v3.1-legacy), karena repo tidak menyertakan
 -- skema maupun migrasi. Dialek: PostgreSQL.
 --
 -- Legenda komentar:

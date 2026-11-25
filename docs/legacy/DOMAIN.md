@@ -1,7 +1,7 @@
 # Referensi Domain Versi Skripsi (Legacy)
 
 Dokumen referensi untuk rebuild. Isinya direkonstruksi dengan membaca seluruh
-kode di [`legacy/`](../../legacy/README.md) (tag git `v3.1-skripsi`). Kode legacy
+kode di [`legacy/`](../../legacy/README.md) (tag git `v3.1-legacy`). Kode legacy
 **tidak diubah**; masalah di §5 hanya catatan untuk dipelajari, bukan diperbaiki
 di sana.
 

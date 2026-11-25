@@ -4,7 +4,7 @@
 Proyek ini berasal dari skripsi Muhammad Khalil Adha (Ilmu Komputer IPB, 2025):
 "Pengembangan Sistem Informasi Permintaan Inseminasi Buatan (IB) Berbasis Web
 Guna Mendukung Koordinasi Stakeholder". Versi skripsi diarsipkan di folder
-`legacy/` dan tag git `v3.1-skripsi`. Folder `legacy/` hanya referensi logika
+`legacy/` dan tag git `v3.1-legacy`. Folder `legacy/` hanya referensi logika
 bisnis: JANGAN diubah, JANGAN diimpor oleh kode baru. Pengecualian yang sudah
 disetujui: konfigurasi lewat environment variable untuk Docker, dicatat di
 `legacy/README.md`.
@@ -21,7 +21,7 @@ inseminator, dan admin kelompok/dinas.
 
 ## Status saat ini
 - Fase 0 (arsip skripsi) selesai, termasuk 0.3 (`cd legacy && docker compose up`),
-  kecuali tag `v3.1-skripsi` yang belum ada di GitHub. Monorepo belum dibuat;
+  kecuali tag `v3.1-legacy` yang belum ada di GitHub. Monorepo belum dibuat;
   langkah berikutnya: 1.1 kerangka monorepo.
 
 ## Prinsip
@@ -87,6 +87,10 @@ Belum ada; dibuat di langkah 1.1. Yang direncanakan:
 - `pnpm db:migrate` / `pnpm db:seed`
 
 Versi skripsi: `cd legacy && docker compose up` (detail di `legacy/README.md`).
+
+## Versi
+- `v3.1-legacy` = versi skripsi. Rebuild memakai semver: `v0.1.0` setelah Fase 1,
+  naik minor per fase, `v1.0.0` di langkah 6.1 (lihat `docs/PLAN.md` §9).
 
 ## Catatan lingkungan
 - Di sesi cloud Claude Code, push tag git ditolak (403); push branch bisa.

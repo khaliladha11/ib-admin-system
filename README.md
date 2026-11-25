@@ -25,7 +25,7 @@ ib-admin-system/
 Versi ini berasal dari skripsi *"Pengembangan Sistem Informasi Permintaan
 Inseminasi Buatan (IB) Berbasis Web Guna Mendukung Koordinasi Stakeholder"*
 (Ilmu Komputer IPB, 2025). Kodenya tersimpan di folder `legacy/` dan tag git
-`v3.1-skripsi`.
+`v3.1-legacy`.
 
 - Cara menjalankan versi skripsi: [`legacy/README.md`](legacy/README.md)
 - Abstrak dan naskah: [`docs/skripsi/README.md`](docs/skripsi/README.md)

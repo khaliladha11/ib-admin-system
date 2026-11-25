@@ -26,7 +26,7 @@ Salin isi ini ke file `CLAUDE.md` di root repo (filenya juga saya kirim di chat)
 Proyek ini berasal dari skripsi Muhammad Khalil Adha (Ilmu Komputer IPB, 2025):
 "Pengembangan Sistem Informasi Permintaan Inseminasi Buatan (IB) Berbasis Web
 Guna Mendukung Koordinasi Stakeholder". Versi skripsi diarsipkan di folder
-`legacy/` dan tag git `v3.1-skripsi`. Folder `legacy/` hanya referensi logika
+`legacy/` dan tag git `v3.1-legacy`. Folder `legacy/` hanya referensi logika
 bisnis: JANGAN diubah, JANGAN diimpor oleh kode baru.
 
 Tujuan rebuild: aplikasi open-source, offline-first, mobile-first untuk
@@ -86,13 +86,13 @@ Sebelum membangun yang baru, versi skripsi dibekukan dengan rapi: tetap bisa dib
 
 - [x] **0.1 Arsipkan versi skripsi**
 
-  > Selesai. Catatan: tag `v3.1-skripsi` dibuat di commit `be16724` tetapi belum ada di GitHub (sesi Claude Code tidak diizinkan push tag); buat manual lewat Releases.
+  > Selesai. Catatan: tag `v3.1-legacy` dibuat di commit `be16724` tetapi belum ada di GitHub (sesi Claude Code tidak diizinkan push tag); buat manual lewat Releases.
 
 ```text
 Ini repo skripsi saya. Sebelum rebuild, saya ingin mengabadikan versi skripsi dengan rapi.
 
 Lakukan:
-1. Buat tag git `v3.1-skripsi` pada commit saat ini.
+1. Buat tag git `v3.1-legacy` pada commit saat ini.
 2. Pindahkan `ib-backend/` dan `ib-frontend/` ke `legacy/backend/` dan `legacy/frontend/` memakai `git mv` supaya riwayat tetap ada.
 3. Buat `legacy/README.md` berisi: judul skripsi, nama saya (Muhammad Khalil Adha, Ilmu Komputer IPB, lulus November 2025), pembimbing (Lailan Sahrina Hasibuan), ringkasan singkat fitur versi ini, teknologi (React + Vite, Express, PostgreSQL), dan cara menjalankannya secara lokal.
 4. Buat `docs/skripsi/README.md` berisi abstrak (saya tempel di bawah) dan tempat untuk tautan PDF skripsi.
@@ -131,7 +131,7 @@ Buat `legacy/docker-compose.yml` yang menjalankan PostgreSQL, memuat `docs/legac
 Perubahan pada kode lama hanya boleh berupa konfigurasi lewat environment variable (koneksi database, base URL), dan catat setiap perubahan di `legacy/README.md`.
 ```
 
-Cek setelah Langkah 0: tag `v3.1-skripsi` terlihat di GitHub, dan `docs/legacy/DOMAIN.md` sudah kamu baca serta koreksi sendiri. Dokumen inilah yang dipakai Claude Code sebagai acuan di Fase 1.
+Cek setelah Langkah 0: tag `v3.1-legacy` terlihat di GitHub, dan `docs/legacy/DOMAIN.md` sudah kamu baca serta koreksi sendiri. Dokumen inilah yang dipakai Claude Code sebagai acuan di Fase 1.
 
 ## Fase 1 — Inti data & logika
 
@@ -351,7 +351,7 @@ Kelompokkan menjadi bug, kebingungan UI, dan permintaan fitur. Usulkan perbaikan
 
 ```text
 Siapkan rilis v1.0:
-- README root yang menarik: apa ini, screenshot HP dan PC, fitur, cara mencoba (demo + docker compose), cara instal di pos IB, bagian "Asal-usul" yang menceritakan proyek ini berawal dari skripsi saya dengan tautan ke `legacy/` dan tag `v3.1-skripsi`
+- README root yang menarik: apa ini, screenshot HP dan PC, fitur, cara mencoba (demo + docker compose), cara instal di pos IB, bagian "Asal-usul" yang menceritakan proyek ini berawal dari skripsi saya dengan tautan ke `legacy/` dan tag `v3.1-legacy`
 - File LICENSE ([MIT atau AGPL-3.0]), CONTRIBUTING.md, CODE_OF_CONDUCT.md, template issue dan pull request, label `good first issue`
 - CHANGELOG.md, nomor versi, dan GitHub Release dengan catatan rilis Bahasa Indonesia
 - Periksa keamanan: tidak ada rahasia di repo, dependensi tanpa kerentanan tinggi (`pnpm audit`), header keamanan di server, batas percobaan login
