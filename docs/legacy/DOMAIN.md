@@ -360,11 +360,27 @@ tersirat dari teks.
 | Hasil IB peternak `Berhasil`/`Gagal`, `/kebuntingan` | Event `PKB` (hasil, umur janin) |
 | `/keguguran` | Event `KGG` (trimester) |
 | `/checkup/kelahiran` | Event `LH` (jenis kelamin, ID anak) |
-| Kematian anak sapi | Belum ada kode event di CLAUDE.md, perlu diputuskan |
+| Kematian anak sapi | Event `EXIT` (alasan `died`) pada ternak anak |
 | `requests.status` campuran | Dipisah: status alur kerja permintaan vs status reproduksi ternak (dihitung) |
 | `flag_*` + `update-flags` | Pengingat dihitung murni dari event, tanpa kolom flag |
 | Ambang 3 bulan / 30 menit / 24 jam di SQL | Konstanta di `packages/shared` |
 | `activity_logs` teks bebas | Log event terstruktur dengan `recorded_by` |
+
+### 4.8 Perbedaan aturan di rebuild (langkah 1.3)
+
+Diterapkan di `packages/shared/src/domain/` dan disetujui pemilik proyek.
+
+| Aturan | Legacy | Rebuild | Alasan |
+| --- | --- | --- | --- |
+| Letak status | `requests.status`, mencampur alur kerja dan hasil (I1) | Status per ternak, dihitung dari event | Prinsip 3 CLAUDE.md |
+| Arti `Gagal` | IB gagal, keguguran, atau anak mati | PKB negatif → `kosong`; keguguran → `keguguran`; anak mati → `EXIT` pada anak (induk tetap `sudah_lahir`) | Status tidak ambigu |
+| Bunting | Laporan peternak `/kebuntingan` atau `/laporan-ib` "Berhasil" | Hanya lewat event PKB hasil bunting | Satu sumber kebenaran (B5, B6) |
+| Patokan 3 bulan | Waktu laporan IB petugas dikirim (§4.1, B4) | Tanggal IB sebenarnya | Laporan yang telat tidak menggeser pengingat |
+| Satuan 3 bulan | `INTERVAL '3 months'` (bulan kalender) | 90 hari | Semua angka dalam hari di satu file konstanta (selisih ±2 hari) |
+| Pengingat 9 bulan | Tidak pernah aktif: `deadline_kelahiran` tidak diisi (B1) | Aktif: lewat perkiraan lahir paling lambat (konsepsi + 300 hari) | Tafsiran harfiah (270 hari setelah PKB) terlambat 1–2 bulan |
+| Flag pengingat | Kolom `flag_*`, diperbarui saat dasbor admin dibuka (§4.3) | Dihitung setiap kali dari event | Tidak ada flag basi |
+| Transisi | Tidak dijaga (§2.2) | `validateNextEvent`: error memblokir, peringatan perlu konfirmasi | Mencegah data tidak masuk akal |
+| Koreksi data | Kolom ditimpa (B7, B8) | Event baru dengan `voidsEventId` | Riwayat tetap utuh |
 
 ---
 

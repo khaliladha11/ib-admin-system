@@ -164,7 +164,7 @@ Rancang skema baru yang berpusat pada ternak memakai Drizzle ORM + SQLite di `ap
 Tunjukkan rancangan tabel (diagram Mermaid ER) dan contoh payload tiap jenis event dulu. Tunggu persetujuan saya.
 ```
 
-- [ ] **1.3 Mesin status reproduksi** \[Rencana dulu\]
+- [x] **1.3 Mesin status reproduksi** \[Rencana dulu\]
 
 ```text
 Di `packages/shared/src/domain/`, buat logika murni (tanpa database, tanpa UI) untuk menghitung status reproduksi seekor sapi dari daftar event-nya.

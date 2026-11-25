@@ -113,9 +113,11 @@ disetujui sebelum implementasi.
 
 ### 6.1 Status reproduksi (dihitung)
 
-`deriveReproStatus(events)` → `kosong`, `birahi`, `sudah_IB_menunggu_PKB`,
-`bunting` (dengan umur kebuntingan), `keguguran`, `sudah_lahir`, beserta event
-terakhir yang relevan.
+`deriveReproStatus(events, today)` → `{ status, anomalies }`. Status: `kosong`,
+`birahi`, `sudah_IB_menunggu_PKB` (dengan IB ke-berapa), `bunting` (tanggal konsepsi,
+umur kebuntingan hari/bulan, IB yang berhasil, S/C), `keguguran`, `sudah_lahir`,
+`keluar`, beserta event terakhir yang relevan. `today` dibutuhkan untuk umur
+kebuntingan dan agar status `birahi` kembali `kosong` setelah `ESTRUS_ACTIVE_DAYS`.
 
 ```
           BH          IB                      PKB bunting           LH
@@ -123,30 +125,50 @@ terakhir yang relevan.
    ▲                               │ PKB tidak bunting            │ KGG
    └───────────────────────────────┘                              ▼
                                                               keguguran
+ (status apa pun) ── EXIT ──► keluar
 ```
 
-`BB` dan `HEALTH` tidak mengubah status reproduksi; `EXIT` mengakhiri catatan ternak.
+- Hanya event yang berlaku yang dihitung: event terhapus (`deletedAt`) dan event yang
+  dibatalkan oleh event pengganti (`voidsEventId`) diabaikan.
+- `BB` dan `HEALTH` tidak mengubah status; `EXIT` mengakhiri catatan ternak.
+- Hitungan IB (S/C) direset setelah `LH`/`KGG`; dua IB dalam `SAME_HEAT_IB_DAYS`
+  dihitung satu layanan.
+- Event yang tidak masuk akal tidak mengubah status dan dikembalikan di `anomalies`
+  (data offline bisa datang tidak berurutan; tidak dibuang).
 
 ### 6.2 Validasi urutan
 
-`validateNextEvent(events, newEvent)` menolak urutan yang tidak masuk akal
-(mis. `LH` tanpa PKB bunting, `IB` pada sapi bunting) dengan pesan Bahasa
-Indonesia. Dipakai di server **dan** di HP. Event yang datang lewat sinkron dan
-ternyata tidak valid tidak dibuang, tetapi ditandai **"perlu dicek"**.
+`validateNextEvent(events, newEvent)` → `{ ok, errors, warnings }`, pesan Bahasa
+Indonesia. Dipakai di server **dan** di HP. Event bertanggal mundur dinilai pada
+posisinya dan ditolak bila membuat riwayat sesudahnya tidak masuk akal. Event yang
+datang lewat sinkron dan ternyata tidak valid tidak dibuang, tetapi ditandai
+**"perlu dicek"** (langkah 4.2).
+
+| Ditolak (error) | Peringatan (boleh disimpan setelah konfirmasi) |
+| --- | --- |
+| `LH` atau `KGG` pada sapi yang tidak tercatat bunting | `BH` pada sapi bunting |
+| `IB` pada sapi bunting | `PKB` tanpa catatan IB (mis. kawin alam) |
+| Event apa pun setelah `EXIT` | `PKB` tidak bunting pada sapi yang tercatat bunting |
+| `PKB` kurang dari `PKB_MIN_DAYS_AFTER_IB` (30) hari setelah IB | `LH` dengan umur kebuntingan < `PREMATURE_BIRTH_DAYS` (240) |
+| `voidsEventId` ke event yang tidak ada, sudah dibatalkan, atau milik ternak lain | `IB` < `MIN_IB_INTERVAL_DAYS` (18) setelah IB sebelumnya |
 
 ### 6.3 Jadwal & pengingat
 
 `computeSchedule(events, today)` menghasilkan:
-- perkiraan birahi berikutnya (`BH`/`IB` terakhir + 21 hari bila belum bunting);
-- jadwal PKB setelah IB;
-- perkiraan lahir (9–10 bulan setelah IB yang dikonfirmasi bunting);
-- pengingat terlambat dari skripsi: **hasil IB belum dilaporkan > 3 bulan**, dan
-  **kelahiran/keguguran belum dilaporkan > 9 bulan setelah dinyatakan bunting**.
+- perkiraan birahi berikutnya, selalu dimajukan per 21 hari sampai ≥ hari ini:
+  dari `BH`/`IB` terakhir, dari `LH` + 45 hari, atau dari `KGG` + 21 hari;
+- jadwal PKB: IB + 60 hari;
+- perkiraan lahir: konsepsi + 270 / 283 / 300 hari (paling cepat / perkiraan / paling lambat);
+- pengingat terlambat dari skripsi:
+  - `IB_RESULT_OVERDUE`: hasil IB belum dilaporkan > 90 hari **sejak tanggal IB**;
+  - `BIRTH_REPORT_OVERDUE`: kelahiran/keguguran belum dilaporkan setelah lewat
+    **perkiraan lahir paling lambat** (konsepsi + 300 hari). Ini tafsiran yang disetujui
+    untuk aturan "> 9 bulan setelah dinyatakan bunting"; tafsiran harfiah (270 hari
+    setelah PKB) baru memberi pengingat saat kebuntingan 11–12 bulan.
 
-Semua angka hari/bulan diambil dari satu file konstanta (mis. `ESTRUS_CYCLE_DAYS = 21`,
-`IB_RESULT_REPORT_DUE_MONTHS = 3`, `BIRTH_REPORT_DUE_MONTHS = 9`,
-`GESTATION_MONTHS_MIN/MAX = 9/10`). Patokan waktu adalah tanggal event sebenarnya,
-bukan waktu laporan diketik (legacy memakai waktu laporan, lihat DOMAIN.md §4.1).
+Semua angka hari ada di `packages/shared/src/domain/constants.ts`. Patokan waktu adalah
+tanggal event sebenarnya, bukan waktu laporan diketik. Perbedaan lengkap dengan
+versi skripsi: [`docs/legacy/DOMAIN.md`](legacy/DOMAIN.md) §4.8.
 
 ### 6.4 Statistik (Fase 6)
 
@@ -183,7 +205,7 @@ Nomor langkah = nomor prompt di [`docs/PROMPTS.md`](PROMPTS.md).
 | Fase | Langkah | Selesai bila |
 | --- | --- | --- |
 | **0. Arsip skripsi** | 0.1 arsip ke `legacy/` ✅ · 0.2 ekstrak domain ✅ · 0.3 jalankan versi lama via Docker ✅ | Tag `v3.1-legacy` terlihat di GitHub; DOMAIN.md sudah direview |
-| **1. Inti data & logika** | 1.1 kerangka monorepo + CI ✅ · 1.2 model data & DB ✅ · 1.3 mesin status (TDD) · 1.4 API, login, peran | Alur IB → PKB → lahir bisa dicatat lewat API dan lulus tes integrasi |
+| **1. Inti data & logika** | 1.1 kerangka monorepo + CI ✅ · 1.2 model data & DB ✅ · 1.3 mesin status (TDD) ✅ · 1.4 API, login, peran | Alur IB → PKB → lahir bisa dicatat lewat API dan lulus tes integrasi |
 | **2. UI & dashboard** | 2.0 lapisan data lokal Dexie · 2.1 sistem desain · 2.2 layar HP · 2.3 dashboard admin · 2.4 review UI | Screenshot 360×740 dan 1280×800 di `docs/screenshots/` |
 | **3. Identitas QR/tag** | 3.1 kode QR & cetak label · 3.2 pemindai QR | Scan → IB tercatat ≤ 30 detik, offline, diuji di HP sungguhan |
 | **4. Offline penuh & server lokal** | 4.1 PWA · 4.2 sinkron tahan konflik · 4.3 mode pos/kelompok (Docker, HTTPS lokal, cadangan) | Tes dua perangkat offline lulus tanpa data hilang/ganda; `docs/INSTALL.md` bisa diikuti non-programmer |

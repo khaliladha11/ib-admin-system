@@ -21,9 +21,8 @@ inseminator, dan admin kelompok/dinas.
 
 ## Status saat ini
 - Fase 0 selesai (tag `v3.1-legacy` masih perlu dibuat manual di GitHub).
-- Fase 1: 1.1 kerangka monorepo dan 1.2 model data & database selesai
-  (skema Drizzle + migrasi, skema Zod, seed 40 sapi). Langkah berikutnya: 1.3 mesin
-  status reproduksi.
+- Fase 1: 1.1 kerangka monorepo, 1.2 model data & database, dan 1.3 mesin status
+  reproduksi selesai. Langkah berikutnya: 1.4 API, login, dan peran.
 
 ## Prinsip
 1. Offline-first: semua pencatatan harus bisa tanpa internet; sinkron menyusul.
@@ -109,6 +108,10 @@ inseminator, dan admin kelompok/dinas.
 - Hitung baris dengan `countRows()` (`apps/server/src/db/client.ts`), bukan
   `db.$count()` yang mengembalikan builder async.
 - Zod 4: opsi pesan di `.refine()` memakai `error`, bukan `message`.
+- Logika reproduksi di `packages/shared/src/domain/`: `deriveReproStatus`,
+  `validateNextEvent`, `computeSchedule` memakai satu mesin status (`replay`).
+  Semua angka hari di `domain/constants.ts`. Pengingat 9 bulan = lewat konsepsi +
+  300 hari; BH saat bunting hanya peringatan (keputusan langkah 1.3).
 
 Versi skripsi: `cd legacy && docker compose up` (detail di `legacy/README.md`).
 
