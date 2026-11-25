@@ -194,7 +194,7 @@ Jalankan semua tes di akhir dan laporkan hasilnya.
 
 Prompt 2.0 sengaja ditaruh sebelum layar apa pun: web membaca dan menulis ke database lokal di HP sejak awal, supaya offline di Fase 4 tinggal menyempurnakan sinkronisasi, bukan membongkar ulang.
 
-- [ ] **2.0 Lapisan data lokal di web** \[Rencana dulu\]
+- [x] **2.0 Lapisan data lokal di web** \[Rencana dulu\]
 
 ```text
 Di `apps/web`, buat lapisan data local-first memakai Dexie (IndexedDB):

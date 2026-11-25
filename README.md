@@ -10,7 +10,7 @@ Permintaan Inseminasi Buatan (IB) Berbasis Web Guna Mendukung Koordinasi
 Stakeholder"* (Muhammad Khalil Adha, Ilmu Komputer IPB, 2025). Versi skripsi
 diarsipkan di [`legacy/`](legacy/README.md) dan tag git `v3.1-legacy`.
 
-> **Status:** Fase 1 (API & logika domain) selesai; antarmuka web dikerjakan di Fase 2.
+> **Status:** Fase 1 (API & logika domain) selesai. Fase 2 berjalan: lapisan data lokal (offline-first) sudah ada, layar web menyusul.
 > Roadmap: [`docs/PLAN.md`](docs/PLAN.md).
 
 ## Menjalankan
