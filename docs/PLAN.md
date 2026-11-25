@@ -212,5 +212,3 @@ langkahnya dikerjakan): ZXing (cadangan pemindai, 3.2), Docker Compose + Caddy
    dalam 24 jam) masih dibutuhkan?
 4. Lisensi v1.0: MIT (seperti versi skripsi) atau AGPL-3.0?
 5. Nama aplikasi PWA: "IB Ternak" atau nama lain?
-6. Istilah: CLAUDE.md menyebut peternak sebagai *owner*, sedangkan rencana ini
-   memakai `farmer`. Perlu diseragamkan di CLAUDE.md.
