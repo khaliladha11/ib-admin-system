@@ -11,3 +11,4 @@ catalog:
 # Paket yang boleh menjalankan script install (pnpm 10 memblokir default).
 onlyBuiltDependencies:
   - esbuild
+  - better-sqlite3

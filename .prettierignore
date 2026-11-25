@@ -4,3 +4,6 @@ pnpm-lock.yaml
 dist/
 coverage/
 *.md
+
+# Dibuat otomatis oleh drizzle-kit
+apps/server/drizzle/
