@@ -11,8 +11,10 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@fontsource-variable/atkinson-hyperlegible-next": "^5.3.0",
     "@ib/shared": "workspace:*",
     "@radix-ui/react-slot": "^1.5.0",
+    "@tanstack/react-router": "^1.170.46",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "dexie": "^4.4.7",
