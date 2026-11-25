@@ -1,44 +1,62 @@
 # 🐄 IB Admin System
 
-Sistem informasi untuk mencatat siklus reproduksi sapi (birahi, IB, PKB, kelahiran)
-bagi peternak, inseminator, dan admin kelompok/dinas.
+Aplikasi open-source untuk mencatat siklus reproduksi sapi (birahi, IB, PKB,
+kelahiran) bagi peternak, inseminator, dan admin kelompok/dinas. Dirancang
+**offline-first** dan **mobile-first**: pencatatan tetap bisa dilakukan di HP
+tanpa internet, lalu disinkronkan saat terhubung.
 
-> **Status:** sedang dibangun ulang (rebuild) sebagai aplikasi open-source,
-> offline-first, dan mobile-first. Kode versi skripsi diarsipkan di folder
-> [`legacy/`](legacy/README.md).
+Proyek ini adalah **rebuild** dari skripsi *"Pengembangan Sistem Informasi
+Permintaan Inseminasi Buatan (IB) Berbasis Web Guna Mendukung Koordinasi
+Stakeholder"* (Muhammad Khalil Adha, Ilmu Komputer IPB, 2025). Versi skripsi
+diarsipkan di [`legacy/`](legacy/README.md) dan tag git `v3.1-legacy`.
 
-## 📁 Struktur Folder
+> **Status:** Fase 1, kerangka monorepo. Belum siap dipakai.
+> Roadmap: [`docs/PLAN.md`](docs/PLAN.md).
 
-```
-ib-admin-system/
-├── legacy/          # Arsip versi skripsi (V3.1) — hanya referensi, jangan diubah
-│   ├── backend/     # API Express + PostgreSQL
-│   └── frontend/    # Web React + Vite
-├── docs/
-│   └── skripsi/     # Abstrak dan tautan naskah skripsi
-├── CLAUDE.md
-└── README.md
-```
+## Menjalankan
 
-## 🎓 Versi Skripsi
-
-Versi ini berasal dari skripsi *"Pengembangan Sistem Informasi Permintaan
-Inseminasi Buatan (IB) Berbasis Web Guna Mendukung Koordinasi Stakeholder"*
-(Ilmu Komputer IPB, 2025). Kodenya tersimpan di folder `legacy/` dan tag git
-`v3.1-legacy`.
-
-- Cara menjalankan versi skripsi: [`legacy/README.md`](legacy/README.md)
-- Abstrak dan naskah: [`docs/skripsi/README.md`](docs/skripsi/README.md)
-
-Menjalankan versi skripsi dengan data contoh fiktif:
+Prasyarat: Node.js 22 (lihat `.nvmrc`) dan pnpm 10.
 
 ```bash
-cd legacy && docker compose up
+pnpm install
+pnpm dev
 ```
 
-Lalu buka `http://localhost:5173` dan masuk dengan `admin@ib.test` / `admin123`
-atau `petugas1@ib.test` / `petugas123`.
+Buka `http://localhost:5173`. Web memanggil server di `http://localhost:3000`
+lewat proxy `/api`. Konfigurasi opsional: salin `.env.example` menjadi `.env`.
 
-## 📄 Lisensi
+Port 5173 juga dipakai versi skripsi di Docker, jadi jangan jalankan keduanya
+bersamaan.
+
+## Skrip
+
+| Perintah | Fungsi |
+| --- | --- |
+| `pnpm dev` | Jalankan web dan server bersamaan |
+| `pnpm test` | Unit test (Vitest) di semua paket |
+| `pnpm typecheck` | Pemeriksaan tipe TypeScript |
+| `pnpm lint` | ESLint + cek format Prettier |
+| `pnpm format` | Rapikan format dengan Prettier |
+| `pnpm build` | Build produksi web |
+
+## Struktur
+
+```
+apps/web         Aplikasi web (React + Vite + Tailwind + shadcn/ui)
+apps/server      API (Hono)
+packages/shared  Tipe dan logika domain yang dipakai web & server
+legacy/          Arsip versi skripsi, hanya referensi
+docs/            Rencana, prompt kerja, analisis versi lama
+```
+
+## Dokumen
+
+- [`docs/PLAN.md`](docs/PLAN.md): roadmap dan model data
+- [`docs/PROMPTS.md`](docs/PROMPTS.md): langkah kerja per fase
+- [`docs/legacy/DOMAIN.md`](docs/legacy/DOMAIN.md): analisis logika bisnis versi skripsi
+- [`legacy/README.md`](legacy/README.md): menjalankan versi skripsi (`cd legacy && docker compose up`)
+- [`docs/skripsi/README.md`](docs/skripsi/README.md): abstrak skripsi
+
+## Lisensi
 
 MIT License © 2025 Muhammad Khalil Adha

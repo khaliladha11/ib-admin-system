@@ -20,9 +20,9 @@ inseminator, dan admin kelompok/dinas.
   aturan bisnis, daftar masalah S*/B*/I*). Rujuk ID masalahnya saat relevan.
 
 ## Status saat ini
-- Fase 0 (arsip skripsi) selesai, termasuk 0.3 (`cd legacy && docker compose up`),
-  kecuali tag `v3.1-legacy` yang belum ada di GitHub. Monorepo belum dibuat;
-  langkah berikutnya: 1.1 kerangka monorepo.
+- Fase 0 selesai (tag `v3.1-legacy` masih perlu dibuat manual di GitHub).
+- Fase 1: 1.1 kerangka monorepo selesai (halaman "Halo" + `GET /api/health`, CI).
+  Langkah berikutnya: 1.2 model data & database.
 
 ## Prinsip
 1. Offline-first: semua pencatatan harus bisa tanpa internet; sinkron menyusul.
@@ -81,10 +81,22 @@ inseminator, dan admin kelompok/dinas.
 - Beda huruf besar/kecil antara nama file dan import: build gagal di Linux (B11).
 
 ## Perintah
-Belum ada; dibuat di langkah 1.1. Yang direncanakan:
-- `pnpm dev` — jalankan web dan server
-- `pnpm test` / `pnpm typecheck` / `pnpm lint`
-- `pnpm db:migrate` / `pnpm db:seed`
+- `pnpm dev` — web (http://localhost:5173) + server (http://localhost:3000), proxy `/api`
+- `pnpm test` / `pnpm typecheck` / `pnpm lint` (ESLint + Prettier check) / `pnpm format`
+- `pnpm build` — build produksi web
+- Belum ada: `pnpm db:migrate` / `pnpm db:seed` (langkah 1.2)
+
+## Keputusan teknis
+- pnpm 10 (`packageManager`), Node 22 (`.nvmrc`); versi bersama lewat `catalog:`
+  di `pnpm-workspace.yaml`.
+- TypeScript dikunci ~6.0: typescript-eslint belum mendukung TS 7.
+- `packages/shared` source-only (`exports` ke `src/index.ts`, tanpa build);
+  resolusi modul `Bundler`. Impor antarpaket: `@ib/shared`.
+- Alias `@/` di web menunjuk `apps/web/src`.
+- Komponen shadcn/ui ada di `apps/web/src/components/ui`; ukuran tombol dinaikkan
+  ke ≥ 44px. Registry shadcn tidak bisa diakses dari sandbox cloud, jadi
+  komponen baru ditulis manual mengikuti keluaran CLI.
+- Paket yang butuh build script didaftarkan di `onlyBuiltDependencies`.
 
 Versi skripsi: `cd legacy && docker compose up` (detail di `legacy/README.md`).
 

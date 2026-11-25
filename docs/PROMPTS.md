@@ -137,7 +137,7 @@ Cek setelah Langkah 0: tag `v3.1-legacy` terlihat di GitHub, dan `docs/legacy/DO
 
 Fase ini membangun fondasi yang menentukan semua fase berikutnya, jadi semua prompt di sini meminta rencana dulu. Hasil akhirnya: siklus IB → PKB → lahir bisa dicatat lewat API dan dites otomatis.
 
-- [ ] **1.1 Kerangka monorepo** \[Rencana dulu\]
+- [x] **1.1 Kerangka monorepo** \[Rencana dulu\]
 
 ```text
 Baca CLAUDE.md dan docs/PLAN.md. Buat kerangka monorepo baru di root repo (jangan sentuh `legacy/`) sesuai bagian Stack di CLAUDE.md:
