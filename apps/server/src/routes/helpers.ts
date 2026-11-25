@@ -6,7 +6,7 @@ import { canAccessFarmer, loadScope, type Scope } from '../auth/scope';
 import { requireUser } from '../auth/session';
 import type { Db } from '../db/client';
 import { animals, animalTags, auditLogs, events, farmers } from '../db/schema';
-import { conflict, notFound } from '../http/errors';
+import { alreadyExists, notFound } from '../http/errors';
 import type { AppEnv } from '../http/env';
 import { toStatusDto } from '../http/schemas';
 
@@ -29,9 +29,9 @@ export function newRow(c: AppContext, id?: string) {
   };
 }
 
-/** Pastikan id baru belum dipakai. */
+/** Pastikan id baru belum dipakai (409 ALREADY_EXISTS: kiriman ulang dari outbox). */
 export function assertNewId(exists: boolean) {
-  if (exists) throw conflict('Data dengan id ini sudah ada.');
+  if (exists) throw alreadyExists();
 }
 
 export function loadFarmer(c: AppContext, scope: Scope, id: string) {

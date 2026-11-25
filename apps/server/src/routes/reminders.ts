@@ -1,5 +1,5 @@
 import { createRoute, z, type OpenAPIHono } from '@hono/zod-openapi';
-import { computeSchedule, DAY_MS } from '@ib/shared';
+import { compareReminders, computeSchedule, listReminders, REMINDER_KINDS } from '@ib/shared';
 import { and, asc, eq, isNull } from 'drizzle-orm';
 
 import { farmerScopeCondition } from '../auth/scope';
@@ -8,14 +8,6 @@ import { errorResponses } from '../http/errors';
 import type { AppEnv } from '../http/env';
 import { jsonContent } from '../http/schemas';
 import { activeQrCodes, eventsOfAnimals, scopeOf, toDomainEvent } from './helpers';
-
-const REMINDER_KINDS = [
-  'IB_RESULT_OVERDUE',
-  'BIRTH_REPORT_OVERDUE',
-  'ESTRUS_EXPECTED',
-  'PKB_DUE',
-  'CALVING_EXPECTED',
-] as const;
 
 const reminderItemSchema = z
   .object({
@@ -35,14 +27,6 @@ const reminderItemSchema = z
     }),
   })
   .openapi('Reminder');
-
-const fmt = (ms: number) =>
-  new Date(ms).toLocaleDateString('id-ID', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-    timeZone: 'Asia/Jakarta',
-  });
 
 export function registerReminderRoutes(app: OpenAPIHono<AppEnv>) {
   app.openapi(
@@ -68,7 +52,6 @@ export function registerReminderRoutes(app: OpenAPIHono<AppEnv>) {
       const scope = scopeOf(c);
       const { withinDays } = c.req.valid('query');
       const today = c.var.now();
-      const horizon = today + withinDays * DAY_MS;
       const rows = c.var.db
         .select({ animal: animals, farmer: farmers })
         .from(animals)
@@ -90,50 +73,12 @@ export function registerReminderRoutes(app: OpenAPIHono<AppEnv>) {
           farmerName: farmer.name,
           locationId: farmer.locationId,
         };
-        const s = computeSchedule((eventMap.get(animal.id) ?? []).map(toDomainEvent), today);
-        for (const r of s.reminders) {
-          items.push({
-            kind: r.code,
-            overdue: true,
-            dueAt: r.dueAt,
-            overdueDays: r.overdueDays,
-            message: r.message,
-            animal: ref,
-          });
-        }
-        const upcoming = (
-          kind: (typeof REMINDER_KINDS)[number],
-          at: number | null | undefined,
-          message: string,
-        ) => {
-          if (at != null && at <= horizon) {
-            items.push({
-              kind,
-              overdue: false,
-              dueAt: at,
-              overdueDays: null,
-              message,
-              animal: ref,
-            });
-          }
-        };
-        upcoming(
-          'ESTRUS_EXPECTED',
-          s.nextEstrusAt,
-          s.nextEstrusAt ? `Perkiraan birahi ${fmt(s.nextEstrusAt)}.` : '',
-        );
-        if (s.reminders.length === 0) {
-          upcoming('PKB_DUE', s.pkbDueAt, s.pkbDueAt ? `Jadwal PKB ${fmt(s.pkbDueAt)}.` : '');
-          upcoming(
-            'CALVING_EXPECTED',
-            s.expectedCalving?.earliest,
-            s.expectedCalving
-              ? `Perkiraan lahir ${fmt(s.expectedCalving.earliest)} – ${fmt(s.expectedCalving.latest)}.`
-              : '',
-          );
+        const schedule = computeSchedule((eventMap.get(animal.id) ?? []).map(toDomainEvent), today);
+        for (const item of listReminders(schedule, today, withinDays)) {
+          items.push({ ...item, animal: ref });
         }
       }
-      items.sort((a, b) => Number(b.overdue) - Number(a.overdue) || a.dueAt - b.dueAt);
+      items.sort(compareReminders);
       return c.json({ items }, 200);
     },
   );

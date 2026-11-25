@@ -10,6 +10,8 @@ export const ERROR_CODES = [
   'FORBIDDEN',
   'NOT_FOUND',
   'CONFLICT',
+  /** Id yang dikirim klien sudah tersimpan: aman dianggap berhasil saat kirim ulang dari outbox. */
+  'ALREADY_EXISTS',
   'INVALID_EVENT',
   'WARNINGS_NEED_CONFIRMATION',
   'INTERNAL_ERROR',
@@ -44,6 +46,8 @@ export const forbidden = (message = 'Anda tidak punya akses untuk tindakan ini.'
   new ApiError(403, 'FORBIDDEN', message);
 export const conflict = (message: string, details?: unknown) =>
   new ApiError(409, 'CONFLICT', message, details);
+export const alreadyExists = () =>
+  new ApiError(409, 'ALREADY_EXISTS', 'Data dengan id ini sudah ada.');
 export const unauthenticated = () =>
   new ApiError(401, 'UNAUTHENTICATED', 'Silakan masuk terlebih dahulu.');
 

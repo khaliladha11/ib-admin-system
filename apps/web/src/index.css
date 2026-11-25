@@ -1,58 +1,152 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
+/* Huruf dipasang lokal (bukan CDN) agar tetap jalan offline. */
+@import '@fontsource-variable/atkinson-hyperlegible-next';
 
-/* Token warna bawaan shadcn/ui (neutral). Palet bernuansa pertanian dibuat di langkah 2.1. */
+/*
+ * Sistem desain "kartu lapangan" (lihat docs/DESIGN.md).
+ * Semua warna di sini diperiksa rasio kontrasnya oleh src/design/contrast.test.ts:
+ * teks ≥ 4,5:1, garis input/ikon/tepi status ≥ 3:1, di mode terang DAN kontras tinggi.
+ * Tulis warna sebagai #RRGGBB agar bisa dibaca tes.
+ */
 
-@custom-variant dark (&:is(.dark *));
+@custom-variant high-contrast (&:where([data-contrast='high'], [data-contrast='high'] *));
 
 :root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  /* Palet dasar */
+  --paper: #ffffff;
+  --field: #eef3ea;
+  --ink: #14261a;
+  --ink-muted: #4a5a4f;
+  --leaf: #2e6b34;
+  --leaf-strong: #22522a;
+  --straw: #f2c230;
+  --soil: #6e4524;
+  --sky: #1d5a86;
+  --alarm: #b3261e;
+  --line: #d3ddcf;
+  --line-strong: #6f7f73;
+  --on-dark: #ffffff;
+
+  /* Tebal garis tepi: 1px, 2px di kontras tinggi */
+  --bw: 1px;
+
+  /* Peta ke token shadcn/ui */
+  --radius: 0.75rem;
+  --background: var(--field);
+  --foreground: var(--ink);
+  --card: var(--paper);
+  --card-foreground: var(--ink);
+  --popover: var(--paper);
+  --popover-foreground: var(--ink);
+  --primary: var(--leaf);
+  --primary-foreground: var(--on-dark);
+  --secondary: #e2ebdd;
+  --secondary-foreground: var(--ink);
+  --muted: var(--field);
+  --muted-foreground: var(--ink-muted);
+  --accent: var(--straw);
+  --accent-foreground: var(--ink);
+  --destructive: var(--alarm);
+  --destructive-foreground: var(--on-dark);
+  --info: var(--sky);
+  --border: var(--line);
+  --input: var(--line-strong);
+  --ring: var(--sky);
+
+  /* Status reproduksi: latar tipis, teks gelap, garis/ikon sedang */
+  --st-kosong-bg: #edf0ee;
+  --st-kosong-fg: #3b4741;
+  --st-kosong-line: #6b7770;
+  --st-birahi-bg: #fbe7f0;
+  --st-birahi-fg: #7a1046;
+  --st-birahi-line: #b0236a;
+  --st-ib-bg: #e3eef7;
+  --st-ib-fg: #133f60;
+  --st-ib-line: #1d5a86;
+  --st-bunting-bg: #e2f0e2;
+  --st-bunting-fg: #1d4a22;
+  --st-bunting-line: #2e6b34;
+  --st-keguguran-bg: #fbebdb;
+  --st-keguguran-fg: #6b3108;
+  --st-keguguran-line: #a65410;
+  --st-lahir-bg: #ddf1ee;
+  --st-lahir-fg: #0b4a44;
+  --st-lahir-line: #0e7a70;
+  --st-keluar-bg: #e6e6e6;
+  --st-keluar-fg: #2b2b2b;
+  --st-keluar-line: #5c5c5c;
 }
 
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
+/* Mode kontras tinggi: hitam di atas putih, garis 2px, fokus kuning tebal. */
+:root[data-contrast='high'] {
+  --paper: #ffffff;
+  --field: #ffffff;
+  --ink: #000000;
+  --ink-muted: #1f1f1f;
+  --leaf: #0f3d16;
+  --leaf-strong: #082a0e;
+  --line: #000000;
+  --line-strong: #000000;
+  --bw: 2px;
+  --secondary: #ffffff;
+  --ring: #000000;
+
+  --st-kosong-bg: #ffffff;
+  --st-kosong-fg: #000000;
+  --st-kosong-line: #000000;
+  --st-birahi-bg: #ffffff;
+  --st-birahi-fg: #5c0533;
+  --st-birahi-line: #5c0533;
+  --st-ib-bg: #ffffff;
+  --st-ib-fg: #0b2f4a;
+  --st-ib-line: #0b2f4a;
+  --st-bunting-bg: #ffffff;
+  --st-bunting-fg: #0f3d16;
+  --st-bunting-line: #0f3d16;
+  --st-keguguran-bg: #ffffff;
+  --st-keguguran-fg: #552506;
+  --st-keguguran-line: #552506;
+  --st-lahir-bg: #ffffff;
+  --st-lahir-fg: #053833;
+  --st-lahir-line: #053833;
+  --st-keluar-bg: #ffffff;
+  --st-keluar-fg: #000000;
+  --st-keluar-line: #000000;
 }
 
 @theme inline {
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
+  --font-sans: 'Atkinson Hyperlegible Next Variable', system-ui, sans-serif;
+
+  /* Skala huruf: dasar 16px, rasio ±1,25. Terkecil 14px hanya untuk keterangan. */
+  --text-sm: 0.875rem;
+  --text-sm--line-height: 1.45;
+  --text-base: 1rem;
+  --text-base--line-height: 1.5;
+  --text-lg: 1.25rem;
+  --text-lg--line-height: 1.35;
+  --text-xl: 1.5625rem;
+  --text-xl--line-height: 1.25;
+  --text-2xl: 1.9375rem;
+  --text-2xl--line-height: 1.2;
+
+  --radius-sm: calc(var(--radius) - 6px);
+  --radius-md: calc(var(--radius) - 3px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+
+  --color-paper: var(--paper);
+  --color-field: var(--field);
+  --color-ink: var(--ink);
+  --color-leaf: var(--leaf);
+  --color-leaf-strong: var(--leaf-strong);
+  --color-straw: var(--straw);
+  --color-soil: var(--soil);
+  --color-sky: var(--sky);
+  --color-alarm: var(--alarm);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -68,6 +162,8 @@
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-info: var(--info);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -75,9 +171,31 @@
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border;
+  }
+  html {
+    -webkit-tap-highlight-color: transparent;
   }
   body {
-    @apply bg-background text-base text-foreground antialiased;
+    @apply bg-background font-sans text-base text-foreground antialiased;
+    font-variant-numeric: tabular-nums;
+  }
+  /* Fokus keyboard selalu terlihat. */
+  :focus-visible {
+    outline: 3px solid var(--ring);
+    outline-offset: 2px;
+  }
+  :root[data-contrast='high'] :focus-visible {
+    outline: 3px solid #000000;
+    outline-offset: 2px;
+    box-shadow: 0 0 0 6px var(--straw);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 }

@@ -181,6 +181,10 @@ halaman dan dites dengan data contoh yang dihitung manual.
 
 - Web membaca dan menulis ke **Dexie sejak layar pertama** (langkah 2.0); setiap
   penulisan masuk ke `outbox` dan dikirim di latar belakang.
+- Versi sederhana (langkah 2.0, sudah ada): outbox dikirim berurutan lewat endpoint
+  REST biasa (id dari perangkat, kiriman ulang dijawab `409 ALREADY_EXISTS`), lalu
+  `GET /api/sync/changes?since=` mengambil perubahan dalam cakupan pengguna. Endpoint
+  batch di bawah ini adalah rancangan Fase 4.
 - `POST /api/sync/push`: batch dari outbox, idempoten berdasarkan id perubahan.
 - `GET /api/sync/pull?since=`: perubahan sejak versi terakhir, dengan paginasi.
 - Aturan konflik: event selalu ditambahkan, tidak pernah ditimpa; data profil
@@ -207,7 +211,7 @@ Nomor langkah = nomor prompt di [`docs/PROMPTS.md`](PROMPTS.md).
 | --- | --- | --- |
 | **0. Arsip skripsi** | 0.1 arsip ke `legacy/` ✅ · 0.2 ekstrak domain ✅ · 0.3 jalankan versi lama via Docker ✅ | Tag `v3.1-legacy` terlihat di GitHub; DOMAIN.md sudah direview |
 | **1. Inti data & logika** | 1.1 kerangka monorepo + CI ✅ · 1.2 model data & DB ✅ · 1.3 mesin status (TDD) ✅ · 1.4 API, login, peran ✅ | Alur IB → PKB → lahir bisa dicatat lewat API dan lulus tes integrasi |
-| **2. UI & dashboard** | 2.0 lapisan data lokal Dexie · 2.1 sistem desain · 2.2 layar HP · 2.3 dashboard admin · 2.4 review UI | Screenshot 360×740 dan 1280×800 di `docs/screenshots/` |
+| **2. UI & dashboard** | 2.0 lapisan data lokal Dexie ✅ · 2.1 sistem desain ✅ · 2.2 layar HP · 2.3 dashboard admin · 2.4 review UI | Screenshot 360×740 dan 1280×800 di `docs/screenshots/` |
 | **3. Identitas QR/tag** | 3.1 kode QR & cetak label · 3.2 pemindai QR | Scan → IB tercatat ≤ 30 detik, offline, diuji di HP sungguhan |
 | **4. Offline penuh & server lokal** | 4.1 PWA · 4.2 sinkron tahan konflik · 4.3 mode pos/kelompok (Docker, HTTPS lokal, cadangan) | Tes dua perangkat offline lulus tanpa data hilang/ganda; `docs/INSTALL.md` bisa diikuti non-programmer |
 | **5. Pilot** | 5.1 persiapan UAT · 5.2 perbaikan dari umpan balik (mingguan) | Skenario `docs/UAT.md` dijalankan bersama inseminator & peternak |

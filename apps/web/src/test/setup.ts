@@ -1,4 +1,6 @@
 import '@testing-library/jest-dom/vitest';
+// IndexedDB tiruan di memori untuk tes lapisan data (Dexie).
+import 'fake-indexeddb/auto';
 import { cleanup } from '@testing-library/react';
 import { afterEach } from 'vitest';
 

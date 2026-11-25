@@ -23,7 +23,10 @@ inseminator, dan admin kelompok/dinas.
 - Fase 0 selesai (tag `v3.1-legacy` masih perlu dibuat manual di GitHub).
 - Fase 1 selesai: 1.1 monorepo, 1.2 model data, 1.3 mesin status reproduksi, 1.4 API
   (login, peran, CRUD, event, permintaan layanan, pengingat, OpenAPI di `/api/docs`).
-  Langkah berikutnya: 2.0 lapisan data lokal di web. Setelah Fase 1 di-merge: tag `v0.1.0`.
+  Tag `v0.1.0` (commit merge Fase 1) masih perlu dibuat manual di GitHub.
+- Fase 2: 2.0 lapisan data lokal selesai (Dexie + outbox + hook + sinkron sederhana).
+  2.1 sistem desain selesai (`docs/DESIGN.md`, review di `/dev/komponen`).
+  Langkah berikutnya: 2.2 layar HP.
 
 ## Prinsip
 1. Offline-first: semua pencatatan harus bisa tanpa internet; sinkron menyusul.
@@ -121,6 +124,29 @@ inseminator, dan admin kelompok/dinas.
 - Event via API wajib lolos `validateNextEvent`: error → 422, peringatan → 409 sampai
   dikirim ulang dengan `confirmWarnings: true`. LH dengan anak hidup mendaftarkan anaknya.
 - Swagger UI disajikan dari `swagger-ui-dist` (bukan CDN) agar jalan offline.
+- Data web (`apps/web/src/data/`): komponen membaca HANYA lewat hook (`useAnimals`,
+  `useAnimalTimeline`, `useReminders`, `useSyncStatus`, ...) yang membaca Dexie, dan
+  menulis HANYA lewat `useRepo()`. Repo memvalidasi dengan Zod + `validateNextEvent`,
+  lalu menulis baris + entri `outbox` dalam satu transaksi. Tidak ada `fetch` di komponen.
+- Status, jadwal, pengingat dihitung di klien dengan fungsi `@ib/shared` yang sama
+  dengan server (`listReminders` dipakai bersama `/api/reminders`).
+- Sinkron sederhana (`data/sync/engine.ts`): push outbox FIFO lewat endpoint REST;
+  2xx/`409 ALREADY_EXISTS` = selesai, 4xx lain = ditolak (disimpan, antrean lanjut),
+  401 = berhenti (perlu masuk), jaringan/5xx = berhenti + backoff. Pull
+  `GET /api/sync/changes?since=` tidak menimpa baris yang masih pending. Konflik penuh: Fase 4.
+- Data lokal milik satu akun (`meta.owner`); akun lain yang masuk menghapusnya, dan
+  ditolak bila masih ada perubahan belum terkirim.
+- Desain: lihat `docs/DESIGN.md`. Warna hanya lewat token di `apps/web/src/index.css`
+  (ditulis `#rrggbb`); `design/contrast.test.ts` memeriksa WCAG AA untuk mode terang dan
+  kontras tinggi (`<html data-contrast="high">`). Tepi pakai `border-(length:--bw)`.
+  Huruf Atkinson Hyperlegible Next dari `@fontsource-variable` (lokal, bukan CDN).
+- Status reproduksi di UI selalu lewat `StatusBadge` (ikon + teks), lintasan siklus `CycleTrack`.
+  Fungsi non-komponen ditaruh di file `.ts` terpisah (`describe-*.ts`, `cycle.ts`) agar
+  Fast Refresh tidak memberi peringatan.
+- Rute: TanStack Router berbasis kode di `apps/web/src/router.tsx` (tanpa plugin Vite).
+  Kerangka `layout/app-shell.tsx`: navigasi bawah di HP, sidebar di ≥ 1024px.
+- Tes web memakai `fake-indexeddb` (di `src/test/setup.ts`) dan fixture
+  `src/test/data-fixtures.ts` (DB baru per tes, fetch tiruan).
 - Logika reproduksi di `packages/shared/src/domain/`: `deriveReproStatus`,
   `validateNextEvent`, `computeSchedule` memakai satu mesin status (`replay`).
   Semua angka hari di `domain/constants.ts`. Pengingat 9 bulan = lewat konsepsi +

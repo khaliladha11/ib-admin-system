@@ -12,6 +12,7 @@ import { registerAuthRoutes } from './routes/auth';
 import { registerFarmerRoutes } from './routes/farmers';
 import { registerReminderRoutes } from './routes/reminders';
 import { registerServiceRequestRoutes } from './routes/service-requests';
+import { registerSyncRoutes } from './routes/sync';
 
 export const SERVICE_NAME = 'ib-server';
 export const API_VERSION = '0.1.0';
@@ -49,6 +50,7 @@ export function createApp({ db, now = () => Date.now(), config }: AppDeps) {
   registerAnimalRoutes(app);
   registerServiceRequestRoutes(app);
   registerReminderRoutes(app);
+  registerSyncRoutes(app);
 
   app.openAPIRegistry.registerComponent('securitySchemes', 'cookieAuth', {
     type: 'apiKey',
