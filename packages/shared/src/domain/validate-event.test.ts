@@ -62,7 +62,10 @@ describe('validateNextEvent: diterima', () => {
 
 describe('validateNextEvent: ditolak', () => {
   it('(28) LH tanpa PKB bunting', () => {
-    expectError(validateNextEvent([bh(1)], lh(0)), /Kelahiran hanya bisa dicatat untuk sapi yang tercatat bunting/);
+    expectError(
+      validateNextEvent([bh(1)], lh(0)),
+      /Kelahiran hanya bisa dicatat untuk sapi yang tercatat bunting/,
+    );
   });
 
   it('(29) IB pada sapi bunting', () => {
@@ -70,7 +73,10 @@ describe('validateNextEvent: ditolak', () => {
   });
 
   it('(30) KGG pada sapi yang tidak bunting', () => {
-    expectError(validateNextEvent([ib(40)], kgg(0)), /Keguguran hanya bisa dicatat untuk sapi yang tercatat bunting/);
+    expectError(
+      validateNextEvent([ib(40)], kgg(0)),
+      /Keguguran hanya bisa dicatat untuk sapi yang tercatat bunting/,
+    );
   });
 
   it('(31) event apa pun setelah EXIT', () => {
@@ -80,7 +86,11 @@ describe('validateNextEvent: ditolak', () => {
 
   it('(33) voidsEventId harus menunjuk event yang ada, belum dibatalkan, dan milik ternak yang sama', () => {
     const original = bb(10, 34);
-    const missing = ev(10, { type: 'BB', payload: { weightKg: 340 } }, { voidsEventId: '0193f000-0000-7000-8000-999999999999' });
+    const missing = ev(
+      10,
+      { type: 'BB', payload: { weightKg: 340 } },
+      { voidsEventId: '0193f000-0000-7000-8000-999999999999' },
+    );
     expectError(validateNextEvent([original], missing), /Event yang dibatalkan tidak ditemukan/);
 
     const first = ev(10, { type: 'BB', payload: { weightKg: 340 } }, { voidsEventId: original.id });

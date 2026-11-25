@@ -23,7 +23,7 @@ export function ev(
     deletedAt: null,
     ...body,
     ...extra,
-  } as DomainEvent;
+  };
 }
 
 export const bh = (d: number) => ev(d, { type: 'BH', payload: {} });
@@ -37,7 +37,9 @@ export const lh = (d: number) =>
   ev(d, {
     type: 'LH',
     payload: {
-      calves: [{ sex: 'F', condition: 'alive', calfAnimalId: '0193f000-0000-7000-8000-0000000000ff' }],
+      calves: [
+        { sex: 'F', condition: 'alive', calfAnimalId: '0193f000-0000-7000-8000-0000000000ff' },
+      ],
     },
   });
 export const bb = (d: number, weightKg = 300) => ev(d, { type: 'BB', payload: { weightKg } });

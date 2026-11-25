@@ -15,7 +15,12 @@ const day = (n: number) => TODAY + n * DAY;
 describe('computeSchedule', () => {
   it('tanpa riwayat: tidak ada jadwal', () => {
     const s = computeSchedule([], TODAY);
-    expect(s).toMatchObject({ nextEstrusAt: null, pkbDueAt: null, expectedCalving: null, reminders: [] });
+    expect(s).toMatchObject({
+      nextEstrusAt: null,
+      pkbDueAt: null,
+      expectedCalving: null,
+      reminders: [],
+    });
   });
 
   it('(40) sapi kosong, BH 30 hari lalu: birahi berikutnya dimajukan ke H+12', () => {
@@ -89,7 +94,12 @@ describe('computeSchedule', () => {
 
   it('(48) keluar: tanpa jadwal dan pengingat', () => {
     const s = computeSchedule([ib(200), exit(5)], TODAY);
-    expect(s).toMatchObject({ nextEstrusAt: null, pkbDueAt: null, expectedCalving: null, reminders: [] });
+    expect(s).toMatchObject({
+      nextEstrusAt: null,
+      pkbDueAt: null,
+      expectedCalving: null,
+      reminders: [],
+    });
   });
 
   it('(49) pengingat hilang setelah PKB atau LH dicatat', () => {

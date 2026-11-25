@@ -26,7 +26,10 @@ describe('effectiveEvents', () => {
 
   it('pembatalan yang dihapus tidak membatalkan apa pun', () => {
     const original = bh(10);
-    const voider = { ...ev(9, { type: 'BH', payload: {} }, { voidsEventId: original.id }), deletedAt: TODAY };
+    const voider = {
+      ...ev(9, { type: 'BH', payload: {} }, { voidsEventId: original.id }),
+      deletedAt: TODAY,
+    };
     expect(effectiveEvents([original, voider])).toEqual([original]);
   });
 });
@@ -124,7 +127,10 @@ describe('deriveReproStatus: alur normal', () => {
   it('(17) dua IB dalam satu masa birahi dihitung satu layanan', () => {
     const first = ib(40);
     const second = ev(40, first, {}); // salinan dengan id baru
-    const { status } = deriveReproStatus([first, { ...second, occurredAt: first.occurredAt + DAY / 2 }], TODAY);
+    const { status } = deriveReproStatus(
+      [first, { ...second, occurredAt: first.occurredAt + DAY / 2 }],
+      TODAY,
+    );
     expect(status.kind === 'sudah_IB_menunggu_PKB' && status.serviceNumber).toBe(1);
   });
 
