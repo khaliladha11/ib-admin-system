@@ -16,6 +16,8 @@ export {
   useUsers,
   useAnimalTimeline,
   useAnimalTags,
+  useScanLookup,
+  useScanResult,
   useQrLabels,
   useEventDefaults,
   useHasPin,
@@ -56,6 +58,7 @@ export type {
   SyncStatusView,
   TimelineEvent,
 } from './queries';
+export { classifyScanText, type ScanResult } from './scan-lookup';
 export type { QrLabelState, QrLabelView, TagView } from './tag-queries';
 export type {
   AnimalInput,

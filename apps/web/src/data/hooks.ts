@@ -25,6 +25,7 @@ import {
   type AnimalFilter,
   type ServiceRequestFilter,
 } from './queries';
+import { lookupScan } from './scan-lookup';
 import { loadAnimalTags, loadQrLabels } from './tag-queries';
 
 export function useDataLayer(): DataLayer {
@@ -72,6 +73,18 @@ export function useQrLabels() {
     const session = await db.getMeta('session');
     return session ? loadQrLabels(db, session.user.id) : [];
   }, [db]);
+}
+
+/** Hasil scan/ketikan yang selalu terbaru (mis. setelah sapi didaftarkan). */
+export function useScanResult(text: string) {
+  const { db } = useDataLayer();
+  return useLiveQuery(() => lookupScan(db, text), [db, text]);
+}
+
+/** Cari sekali (untuk pemindai: hasil langsung dipakai untuk pindah halaman). */
+export function useScanLookup() {
+  const { db } = useDataLayer();
+  return useMemo(() => (text: string) => lookupScan(db, text), [db]);
 }
 
 export function useFarmers() {

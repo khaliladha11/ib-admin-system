@@ -102,6 +102,8 @@ export const animalInputSchema = animalFields
   })
   .extend({
     qrCode: z.string().regex(QR_CODE_PATTERN, 'Kode QR harus berformat IB-XXXXX').optional(),
+    /** Nomor eartag resmi yang langsung dipasang (mis. hasil scan/ketik di halaman Scan). */
+    eartag: z.string().trim().min(1, 'Isi nomor eartag.').max(50).optional(),
   });
 export type AnimalInput = z.input<typeof animalInputSchema>;
 export const animalPatchSchema = animalFields.partial();
@@ -278,6 +280,13 @@ export function createRepo(
     if (data.qrCode && (await db.animalTags.where({ type: 'qr', code: data.qrCode }).count()) > 0) {
       throw new LocalValidationError('Kode QR sudah pernah dipakai.');
     }
+    if (
+      data.eartag &&
+      (await db.animalTags.where({ type: 'eartag', code: data.eartag }).count()) > 0
+    ) {
+      throw new LocalValidationError('Nomor eartag ini sudah pernah dipakai.');
+    }
+    const { eartag, ...animalBody } = data;
     const row = parse(animalSchema, {
       ...base(),
       farmerId: data.farmerId,
@@ -300,16 +309,28 @@ export function createRepo(
           removalReason: null,
         }
       : null;
+    const eartagRow: AnimalTag | null = eartag
+      ? {
+          ...base(),
+          animalId: row.id,
+          type: 'eartag',
+          code: eartag,
+          attachedAt: time,
+          removedAt: null,
+          removalReason: null,
+        }
+      : null;
     await db.transaction('rw', db.animals, db.animalTags, db.outbox, async () => {
       await db.animals.add(row);
       if (tag) await db.animalTags.add(tag);
+      if (eartagRow) await db.animalTags.add(eartagRow);
       await enqueue(
         db,
         {
           kind: 'animal.create',
           method: 'POST',
           path: '/api/animals',
-          body: { id: row.id, ...data },
+          body: { id: row.id, ...animalBody },
           table: 'animals',
           rowId: row.id,
           // Server membuat tag QR dengan id-nya sendiri; tag lokal diganti versi server saat pull.
@@ -317,6 +338,21 @@ export function createRepo(
         },
         time,
       );
+      // Eartag dikirim sebagai entri berikutnya (FIFO: ternaknya sudah ada di server).
+      if (eartagRow) {
+        await enqueue(
+          db,
+          {
+            kind: 'tag.attach',
+            method: 'POST',
+            path: `/api/animals/${row.id}/tags`,
+            body: { id: eartagRow.id, type: 'eartag', code: eartagRow.code },
+            table: 'animalTags',
+            rowId: eartagRow.id,
+          },
+          time,
+        );
+      }
     });
     return done(row);
   }
