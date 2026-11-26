@@ -26,7 +26,8 @@ inseminator, dan admin kelompok/dinas.
   Tag `v0.1.0` (commit merge Fase 1) masih perlu dibuat manual di GitHub.
 - Fase 2: 2.0 lapisan data lokal selesai (Dexie + outbox + hook + sinkron sederhana).
   2.1 sistem desain selesai (`docs/DESIGN.md`, review di `/dev/komponen`).
-  Langkah berikutnya: 2.2 layar HP.
+  2.2 layar HP selesai (masuk + PIN, Hari ini, Ternak, profil, catat event, Tugas).
+  Langkah berikutnya: 2.3 dashboard PC untuk admin.
 
 ## Prinsip
 1. Offline-first: semua pencatatan harus bisa tanpa internet; sinkron menyusul.
@@ -88,6 +89,9 @@ inseminator, dan admin kelompok/dinas.
 - `pnpm dev` — web (http://localhost:5173) + server (http://localhost:3000), proxy `/api`
 - `pnpm test` / `pnpm typecheck` / `pnpm lint` (ESLint + Prettier check) / `pnpm format`
 - `pnpm build` — build produksi web
+- `pnpm e2e` — Playwright 360×740 (`apps/web/e2e/`): menyalakan server port 3100 dengan
+  `data/e2e.sqlite` yang diisi ulang + Vite port 5174, lalu menyimpan screenshot ke
+  `docs/screenshots/2.2-*.png`. Di luar sandbox: `pnpm --filter @ib/web exec playwright install chromium`.
 - `pnpm db:migrate` — jalankan migrasi (`DATABASE_URL`, bawaan `apps/server/data/ib.sqlite`)
 - `pnpm db:seed` — isi data contoh fiktif; `pnpm db:seed --reset` untuk mengisi ulang
 - `pnpm db:generate` — buat file migrasi baru setelah mengubah `apps/server/src/db/schema.ts`
@@ -145,6 +149,15 @@ inseminator, dan admin kelompok/dinas.
   Fast Refresh tidak memberi peringatan.
 - Rute: TanStack Router berbasis kode di `apps/web/src/router.tsx` (tanpa plugin Vite).
   Kerangka `layout/app-shell.tsx`: navigasi bawah di HP, sidebar di ≥ 1024px.
+- Layar (langkah 2.2): `layout/auth-gate.tsx` (belum masuk → Masuk; PIN → layar PIN),
+  rute di `router.tsx` dengan `staticData` (`title`, `focus` = tanpa navigasi bawah + tombol
+  kembali, `backTo`). Halaman di `pages/`; fungsi murni layar di file `.ts` (mis.
+  `animal-filter.ts`, `reminder-groups.ts`, `components/event-form-model.ts`).
+- PIN hanya di HP (hash PBKDF2 di `meta.pin`, `data/pin.ts`), 5× salah → masuk dengan password.
+  Status terkunci di memori (`data/lock.ts`). Foto ternak hanya lokal (`animalPhotos`, Dexie v2);
+  unggah ke server di Fase 4.
+- Form IB harus muat satu layar 360×740 (dicek `pnpm e2e`); isian bawaan dari IB terakhir
+  pengguna dan stok strawnya (`loadEventDefaults`).
 - Tes web memakai `fake-indexeddb` (di `src/test/setup.ts`) dan fixture
   `src/test/data-fixtures.ts` (DB baru per tes, fetch tiruan).
 - Logika reproduksi di `packages/shared/src/domain/`: `deriveReproStatus`,

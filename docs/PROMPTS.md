@@ -221,7 +221,7 @@ Buat sistem desain kecil untuk `apps/web` dengan Tailwind + shadcn/ui:
 Gunakan Bahasa Indonesia sederhana untuk semua teks.
 ```
 
-- [ ] **2.2 Layar HP untuk peternak & inseminator**
+- [x] **2.2 Layar HP untuk peternak & inseminator**
 
 ```text
 Bangun layar mobile-first berikut memakai hook data lokal dari prompt 2.0:

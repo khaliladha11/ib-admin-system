@@ -46,6 +46,7 @@ bersamaan.
 | --- | --- |
 | `pnpm dev` | Jalankan web dan server bersamaan |
 | `pnpm test` | Unit test (Vitest) di semua paket |
+| `pnpm e2e` | Uji layar HP 360×740 dengan Playwright (server + data contoh sendiri), screenshot ke `docs/screenshots/` |
 | `pnpm typecheck` | Pemeriksaan tipe TypeScript |
 | `pnpm lint` | ESLint + cek format Prettier |
 | `pnpm format` | Rapikan format dengan Prettier |
