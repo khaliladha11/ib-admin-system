@@ -108,7 +108,8 @@ declare module '@tanstack/react-router' {
     /** Layar tugas tunggal (form): tanpa navigasi bawah, dengan tombol kembali. */
     focus?: boolean;
     /** Tujuan tombol kembali bila tidak ada riwayat (dibuka langsung dari tautan). */
-    backTo?: '/' | '/ternak' | '/tugas' | '/lainnya' | '/permintaan' | '/peternak' | '/pengguna';
+    backTo?:
+      '/' | '/scan' | '/ternak' | '/tugas' | '/lainnya' | '/permintaan' | '/peternak' | '/pengguna';
   }
 }
 
