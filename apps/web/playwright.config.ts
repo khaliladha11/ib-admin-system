@@ -4,10 +4,12 @@ import path from 'node:path';
 
 import { defineConfig } from '@playwright/test';
 
-import { FAKE_CAMERA_CODE, writeQrVideo } from './e2e/fake-camera';
+import { FAKE_CAMERA_CODE, writeQrVideo } from './e2e/fake-camera.ts';
 
 const SERVER_PORT = 3100;
 const WEB_PORT = 5174;
+/** Build produksi + service worker (project `pwa`). */
+const PREVIEW_PORT = 5175;
 
 // Kamera palsu (halaman Scan): QR berisi URL label agar parseQrCode ikut teruji.
 const FAKE_VIDEO = path.resolve(import.meta.dirname, 'node_modules/.cache/ib-e2e/fake-camera.y4m');
@@ -56,6 +58,22 @@ export default defineConfig({
       url: `http://localhost:${String(WEB_PORT)}`,
       reuseExistingServer: false,
       timeout: 60_000,
+    },
+    {
+      // Service worker hanya ada di build produksi, bukan dev server.
+      command: `pnpm exec vite build --outDir node_modules/.cache/ib-e2e/dist && pnpm exec vite preview --outDir node_modules/.cache/ib-e2e/dist --port ${String(PREVIEW_PORT)} --strictPort`,
+      env: { VITE_API_PROXY_TARGET: `http://localhost:${String(SERVER_PORT)}` },
+      url: `http://localhost:${String(PREVIEW_PORT)}`,
+      reuseExistingServer: false,
+      timeout: 120_000,
+    },
+  ],
+  projects: [
+    { name: 'hp', testIgnore: /pwa\.spec\.ts/ },
+    {
+      name: 'pwa',
+      testMatch: /pwa\.spec\.ts/,
+      use: { baseURL: `http://localhost:${String(PREVIEW_PORT)}`, serviceWorkers: 'allow' },
     },
   ],
 });
