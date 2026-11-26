@@ -1,0 +1,221 @@
+// Tindak lanjut: laporan terlambat (aturan skripsi 3 bulan dan 9 bulan) dengan tombol
+// WhatsApp berisi pesan siap kirim. Pesan tidak terkirim otomatis: admin menekan kirim sendiri.
+import { Link } from '@tanstack/react-router';
+import { MessageCircle, PartyPopper } from 'lucide-react';
+import { useState } from 'react';
+
+import { EmptyState } from '@/components/empty-state';
+import { Button } from '@/components/ui/button';
+import { useFollowUps, useSession, type FollowUp } from '@/data';
+import { formatDate } from '@/lib/format';
+import { cn } from '@/lib/utils';
+import { followUpMessage, waLink } from '@/lib/whatsapp';
+
+import { useAdminScope } from './scope';
+
+type Filter = 'semua' | FollowUp['code'];
+
+const PROBLEM: Record<FollowUp['code'], { title: string; rule: string }> = {
+  IB_RESULT_OVERDUE: { title: 'Hasil IB belum dilaporkan', rule: 'lebih dari 3 bulan setelah IB' },
+  BIRTH_REPORT_OVERDUE: {
+    title: 'Kelahiran belum dilaporkan',
+    rule: 'lewat perkiraan lahir (9–10 bulan)',
+  },
+};
+
+function useSender() {
+  const session = useSession();
+  const scope = useAdminScope();
+  return [session?.user.name, scope?.root?.name].filter(Boolean).join(', ');
+}
+
+function WaButtons({ item }: { item: FollowUp }) {
+  const sender = useSender();
+  const base = {
+    code: item.code,
+    animalName: item.animal.name,
+    qrCode: item.animal.qrCode,
+    farmerName: item.animal.farmerName,
+    locationName: item.animal.locationName,
+    eventAt: item.eventAt,
+    overdueDays: item.overdueDays,
+    senderName: sender,
+  };
+  const toFarmer = waLink(
+    item.farmerPhone,
+    followUpMessage({ ...base, recipient: 'farmer', recipientName: item.animal.farmerName }),
+  );
+  const toInseminator = item.inseminator
+    ? waLink(
+        item.inseminator.phone,
+        followUpMessage({
+          ...base,
+          recipient: 'inseminator',
+          recipientName: item.inseminator.name,
+        }),
+      )
+    : null;
+  return (
+    <div className="flex flex-wrap gap-2">
+      {toFarmer ? (
+        <Button asChild variant="outline" size="sm">
+          <a href={toFarmer} target="_blank" rel="noopener noreferrer">
+            <MessageCircle aria-hidden="true" />
+            WA peternak
+          </a>
+        </Button>
+      ) : (
+        <span className="flex min-h-11 items-center text-sm text-muted-foreground">
+          HP peternak belum ada
+        </span>
+      )}
+      {toInseminator && (
+        <Button asChild variant="outline" size="sm">
+          <a href={toInseminator} target="_blank" rel="noopener noreferrer">
+            <MessageCircle aria-hidden="true" />
+            WA petugas
+          </a>
+        </Button>
+      )}
+    </div>
+  );
+}
+
+export function FollowUpsPage() {
+  const items = useFollowUps();
+  const [filter, setFilter] = useState<Filter>('semua');
+  if (!items) return null;
+  const shown = items.filter((i) => filter === 'semua' || i.code === filter);
+  const count = (code: FollowUp['code']) => items.filter((i) => i.code === code).length;
+
+  return (
+    <div className="flex flex-col gap-4">
+      <p className="max-w-prose text-muted-foreground">
+        Sapi yang laporannya terlambat menurut aturan skripsi. Kirim pengingat lewat WhatsApp: pesan
+        sudah terisi dan bisa diubah sebelum dikirim.
+      </p>
+      <div role="radiogroup" aria-label="Jenis laporan" className="flex flex-wrap gap-2">
+        {(
+          [
+            ['semua', `Semua (${String(items.length)})`],
+            ['IB_RESULT_OVERDUE', `Hasil IB, 3 bulan (${String(count('IB_RESULT_OVERDUE'))})`],
+            [
+              'BIRTH_REPORT_OVERDUE',
+              `Kelahiran, 9 bulan (${String(count('BIRTH_REPORT_OVERDUE'))})`,
+            ],
+          ] as const
+        ).map(([key, label]) => (
+          <button
+            key={key}
+            type="button"
+            role="radio"
+            aria-checked={filter === key}
+            onClick={() => {
+              setFilter(key);
+            }}
+            className={cn(
+              'min-h-11 rounded-full border-(length:--bw) px-4 font-semibold',
+              filter === key
+                ? 'border-primary bg-primary text-primary-foreground'
+                : 'border-input bg-card',
+            )}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {shown.length === 0 ? (
+        <EmptyState icon={PartyPopper} title="Tidak ada laporan terlambat">
+          Semua hasil IB dan kelahiran di wilayah Anda sudah dilaporkan tepat waktu.
+        </EmptyState>
+      ) : (
+        <>
+          <div className="hidden overflow-hidden rounded-xl border-(length:--bw) bg-card lg:block">
+            <table className="w-full border-collapse text-left">
+              <caption className="sr-only">Laporan terlambat</caption>
+              <thead className="bg-secondary">
+                <tr>
+                  {['Ternak', 'Peternak', 'Masalah', 'Terlambat', 'Kirim pengingat'].map((h) => (
+                    <th key={h} scope="col" className="px-4 py-3 font-semibold">
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {shown.map((item) => (
+                  <tr
+                    key={`${item.code}-${item.animal.id}`}
+                    className="border-t-(length:--bw) align-top"
+                  >
+                    <td className="px-4 py-3">
+                      <Link
+                        to="/ternak/$animalId"
+                        params={{ animalId: item.animal.id }}
+                        className="font-semibold underline underline-offset-4"
+                      >
+                        {item.animal.name ?? 'Tanpa nama'}
+                      </Link>
+                      {item.animal.qrCode && (
+                        <span className="block text-sm text-muted-foreground">
+                          {item.animal.qrCode}
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      {item.animal.farmerName ?? '–'}
+                      <span className="block text-sm text-muted-foreground">
+                        {item.animal.locationName}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="font-semibold">{PROBLEM[item.code].title}</span>
+                      <span className="block text-sm text-muted-foreground">
+                        {item.eventAt
+                          ? `${item.code === 'IB_RESULT_OVERDUE' ? 'IB' : 'Bunting'} ${formatDate(item.eventAt)}`
+                          : PROBLEM[item.code].rule}
+                        {item.inseminator ? `, petugas ${item.inseminator.name}` : ''}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 font-bold whitespace-nowrap text-alarm">
+                      {item.overdueDays} hari
+                    </td>
+                    <td className="px-4 py-3">
+                      <WaButtons item={item} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <ul className="flex flex-col gap-2 lg:hidden">
+            {shown.map((item) => (
+              <li
+                key={`${item.code}-${item.animal.id}`}
+                className="flex flex-col gap-2 rounded-xl border-(length:--bw) bg-card p-4"
+              >
+                <p className="flex items-start justify-between gap-2">
+                  <span className="font-bold">{PROBLEM[item.code].title}</span>
+                  <span className="shrink-0 font-bold text-alarm">{item.overdueDays} hari</span>
+                </p>
+                <Link
+                  to="/ternak/$animalId"
+                  params={{ animalId: item.animal.id }}
+                  className="font-semibold underline underline-offset-4"
+                >
+                  {item.animal.name ?? 'Tanpa nama'} {item.animal.qrCode}
+                </Link>
+                <p className="text-muted-foreground">
+                  {[item.animal.farmerName, item.animal.locationName].filter(Boolean).join(', ')}
+                  {item.inseminator ? `. Petugas ${item.inseminator.name}` : ''}
+                </p>
+                <WaButtons item={item} />
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </div>
+  );
+}

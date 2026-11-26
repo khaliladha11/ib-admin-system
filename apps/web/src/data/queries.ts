@@ -11,6 +11,8 @@ import {
   type Assignment,
   type DomainEvent,
   type Farmer,
+  type PublicUser,
+  type Reminder,
   type ReminderItem,
   type ReproStatus,
   type Schedule,
@@ -19,6 +21,7 @@ import {
 } from '@ib/shared';
 
 import type { IbDb } from './db';
+import { childrenMap, descendantsOf } from './locations';
 import type { OutboxEntry } from './outbox';
 
 export interface AnimalView extends Animal {
@@ -220,8 +223,14 @@ export interface ServiceRequestView {
   qrCode: string | null;
   farmerName: string | null;
   locationName: string | null;
+  farmerLocationId: string | null;
+  farmerPhone: string | null;
   /** Penugasan yang masih berjalan (belum ditutup). */
   activeAssignment: Assignment | null;
+  /** Petugas yang sedang ditugaskan, atau yang menyelesaikan (bila data pengguna tersinkron). */
+  inseminatorName: string | null;
+  inseminatorPhone: string | null;
+  requestedByName: string | null;
   /** Ditugaskan ke pengguna yang sedang masuk. */
   assignedToMe: boolean;
   unsynced: boolean;
@@ -233,14 +242,18 @@ export async function loadServiceRequestViews(
   today: number,
 ): Promise<ServiceRequestView[]> {
   const requests = alive(await db.serviceRequests.toArray());
-  const [animals, assignments, unsynced] = await Promise.all([
+  const [animals, assignments, unsynced, users, farmers] = await Promise.all([
     db.animals.bulkGet([...new Set(requests.map((r) => r.animalId))]),
     db.assignments
       .where('serviceRequestId')
       .anyOf(requests.map((r) => r.id))
       .toArray(),
     unsyncedRowIds(db),
+    db.users.toArray(),
+    db.farmers.toArray(),
   ]);
+  const userById = new Map(users.map((u) => [u.id, u]));
+  const farmerById = new Map(farmers.map((f) => [f.id, f]));
   const views = await buildAnimalViews(
     db,
     animals.flatMap((a) => (a ? [a] : [])),
@@ -252,17 +265,30 @@ export async function loadServiceRequestViews(
       .filter((a) => a.endedAt === null)
       .map((a) => [a.serviceRequestId, a]),
   );
+  // Petugas terakhir (juga untuk permintaan yang sudah selesai/penugasannya ditutup).
+  const lastByRequest = new Map<string, Assignment>();
+  for (const a of alive(assignments).sort((x, y) => x.assignedAt - y.assignedAt)) {
+    lastByRequest.set(a.serviceRequestId, a);
+  }
   return requests
     .map((request): ServiceRequestView => {
       const animal = animalById.get(request.animalId);
       const active = activeByRequest.get(request.id) ?? null;
+      // Ditolak/dibatalkan sebelum ditugaskan: tidak ada petugas.
+      const shownIns =
+        active ?? (request.status === 'done' ? lastByRequest.get(request.id) : undefined);
       return {
         request,
         animalName: animal?.name ?? null,
         qrCode: animal?.qrCode ?? null,
         farmerName: animal?.farmerName ?? null,
         locationName: animal?.locationName ?? null,
+        farmerLocationId: farmerById.get(request.farmerId)?.locationId ?? null,
+        farmerPhone: farmerById.get(request.farmerId)?.phone ?? null,
         activeAssignment: active,
+        inseminatorName: shownIns ? (userById.get(shownIns.inseminatorId)?.name ?? null) : null,
+        inseminatorPhone: shownIns ? (userById.get(shownIns.inseminatorId)?.phone ?? null) : null,
+        requestedByName: userById.get(request.requestedBy)?.name ?? null,
         assignedToMe: userId !== null && active?.inseminatorId === userId,
         unsynced: unsynced.has(request.id),
       };
@@ -367,3 +393,230 @@ export async function loadSyncStatus(db: IbDb): Promise<SyncStatusView> {
     needsLogin: sync?.needsLogin ?? false,
   };
 }
+
+// --- Admin (langkah 2.3) ---------------------------------------------------------
+
+export async function loadUsers(db: IbDb): Promise<PublicUser[]> {
+  return alive(await db.users.toArray()).sort((a, b) => a.name.localeCompare(b.name, 'id'));
+}
+
+/** Petugas aktif yang wilayah kerjanya mencakup lokasi peternak (sama dengan aturan server). */
+export async function loadInseminatorsFor(db: IbDb, farmerLocationId: string | null) {
+  if (!farmerLocationId) return [];
+  const [users, locations] = await Promise.all([db.users.toArray(), db.locations.toArray()]);
+  const children = childrenMap(locations);
+  return alive(users)
+    .filter(
+      (u) =>
+        u.role === 'inseminator' &&
+        u.isActive &&
+        u.locationId !== null &&
+        descendantsOf(children, u.locationId).has(farmerLocationId),
+    )
+    .sort((a, b) => a.name.localeCompare(b.name, 'id'));
+}
+
+export interface ActivityEntry {
+  at: number;
+  kind: 'submit' | 'assign' | 'reassign' | 'accept' | 'result' | 'reject' | 'cancel';
+  text: string;
+  actorName: string | null;
+  /** Masih menunggu dikirim ke server. */
+  unsynced: boolean;
+}
+
+/**
+ * Log aktivitas satu permintaan, disusun dari data yang ada di perangkat: permintaan,
+ * riwayat penugasan, event hasil, dan audit_logs (untuk siapa yang menolak/membatalkan).
+ */
+export async function loadRequestActivity(db: IbDb, requestId: string): Promise<ActivityEntry[]> {
+  const request = await db.serviceRequests.get(requestId);
+  if (!request) return [];
+  const [assignments, logs, users, unsynced] = await Promise.all([
+    db.assignments.where('serviceRequestId').equals(requestId).toArray(),
+    db.auditLogs.where('rowId').equals(requestId).toArray(),
+    db.users.toArray(),
+    unsyncedRowIds(db),
+  ]);
+  const name = (id: string | null | undefined) =>
+    id ? (new Map(users.map((u) => [u.id, u.name])).get(id) ?? null) : null;
+  const entries: ActivityEntry[] = [
+    {
+      at: request.createdAt,
+      kind: 'submit',
+      text: `Permintaan ${request.type} diajukan`,
+      actorName: name(request.requestedBy),
+      unsynced: false,
+    },
+  ];
+  // Urut waktu; bila sama (mis. dicatat cepat saat offline), penugasan yang sudah ditutup dulu.
+  const ordered = alive(assignments).sort(
+    (a, b) =>
+      a.assignedAt - b.assignedAt || Number(a.endedAt === null) - Number(b.endedAt === null),
+  );
+  ordered.forEach((a, i) => {
+    const insName = name(a.inseminatorId) ?? 'petugas';
+    entries.push({
+      at: a.assignedAt,
+      kind: i === 0 ? 'assign' : 'reassign',
+      text: i === 0 ? `Diverifikasi dan ditugaskan ke ${insName}` : `Petugas diganti ke ${insName}`,
+      actorName: name(a.assignedBy),
+      unsynced: unsynced.has(a.id) || (a.deviceId.startsWith('web-') && unsynced.has(requestId)),
+    });
+    if (a.acceptedAt !== null) {
+      entries.push({
+        at: a.acceptedAt,
+        kind: 'accept',
+        text: `${insName} menerima tugas`,
+        actorName: name(a.inseminatorId),
+        unsynced: false,
+      });
+    }
+  });
+  if (request.resultEventId) {
+    const event = await db.events.get(request.resultEventId);
+    if (event) {
+      entries.push({
+        at: event.createdAt,
+        kind: 'result',
+        text: `Hasil ${event.type} dicatat (kejadian ${formatDay(event.occurredAt)})`,
+        actorName: name(event.recordedBy),
+        unsynced: unsynced.has(event.id),
+      });
+    }
+  }
+  const logActor = (action: string) => {
+    const log = logs
+      .filter((l) => (l.after as { action?: string } | null)?.action === action)
+      .sort((a, b) => b.createdAt - a.createdAt)[0];
+    return log ? name(log.actorId) : null;
+  };
+  if (request.status === 'rejected') {
+    entries.push({
+      at: request.updatedAt,
+      kind: 'reject',
+      text: `Ditolak: ${request.rejectionReason ?? '-'}`,
+      actorName: logActor('reject'),
+      unsynced: unsynced.has(requestId),
+    });
+  }
+  if (request.status === 'cancelled') {
+    entries.push({
+      at: request.updatedAt,
+      kind: 'cancel',
+      text: 'Permintaan dibatalkan',
+      actorName: logActor('cancel'),
+      unsynced: unsynced.has(requestId),
+    });
+  }
+  return entries.sort((a, b) => a.at - b.at);
+}
+
+const formatDay = (ms: number) =>
+  new Date(ms).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+
+export interface AdminSummary {
+  requestsByStatus: Record<ServiceRequest['status'], number>;
+  /** IB yang terjadi di bulan kalender ini (tidak termasuk yang dibatalkan koreksi). */
+  ibThisMonth: number;
+  pregnant: number;
+  /** Laporan terlambat (aturan 3 bulan dan 9 bulan). */
+  overdueReports: number;
+  animals: number;
+}
+
+export async function loadAdminSummary(db: IbDb, today: number): Promise<AdminSummary> {
+  const [requests, animals, events] = await Promise.all([
+    db.serviceRequests.toArray(),
+    loadAnimals(db, {}, today),
+    db.events.toArray(),
+  ]);
+  const requestsByStatus = {
+    submitted: 0,
+    assigned: 0,
+    in_progress: 0,
+    done: 0,
+    rejected: 0,
+    cancelled: 0,
+  } satisfies AdminSummary['requestsByStatus'];
+  for (const r of alive(requests)) requestsByStatus[r.status] += 1;
+  const now = new Date(today);
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+  const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1).getTime();
+  const effective = effectiveEvents(alive(events) as DomainEvent[]);
+  return {
+    requestsByStatus,
+    ibThisMonth: effective.filter(
+      (e) => e.type === 'IB' && e.occurredAt >= monthStart && e.occurredAt < nextMonth,
+    ).length,
+    pregnant: animals.filter((a) => a.status.kind === 'bunting').length,
+    overdueReports: animals.reduce((n, a) => n + a.schedule.reminders.length, 0),
+    animals: animals.length,
+  };
+}
+
+export interface FollowUp {
+  code: Reminder['code'];
+  message: string;
+  dueAt: number;
+  overdueDays: number;
+  /** Tanggal event patokan (IB atau PKB bunting). */
+  eventAt: number | null;
+  animal: Pick<AnimalView, 'id' | 'name' | 'qrCode' | 'farmerName' | 'locationName'>;
+  farmerPhone: string | null;
+  /** Petugas yang mencatat event patokan (IB/PKB), bila diketahui. */
+  inseminator: { name: string; phone: string | null } | null;
+}
+
+/** Laporan terlambat yang perlu ditindaklanjuti (aturan 3 dan 9 bulan dari skripsi). */
+export async function loadFollowUps(db: IbDb, today: number): Promise<FollowUp[]> {
+  const animals = (await loadAnimals(db, {}, today)).filter((a) => a.schedule.reminders.length > 0);
+  const [farmers, users] = await Promise.all([db.farmers.toArray(), db.users.toArray()]);
+  const farmerById = new Map(farmers.map((f) => [f.id, f]));
+  const userById = new Map(users.map((u) => [u.id, u]));
+  const items: FollowUp[] = [];
+  for (const animal of animals) {
+    for (const r of animal.schedule.reminders) {
+      const event = await db.events.get(r.eventId);
+      const recorder = event ? userById.get(event.recordedBy) : undefined;
+      items.push({
+        code: r.code,
+        message: r.message,
+        dueAt: r.dueAt,
+        overdueDays: r.overdueDays,
+        eventAt: event?.occurredAt ?? null,
+        animal: {
+          id: animal.id,
+          name: animal.name,
+          qrCode: animal.qrCode,
+          farmerName: animal.farmerName,
+          locationName: animal.locationName,
+        },
+        farmerPhone: farmerById.get(animal.farmerId)?.phone ?? null,
+        inseminator:
+          recorder?.role === 'inseminator' ? { name: recorder.name, phone: recorder.phone } : null,
+      });
+    }
+  }
+  return items.sort((a, b) => b.overdueDays - a.overdueDays);
+}
+
+export async function loadFarmerViews(db: IbDb) {
+  const [farmers, animals, locations, users] = await Promise.all([
+    loadFarmers(db),
+    db.animals.toArray(),
+    db.locations.toArray(),
+    db.users.toArray(),
+  ]);
+  const locationName = new Map(locations.map((l) => [l.id, l.name]));
+  const userIds = new Set(users.map((u) => u.id));
+  const count = new Map<string, number>();
+  for (const a of alive(animals)) count.set(a.farmerId, (count.get(a.farmerId) ?? 0) + 1);
+  return farmers.map((f) => ({
+    ...f,
+    locationName: locationName.get(f.locationId) ?? null,
+    animalCount: count.get(f.id) ?? 0,
+    hasAccount: f.userId !== null && userIds.has(f.userId),
+  }));
+}
+export type FarmerView = Awaited<ReturnType<typeof loadFarmerViews>>[number];

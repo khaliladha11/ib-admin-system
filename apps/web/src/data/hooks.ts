@@ -10,7 +10,13 @@ import {
   loadAnimals,
   loadFarmers,
   loadReminders,
+  loadAdminSummary,
   loadAnimalPhoto,
+  loadFarmerViews,
+  loadFollowUps,
+  loadInseminatorsFor,
+  loadRequestActivity,
+  loadUsers,
   loadEventDefaults,
   loadServiceRequestViews,
   loadServiceRequests,
@@ -116,4 +122,42 @@ export function useAnimalPhotoUrl(animalId: string): string | null | undefined {
 export function useHasPin() {
   const { db } = useDataLayer();
   return useLiveQuery(async () => (await db.getMeta('pin')) !== undefined, [db]);
+}
+
+// --- Admin (langkah 2.3) --------------------------------------------------------
+
+export function useAdminSummary() {
+  const { db, now } = useDataLayer();
+  return useLiveQuery(() => loadAdminSummary(db, now()), [db, now]);
+}
+
+export function useFollowUps() {
+  const { db, now } = useDataLayer();
+  return useLiveQuery(() => loadFollowUps(db, now()), [db, now]);
+}
+
+export function useUsers() {
+  const { db } = useDataLayer();
+  return useLiveQuery(() => loadUsers(db), [db]);
+}
+
+export function useInseminatorsFor(farmerLocationId: string | null) {
+  const { db } = useDataLayer();
+  return useLiveQuery(() => loadInseminatorsFor(db, farmerLocationId), [db, farmerLocationId]);
+}
+
+export function useRequestActivity(requestId: string) {
+  const { db } = useDataLayer();
+  return useLiveQuery(() => loadRequestActivity(db, requestId), [db, requestId]);
+}
+
+export function useFarmerViews() {
+  const { db } = useDataLayer();
+  return useLiveQuery(() => loadFarmerViews(db), [db]);
+}
+
+/** Lokasi (dinas, kelompok, desa) yang ada di perangkat. */
+export function useLocations() {
+  const { db } = useDataLayer();
+  return useLiveQuery(() => db.locations.toArray(), [db]);
 }

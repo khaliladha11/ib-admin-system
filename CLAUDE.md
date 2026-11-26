@@ -27,7 +27,8 @@ inseminator, dan admin kelompok/dinas.
 - Fase 2: 2.0 lapisan data lokal selesai (Dexie + outbox + hook + sinkron sederhana).
   2.1 sistem desain selesai (`docs/DESIGN.md`, review di `/dev/komponen`).
   2.2 layar HP selesai (masuk + PIN, Hari ini, Ternak, profil, catat event, Tugas).
-  Langkah berikutnya: 2.3 dashboard PC untuk admin.
+  2.3 dashboard admin selesai (Ringkasan, Permintaan + verifikasi/tolak/ganti petugas + log,
+  Tindak lanjut + WhatsApp, Peternak, Pengguna). Langkah berikutnya: 2.4 review UI.
 
 ## Prinsip
 1. Offline-first: semua pencatatan harus bisa tanpa internet; sinkron menyusul.
@@ -91,7 +92,7 @@ inseminator, dan admin kelompok/dinas.
 - `pnpm build` — build produksi web
 - `pnpm e2e` — Playwright 360×740 (`apps/web/e2e/`): menyalakan server port 3100 dengan
   `data/e2e.sqlite` yang diisi ulang + Vite port 5174, lalu menyimpan screenshot ke
-  `docs/screenshots/2.2-*.png`. Di luar sandbox: `pnpm --filter @ib/web exec playwright install chromium`.
+  `docs/screenshots/2.2-*.png` dan `2.3-*.png` (admin di 1280×800 + cek HP 360). Di luar sandbox: `pnpm --filter @ib/web exec playwright install chromium`.
 - `pnpm db:migrate` — jalankan migrasi (`DATABASE_URL`, bawaan `apps/server/data/ib.sqlite`)
 - `pnpm db:seed` — isi data contoh fiktif; `pnpm db:seed --reset` untuk mengisi ulang
 - `pnpm db:generate` — buat file migrasi baru setelah mengubah `apps/server/src/db/schema.ts`
@@ -158,6 +159,14 @@ inseminator, dan admin kelompok/dinas.
   unggah ke server di Fase 4.
 - Form IB harus muat satu layar 360×740 (dicek `pnpm e2e`); isian bawaan dari IB terakhir
   pengguna dan stok strawnya (`loadEventDefaults`).
+- Admin (langkah 2.3): navigasi menurut peran (`layout/nav-items.ts`: `navItemsFor`); halaman
+  di `pages/admin/`. Tabel di ≥ 1024px, kartu di HP. Verifikasi/tugaskan, tolak, ganti petugas
+  lewat outbox (`repo.assign/reassign/rejectServiceRequest`); server menjawab kiriman ulang
+  dengan 200. Log aktivitas = data permintaan + penugasan + event hasil + `audit_logs`
+  (disinkronkan ke admin saja). Manajemen pengguna ONLINE-ONLY (`data/users-api.ts`,
+  `/api/users`); data pengguna tanpa hash password ikut sinkron (Dexie v3: `users`, `auditLogs`).
+- WhatsApp: hanya tautan `wa.me` dengan pesan terisi (`lib/whatsapp.ts`); tidak ada pengiriman
+  otomatis dan tidak ada API WhatsApp.
 - Tes web memakai `fake-indexeddb` (di `src/test/setup.ts`) dan fixture
   `src/test/data-fixtures.ts` (DB baru per tes, fetch tiruan).
 - Logika reproduksi di `packages/shared/src/domain/`: `deriveReproStatus`,

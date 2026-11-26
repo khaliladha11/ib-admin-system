@@ -8,6 +8,12 @@ import { SearchX } from 'lucide-react';
 
 import { EmptyState } from '@/components/empty-state';
 import { RootLayout } from '@/layout/root-layout';
+import { AdminRequestDetailPage } from '@/pages/admin/request-detail';
+import { AdminRequestsPage } from '@/pages/admin/requests';
+import type { RequestFilter } from '@/pages/admin/request-filter';
+import { FarmerFormPage, FarmersPage } from '@/pages/admin/farmers';
+import { FollowUpsPage } from '@/pages/admin/follow-ups';
+import { UserFormPage, UsersPage } from '@/pages/admin/users';
 import { AnimalProfilePage } from '@/pages/animal-profile';
 import { AnimalsPage } from '@/pages/animals';
 import { DevComponentsPage } from '@/pages/dev-components';
@@ -35,7 +41,7 @@ const homeRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/',
   component: HomePage,
-  staticData: { title: 'Hari ini' },
+  staticData: {},
 });
 const animalsRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -95,7 +101,90 @@ const devRoute = createRoute({
   staticData: { title: 'Komponen' },
 });
 
+const REQUEST_STATUSES = [
+  'submitted',
+  'assigned',
+  'in_progress',
+  'done',
+  'rejected',
+  'cancelled',
+  'aktif',
+] as const;
+
+const requestsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/permintaan',
+  component: AdminRequestsPage,
+  validateSearch: (s: Record<string, unknown>): RequestFilter => ({
+    status: REQUEST_STATUSES.find((v) => v === s.status),
+    jenis: s.jenis === 'IB' || s.jenis === 'PKB' ? s.jenis : undefined,
+    desa: str(s.desa),
+    q: str(s.q),
+  }),
+  staticData: { title: 'Permintaan' },
+});
+const requestDetailRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/permintaan/$requestId',
+  component: AdminRequestDetailPage,
+  staticData: { title: 'Detail permintaan', focus: true, backTo: '/permintaan' },
+});
+const followUpsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/tindak-lanjut',
+  component: FollowUpsPage,
+  staticData: { title: 'Tindak lanjut' },
+});
+const farmersRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/peternak',
+  component: FarmersPage,
+  staticData: { title: 'Peternak' },
+});
+const farmerNewRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/peternak/baru',
+  component: FarmerFormPage,
+  staticData: { title: 'Tambah peternak', focus: true, backTo: '/peternak' },
+});
+const farmerEditRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/peternak/$farmerId',
+  component: FarmerFormPage,
+  staticData: { title: 'Ubah peternak', focus: true, backTo: '/peternak' },
+});
+const usersRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/pengguna',
+  component: UsersPage,
+  staticData: { title: 'Pengguna' },
+});
+const userNewRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/pengguna/baru',
+  component: UserFormPage,
+  validateSearch: (s: Record<string, unknown>): { peternak?: string } => ({
+    peternak: str(s.peternak),
+  }),
+  staticData: { title: 'Tambah pengguna', focus: true, backTo: '/pengguna' },
+});
+const userEditRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/pengguna/$userId',
+  component: UserFormPage,
+  staticData: { title: 'Ubah pengguna', focus: true, backTo: '/pengguna' },
+});
+
 const routeTree = rootRoute.addChildren([
+  requestsRoute,
+  requestDetailRoute,
+  followUpsRoute,
+  farmersRoute,
+  farmerNewRoute,
+  farmerEditRoute,
+  usersRoute,
+  userNewRoute,
+  userEditRoute,
   homeRoute,
   animalsRoute,
   animalRoute,

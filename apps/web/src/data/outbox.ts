@@ -11,7 +11,10 @@ export type OutboxKind =
   | 'animal.update'
   | 'event.create'
   | 'serviceRequest.create'
-  | 'serviceRequest.accept';
+  | 'serviceRequest.accept'
+  | 'serviceRequest.assign'
+  | 'serviceRequest.reassign'
+  | 'serviceRequest.reject';
 
 export interface OutboxEntry {
   /** Nomor urut otomatis (urutan kirim). */

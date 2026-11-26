@@ -6,7 +6,14 @@ export { LocalValidationError, NotSignedInError, WarningsNeedConfirmation } from
 export {
   useAnimal,
   useAnimals,
+  useAdminSummary,
   useAnimalPhotoUrl,
+  useFarmerViews,
+  useFollowUps,
+  useInseminatorsFor,
+  useLocations,
+  useRequestActivity,
+  useUsers,
   useAnimalTimeline,
   useEventDefaults,
   useHasPin,
@@ -34,7 +41,11 @@ export { DataProvider } from './provider';
 export type {
   AnimalFilter,
   AnimalTimeline,
+  ActivityEntry,
+  AdminSummary,
   AnimalView,
+  FarmerView,
+  FollowUp,
   EventDefaults,
   ServiceRequestView,
   StockView,
@@ -54,5 +65,14 @@ export type {
   ServiceRequestInput,
 } from './repo';
 export { ApiRequestError, NetworkError } from './sync/api';
+export { childrenMap, covers, descendantsOf } from './locations';
+export {
+  assignableRoles,
+  createUser,
+  resetPassword,
+  updateUser,
+  type CreateUserInput,
+  type UpdateUserInput,
+} from './users-api';
 export { clearLocalData, signIn, signOut } from './sync/auth';
 export type { SyncResult } from './sync/engine';

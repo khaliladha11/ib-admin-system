@@ -24,6 +24,9 @@ import {
 import { dayDiff, formatDate, formatLongToday, relativeDay } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
+import { isAdminRole } from '@/layout/nav-items';
+
+import { AdminDashboard } from './admin/dashboard';
 import { groupByVillage } from './reminder-groups';
 
 const KIND_META: Record<ReminderKind, { title: string; icon: LucideIcon; tone: string }> = {
@@ -52,6 +55,11 @@ function when(item: ReminderView, today: number) {
 }
 
 export function HomePage() {
+  const role = useSession()?.user.role;
+  return isAdminRole(role) ? <AdminDashboard /> : <FieldHome />;
+}
+
+function FieldHome() {
   const { now } = useDataLayer();
   const today = now();
   const reminders = useReminders(REMINDER_WINDOW_DAYS);

@@ -1,6 +1,15 @@
 // Lainnya: akun, status sinkron + data ditolak, PIN, kontras tinggi, keluar.
 import { Link } from '@tanstack/react-router';
-import { KeyRound, LogOut, RefreshCw, SwatchBook, Trash2, UserRound } from 'lucide-react';
+import {
+  KeyRound,
+  LogOut,
+  RefreshCw,
+  SwatchBook,
+  Trash2,
+  UserCog,
+  UserRound,
+  Users,
+} from 'lucide-react';
 import { useState } from 'react';
 
 import { ROLE_LABEL } from '@/components/request-status';
@@ -15,6 +24,7 @@ import {
   useSyncStatus,
 } from '@/data';
 import { useContrastMode } from '@/design/contrast-mode';
+import { isAdminRole } from '@/layout/nav-items';
 import { formatDateTime } from '@/lib/format';
 
 import { PinSetupForm } from './auth/pin-pages';
@@ -162,6 +172,25 @@ export function MorePage() {
           </>
         )}
       </Section>
+
+      {isAdminRole(session.user.role) && (
+        <Section title="Data wilayah">
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Button asChild variant="outline" className="justify-start">
+              <Link to="/peternak">
+                <Users aria-hidden="true" />
+                Peternak
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="justify-start">
+              <Link to="/pengguna">
+                <UserCog aria-hidden="true" />
+                Pengguna dan petugas
+              </Link>
+            </Button>
+          </div>
+        </Section>
+      )}
 
       <ContrastToggle mode={mode} onChange={setMode} />
 

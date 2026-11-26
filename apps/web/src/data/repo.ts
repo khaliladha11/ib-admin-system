@@ -16,6 +16,7 @@ import {
   type Animal,
   type AnimalEvent,
   type AnimalTag,
+  type Assignment,
   type DomainEvent,
   type EventBody,
   type Farmer,
@@ -32,6 +33,7 @@ import {
   NotSignedInError,
   WarningsNeedConfirmation,
 } from './errors';
+import { covers } from './locations';
 import { enqueue } from './outbox';
 
 /** Sama dengan server: jam HP boleh sedikit lebih cepat. */
@@ -535,6 +537,163 @@ export function createRepo(db: IbDb, { now = () => Date.now(), onChange }: RepoO
     return done(next);
   }
 
+  // --- Aksi admin pada permintaan (alur skripsi: verifikasi → tugaskan → ganti petugas) ---
+
+  async function loadForAdmin(id: string) {
+    const ctx = await context();
+    requireAdmin(ctx.session);
+    const request = await db.serviceRequests.get(id);
+    if (request?.deletedAt !== null) {
+      throw new LocalValidationError('Permintaan layanan tidak ditemukan.');
+    }
+    const list = await db.assignments.where('serviceRequestId').equals(id).toArray();
+    const active = list.find((a) => a.endedAt === null && a.deletedAt === null) ?? null;
+    return { ...ctx, request, active };
+  }
+
+  /** Petugas tujuan harus aktif, ber-peran inseminator, dan wilayahnya mencakup lokasi peternak. */
+  async function checkInseminator(inseminatorId: string, farmerId: string) {
+    const [ins, farmer, locations] = await Promise.all([
+      db.users.get(inseminatorId),
+      db.farmers.get(farmerId),
+      db.locations.toArray(),
+    ]);
+    if (ins?.role !== 'inseminator' || !ins.isActive || ins.deletedAt !== null) {
+      throw new LocalValidationError('Petugas tidak ditemukan atau tidak aktif.');
+    }
+    if (!farmer || !covers(locations, ins.locationId, farmer.locationId)) {
+      throw new LocalValidationError('Wilayah petugas ini tidak mencakup lokasi peternak.');
+    }
+    return ins;
+  }
+
+  function newAssignment(
+    base: (id?: string) => ReturnType<Awaited<ReturnType<typeof context>>['base']>,
+    requestId: string,
+    inseminatorId: string,
+    adminId: string,
+    time: number,
+  ): Assignment {
+    return {
+      ...base(),
+      serviceRequestId: requestId,
+      inseminatorId,
+      assignedBy: adminId,
+      assignedAt: time,
+      acceptedAt: null,
+      endedAt: null,
+      endReason: null,
+    };
+  }
+
+  /** Verifikasi permintaan baru dan tugaskan petugas (submitted → assigned). */
+  async function assignServiceRequest(id: string, inseminatorId: string) {
+    const { session, deviceId, time, base, request } = await loadForAdmin(id);
+    if (request.status !== 'submitted') {
+      throw new LocalValidationError('Hanya permintaan yang baru diajukan yang bisa diverifikasi.');
+    }
+    await checkInseminator(inseminatorId, request.farmerId);
+    const assignment = newAssignment(base, id, inseminatorId, session.user.id, time);
+    const next: ServiceRequest = { ...request, status: 'assigned', updatedAt: time, deviceId };
+    await db.transaction('rw', [db.serviceRequests, db.assignments, db.outbox], async () => {
+      await db.serviceRequests.put(next);
+      await db.assignments.add(assignment);
+      await enqueue(
+        db,
+        {
+          kind: 'serviceRequest.assign',
+          method: 'POST',
+          path: `/api/service-requests/${id}/assign`,
+          body: { inseminatorId },
+          table: 'serviceRequests',
+          rowId: id,
+          // Server membuat penugasan dengan id sendiri; versi server menggantikan yang lokal.
+          provisional: [{ table: 'assignments', id: assignment.id }],
+        },
+        time,
+      );
+    });
+    return done(next);
+  }
+
+  /** Ganti petugas: penugasan lama ditutup (reassigned), penugasan baru dibuat. */
+  async function reassignServiceRequest(id: string, inseminatorId: string) {
+    const { session, deviceId, time, base, request, active } = await loadForAdmin(id);
+    if (request.status !== 'assigned' && request.status !== 'in_progress') {
+      throw new LocalValidationError(
+        'Hanya permintaan yang sedang ditugaskan yang bisa ganti petugas.',
+      );
+    }
+    if (active?.inseminatorId === inseminatorId) {
+      throw new LocalValidationError('Petugas ini sudah ditugaskan.');
+    }
+    await checkInseminator(inseminatorId, request.farmerId);
+    const assignment = newAssignment(base, id, inseminatorId, session.user.id, time);
+    const next: ServiceRequest = { ...request, status: 'assigned', updatedAt: time, deviceId };
+    await db.transaction('rw', [db.serviceRequests, db.assignments, db.outbox], async () => {
+      await db.serviceRequests.put(next);
+      if (active) {
+        await db.assignments.put({
+          ...active,
+          endedAt: time,
+          endReason: 'reassigned',
+          updatedAt: time,
+          deviceId,
+        });
+      }
+      await db.assignments.add(assignment);
+      await enqueue(
+        db,
+        {
+          kind: 'serviceRequest.reassign',
+          method: 'POST',
+          path: `/api/service-requests/${id}/reassign`,
+          body: { inseminatorId },
+          table: 'serviceRequests',
+          rowId: id,
+          relatedRowIds: active ? [active.id] : [],
+          provisional: [{ table: 'assignments', id: assignment.id }],
+        },
+        time,
+      );
+    });
+    return done(next);
+  }
+
+  /** Tolak permintaan baru dengan alasan. */
+  async function rejectServiceRequest(id: string, reason: string) {
+    const { deviceId, time, request } = await loadForAdmin(id);
+    const text = reason.trim();
+    if (!text) throw new LocalValidationError('Tulis alasan penolakan.');
+    if (text.length > 500) throw new LocalValidationError('Alasan maksimal 500 huruf.');
+    if (request.status !== 'submitted') {
+      throw new LocalValidationError('Hanya permintaan yang baru diajukan yang bisa ditolak.');
+    }
+    const next: ServiceRequest = {
+      ...request,
+      status: 'rejected',
+      rejectionReason: text,
+      updatedAt: time,
+      deviceId,
+    };
+    await db.transaction('rw', [db.serviceRequests, db.outbox], async () => {
+      await db.serviceRequests.put(next);
+      await enqueue(
+        db,
+        {
+          kind: 'serviceRequest.reject',
+          method: 'POST',
+          path: `/api/service-requests/${id}/reject`,
+          body: { reason: text },
+          table: 'serviceRequests',
+          rowId: id,
+        },
+        time,
+      );
+    });
+    return done(next);
+  }
+
   // --- Foto (hanya di perangkat ini, belum disinkronkan) ----------------------
 
   /** Simpan foto ternak (sudah dikecilkan oleh pemanggil). Maksimal 1 MB. */
@@ -560,6 +719,9 @@ export function createRepo(db: IbDb, { now = () => Date.now(), onChange }: RepoO
     recordEvent,
     createServiceRequest,
     acceptServiceRequest,
+    assignServiceRequest,
+    reassignServiceRequest,
+    rejectServiceRequest,
     setAnimalPhoto,
     removeAnimalPhoto,
   };

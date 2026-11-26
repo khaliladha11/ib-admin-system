@@ -2,7 +2,13 @@
 // Baris ber-deleted_at ikut dikirim agar klien bisa menghapusnya. Versi lengkap (konflik,
 // cakupan yang berubah, paging) dikerjakan di Fase 4.
 import { createRoute, z, type OpenAPIHono } from '@hono/zod-openapi';
-import { animalSchema, locationSchema, semenStockSchema } from '@ib/shared';
+import {
+  animalSchema,
+  auditLogSchema,
+  locationSchema,
+  publicUserSchema,
+  semenStockSchema,
+} from '@ib/shared';
 import { and, eq, gte, inArray, isNull, or, type SQL } from 'drizzle-orm';
 
 import { farmerScopeCondition, isAdmin } from '../auth/scope';
@@ -10,6 +16,7 @@ import {
   animals,
   animalTags,
   assignments,
+  auditLogs,
   events,
   farmers,
   locations,
@@ -27,7 +34,9 @@ import {
   serviceRequestDtoSchema,
   tagDtoSchema,
 } from '../http/schemas';
+import { toAuthUser } from '../auth/session';
 import { scopeOf } from './helpers';
+import { visibleUsers } from './users';
 
 /** Mundurkan cursor sedikit agar baris yang ditulis pada milidetik yang sama tidak terlewat. */
 export const SYNC_CURSOR_MARGIN_MS = 1_000;
@@ -44,6 +53,10 @@ const changesSchema = z
     serviceRequests: z.array(serviceRequestDtoSchema),
     assignments: z.array(assignmentDtoSchema),
     semenStock: z.array(z.object(semenStockSchema.shape)),
+    /** Tanpa hash password. Email hanya untuk admin. */
+    users: z.array(z.object(publicUserSchema.shape)),
+    /** Log aksi permintaan layanan (hanya untuk admin). */
+    auditLogs: z.array(z.object(auditLogSchema.shape)),
   })
   .openapi('SyncChanges');
 
@@ -142,6 +155,26 @@ export function registerSyncRoutes(app: OpenAPIHono<AppEnv>) {
           .filter((u) => u.locationId !== null && scope.locationIds.has(u.locationId))
           .map((u) => u.id);
 
+      // Pengguna: admin melihat wilayahnya; lainnya hanya dirinya + petugas/admin di penugasannya.
+      const assignmentPeople = db
+        .select({ ins: assignments.inseminatorId, by: assignments.assignedBy })
+        .from(assignments)
+        .where(inIds(assignments.serviceRequestId, requestIds))
+        .all()
+        .flatMap((a) => [a.ins, a.by]);
+      const userIds = isAdmin(scope.user)
+        ? new Set(visibleUsers(db, scope).map((u) => u.id))
+        : new Set([scope.user.id, ...assignmentPeople]);
+      const changedUsers = db
+        .select()
+        .from(users)
+        .where(and(inIds(users.id, userIds), changed(users.updatedAt)))
+        .all()
+        .map((row) => {
+          const u = toAuthUser(row);
+          return isAdmin(scope.user) ? u : { ...u, email: null };
+        });
+
       // --- Baris yang berubah sejak `since` ------------------------------------
       return c.json(
         {
@@ -184,6 +217,20 @@ export function registerSyncRoutes(app: OpenAPIHono<AppEnv>) {
             .from(semenStock)
             .where(and(inIds(semenStock.holderId, stockHolders), changed(semenStock.updatedAt)))
             .all(),
+          users: changedUsers,
+          auditLogs: isAdmin(scope.user)
+            ? db
+                .select()
+                .from(auditLogs)
+                .where(
+                  and(
+                    eq(auditLogs.tableName, 'service_requests'),
+                    inIds(auditLogs.rowId, requestIds),
+                    changed(auditLogs.updatedAt),
+                  ),
+                )
+                .all()
+            : [],
         },
         200,
       );

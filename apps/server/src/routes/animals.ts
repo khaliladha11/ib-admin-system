@@ -675,6 +675,13 @@ export function registerAnimalRoutes(app: OpenAPIHono<AppEnv>) {
             })
             .where(eq(serviceRequests.id, completion.requestId))
             .run();
+          audit(c, tx, {
+            tableName: 'service_requests',
+            rowId: completion.requestId,
+            action: 'update',
+            before: null,
+            after: { action: 'complete', status: 'done', resultEventId: row.id },
+          });
           if (completion.assignmentId) {
             const a = tx
               .select()

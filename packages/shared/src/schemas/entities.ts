@@ -45,6 +45,19 @@ export const userSchema = baseRowSchema
     path: ['email'],
   });
 
+/** Pengguna tanpa hash password: yang boleh dikirim ke klien dan disinkronkan ke HP. */
+export const publicUserSchema = baseRowSchema.extend({
+  name: requiredText(150),
+  email: z.email().nullable(),
+  phone: phone.nullable(),
+  role: z.enum(USER_ROLES),
+  locationId: idSchema.nullable(),
+  isActive: z.boolean(),
+});
+
+/** Nomor HP: angka saja (boleh diawali +), 8–15 digit. */
+export const phoneSchema = phone;
+
 export const farmerSchema = baseRowSchema.extend({
   /** Akun login peternak, bila ada. */
   userId: idSchema.nullable(),
@@ -136,6 +149,7 @@ export const auditLogSchema = baseRowSchema.extend({
 
 export type Location = z.infer<typeof locationSchema>;
 export type User = z.infer<typeof userSchema>;
+export type PublicUser = z.infer<typeof publicUserSchema>;
 export type Farmer = z.infer<typeof farmerSchema>;
 export type Animal = z.infer<typeof animalSchema>;
 export type AnimalTag = z.infer<typeof animalTagSchema>;

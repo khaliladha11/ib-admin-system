@@ -30,6 +30,7 @@ import {
 } from '../http/schemas';
 import {
   assertNewId,
+  audit,
   loadAnimal,
   newRow,
   scopeOf,
@@ -126,6 +127,18 @@ function detail(c: AppContext, requestId: string) {
     .get();
   if (!request) throw notFound('Permintaan layanan');
   return { request, assignments: assignmentsOf(c, requestId) };
+}
+
+/** Catat aksi pada permintaan ke audit_logs (dipakai untuk log aktivitas di dashboard admin). */
+function auditRequest(
+  c: AppContext,
+  db: Parameters<typeof audit>[1],
+  requestId: string,
+  action: 'insert' | 'update',
+  before: Record<string, unknown> | null,
+  after: Record<string, unknown>,
+) {
+  audit(c, db, { tableName: 'service_requests', rowId: requestId, action, before, after });
 }
 
 function requireStatus(current: string, allowed: readonly string[], message: string) {
@@ -319,7 +332,14 @@ export function registerServiceRequestRoutes(app: OpenAPIHono<AppEnv>) {
         rejectionReason: null,
         resultEventId: null,
       };
-      db.insert(serviceRequests).values(row).run();
+      db.transaction((tx) => {
+        tx.insert(serviceRequests).values(row).run();
+        auditRequest(c, tx, row.id, 'insert', null, {
+          action: 'submit',
+          status: 'submitted',
+          type: row.type,
+        });
+      });
       return c.json({ request: row, assignments: [] }, 201);
     },
   );
@@ -333,7 +353,14 @@ export function registerServiceRequestRoutes(app: OpenAPIHono<AppEnv>) {
     (c) => {
       const scope = scopeOf(c);
       requireRole(scope.user, ADMIN_ROLES);
-      const { request, farmer } = loadRequest(c, scope, c.req.valid('param').id);
+      const { request, farmer, active } = loadRequest(c, scope, c.req.valid('param').id);
+      // Kiriman ulang dari outbox: sudah ditugaskan ke petugas yang sama → jawab sama.
+      if (
+        request.status !== 'submitted' &&
+        active?.inseminatorId === c.req.valid('json').inseminatorId
+      ) {
+        return c.json(detail(c, request.id), 200);
+      }
       requireStatus(
         request.status,
         ['submitted'],
@@ -351,6 +378,18 @@ export function registerServiceRequestRoutes(app: OpenAPIHono<AppEnv>) {
           .set({ status: 'assigned', updatedAt: time, deviceId: c.var.deviceId })
           .where(eq(serviceRequests.id, request.id))
           .run();
+        auditRequest(
+          c,
+          tx,
+          request.id,
+          'update',
+          { status: request.status },
+          {
+            action: 'assign',
+            status: 'assigned',
+            inseminatorId: ins.id,
+          },
+        );
         tx.insert(assignments)
           .values({
             ...newRow(c),
@@ -389,7 +428,8 @@ export function registerServiceRequestRoutes(app: OpenAPIHono<AppEnv>) {
         c.req.valid('json').inseminatorId,
         farmer.locationId,
       );
-      if (active?.inseminatorId === ins.id) throw conflict('Petugas ini sudah ditugaskan.');
+      // Sudah ditugaskan ke petugas ini (mis. kiriman ulang dari outbox): tidak ada yang berubah.
+      if (active?.inseminatorId === ins.id) return c.json(detail(c, request.id), 200);
       const time = c.var.now();
       c.var.db.transaction((tx) => {
         if (active) {
@@ -419,6 +459,14 @@ export function registerServiceRequestRoutes(app: OpenAPIHono<AppEnv>) {
           .set({ status: 'assigned', updatedAt: time, deviceId: c.var.deviceId })
           .where(eq(serviceRequests.id, request.id))
           .run();
+        auditRequest(
+          c,
+          tx,
+          request.id,
+          'update',
+          { status: request.status, inseminatorId: active?.inseminatorId ?? null },
+          { action: 'reassign', status: 'assigned', inseminatorId: ins.id },
+        );
       });
       return c.json(detail(c, request.id), 200);
     },
@@ -445,6 +493,17 @@ export function registerServiceRequestRoutes(app: OpenAPIHono<AppEnv>) {
         .set({ status: 'in_progress', updatedAt: time, deviceId: c.var.deviceId })
         .where(eq(serviceRequests.id, request.id))
         .run();
+      auditRequest(
+        c,
+        tx,
+        request.id,
+        'update',
+        { status: request.status },
+        {
+          action: 'accept',
+          status: 'in_progress',
+        },
+      );
     });
     return c.json(detail(c, request.id), 200);
   });
@@ -459,22 +518,37 @@ export function registerServiceRequestRoutes(app: OpenAPIHono<AppEnv>) {
       const scope = scopeOf(c);
       requireRole(scope.user, ADMIN_ROLES);
       const { request } = loadRequest(c, scope, c.req.valid('param').id);
+      if (request.status === 'rejected') return c.json(detail(c, request.id), 200);
       requireStatus(
         request.status,
         ['submitted'],
         'Hanya permintaan yang baru diajukan yang bisa ditolak.',
       );
       const time = c.var.now();
-      c.var.db
-        .update(serviceRequests)
-        .set({
-          status: 'rejected',
-          rejectionReason: c.req.valid('json').reason,
-          updatedAt: time,
-          deviceId: c.var.deviceId,
-        })
-        .where(eq(serviceRequests.id, request.id))
-        .run();
+      const reason = c.req.valid('json').reason;
+      c.var.db.transaction((tx) => {
+        tx.update(serviceRequests)
+          .set({
+            status: 'rejected',
+            rejectionReason: reason,
+            updatedAt: time,
+            deviceId: c.var.deviceId,
+          })
+          .where(eq(serviceRequests.id, request.id))
+          .run();
+        auditRequest(
+          c,
+          tx,
+          request.id,
+          'update',
+          { status: request.status },
+          {
+            action: 'reject',
+            status: 'rejected',
+            reason,
+          },
+        );
+      });
       return c.json(detail(c, request.id), 200);
     },
   );
@@ -487,6 +561,7 @@ export function registerServiceRequestRoutes(app: OpenAPIHono<AppEnv>) {
       if (!isAdmin(scope.user) && request.requestedBy !== scope.user.id) {
         throw forbidden('Hanya pengaju atau admin yang bisa membatalkan permintaan.');
       }
+      if (request.status === 'cancelled') return c.json(detail(c, request.id), 200);
       requireStatus(request.status, OPEN_STATUSES, 'Permintaan ini sudah selesai atau dibatalkan.');
       const time = c.var.now();
       c.var.db.transaction((tx) => {
@@ -505,6 +580,17 @@ export function registerServiceRequestRoutes(app: OpenAPIHono<AppEnv>) {
           .set({ status: 'cancelled', updatedAt: time, deviceId: c.var.deviceId })
           .where(eq(serviceRequests.id, request.id))
           .run();
+        auditRequest(
+          c,
+          tx,
+          request.id,
+          'update',
+          { status: request.status },
+          {
+            action: 'cancel',
+            status: 'cancelled',
+          },
+        );
       });
       return c.json(detail(c, request.id), 200);
     },
