@@ -11,6 +11,38 @@ const PASSWORD = 'contoh123';
 async function shot(page: Page, name: string) {
   await page.waitForTimeout(600); // biarkan data lokal dan animasi masuk selesai
   await page.screenshot({ path: path.join(SHOTS, `${PREFIX}-${name}.png`) });
+  if (PREFIX !== '2.4-sebelum') await checkTargets(page, name);
+}
+
+/** Semua kontrol yang terlihat minimal 44×44px dan tidak ada scroll ke samping. */
+async function checkTargets(page: Page, name: string) {
+  const small = await page.evaluate(() =>
+    [
+      ...document.querySelectorAll(
+        'button, a[href], select, input:not([type=checkbox]):not([type=radio]), [role=radio], label:has(> input)',
+      ),
+    ]
+      .filter((el) => {
+        const r = el.getBoundingClientRect();
+        const style = getComputedStyle(el);
+        return (
+          r.width > 0 && r.height > 0 && style.visibility !== 'hidden' && !el.closest('.sr-only')
+        );
+      })
+      .filter((el) => {
+        const r = el.getBoundingClientRect();
+        return r.height < 43.5 || r.width < 43.5;
+      })
+      .map(
+        (el) =>
+          `${el.tagName} "${el.textContent.trim().slice(0, 30)}" ${String(Math.round(el.getBoundingClientRect().width))}×${String(Math.round(el.getBoundingClientRect().height))}`,
+      ),
+  );
+  expect(small, `${name}: target sentuh < 44px`).toEqual([]);
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth - window.innerWidth,
+  );
+  expect(overflow, `${name}: scroll ke samping`).toBeLessThanOrEqual(0);
 }
 
 async function login(page: Page, identifier: string, home: RegExp) {
