@@ -45,7 +45,7 @@ describe('AppShell', () => {
 
   it('bilah atas menampilkan status sinkron', async () => {
     await renderAt('/');
-    expect(await screen.findByRole('status')).toHaveTextContent('Semua data terkirim');
+    expect(await screen.findByText('Semua data terkirim')).toBeInTheDocument();
   });
 
   it('pindah halaman tanpa memuat ulang', async () => {

@@ -88,7 +88,11 @@ export function useEventDefaults(animalId: string) {
   const { db } = useDataLayer();
   const session = useSession();
   const userId = session?.user.id ?? null;
-  return useLiveQuery(() => loadEventDefaults(db, userId, animalId), [db, userId, animalId]);
+  // Tunggu sesi terbaca: tanpa itu stok straw dan IB terakhir pengguna belum diketahui.
+  return useLiveQuery(
+    () => (session === undefined ? undefined : loadEventDefaults(db, userId, animalId)),
+    [db, session, userId, animalId],
+  );
 }
 
 /** URL foto ternak (lokal), atau null. URL dilepas otomatis saat foto berganti. */

@@ -67,7 +67,9 @@ export interface AnimalFilter {
 const alive = <T extends { deletedAt: number | null }>(rows: T[]) =>
   rows.filter((r) => r.deletedAt === null);
 
+/** Urut nama; yang tanpa nama di belakang. */
 const byName = (a: { name: string | null }, b: { name: string | null }) =>
+  Number(a.name === null) - Number(b.name === null) ||
   (a.name ?? '').localeCompare(b.name ?? '', 'id');
 
 async function unsyncedRowIds(db: IbDb): Promise<Set<string>> {

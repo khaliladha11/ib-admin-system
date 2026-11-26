@@ -42,6 +42,8 @@ export async function setPin(db: IbDb, pin: string): Promise<void> {
     failures: 0,
   };
   await db.setMeta('pin', record);
+  // Memasang PIN berarti pengguna sedang di dalam aplikasi: jangan langsung terkunci.
+  unlockApp();
 }
 
 export async function clearPin(db: IbDb): Promise<void> {

@@ -10,6 +10,8 @@ describe('PIN perangkat', () => {
     const t = await createTestLayer();
     lockApp();
     await setPin(t.db, '2468');
+    expect(isUnlocked()).toBe(true);
+    lockApp();
     const record = await t.db.getMeta('pin');
     expect(JSON.stringify(record)).not.toContain('2468');
     expect(await verifyPin(t.db, '2468')).toEqual({ ok: true });
@@ -25,8 +27,8 @@ describe('PIN perangkat', () => {
 
   it('salah berkali-kali: sisa percobaan berkurang, lalu PIN dan sesi dihapus', async () => {
     const t = await createTestLayer();
-    lockApp();
     await setPin(t.db, '1357');
+    lockApp();
     expect(await verifyPin(t.db, '0000')).toEqual({ ok: false, reason: 'wrong', attemptsLeft: 4 });
     for (let i = 2; i < PIN_MAX_FAILURES; i++) await verifyPin(t.db, '0000');
     expect(await verifyPin(t.db, '0000')).toEqual({ ok: false, reason: 'reset' });

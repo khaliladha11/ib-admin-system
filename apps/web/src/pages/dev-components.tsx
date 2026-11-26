@@ -206,7 +206,7 @@ export function DevComponentsPage() {
         <div className="grid gap-4 lg:grid-cols-[minmax(0,28rem)_1fr]">
           <div className="rounded-xl border-(length:--bw) bg-card p-4">
             <EventForm
-              stocks={SAMPLE_STOCKS}
+              defaults={{ stocks: SAMPLE_STOCKS.map((s) => ({ ...s, remaining: 12 })) }}
               now={() => SAMPLE_TODAY}
               onSubmit={async (input) => {
                 await demoSubmit(input);

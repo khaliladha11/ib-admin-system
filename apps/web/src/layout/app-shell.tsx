@@ -1,6 +1,12 @@
 // Kerangka aplikasi. HP: bilah atas + navigasi bawah (Scan menonjol di tengah).
 // Layar ≥ 1024px: sidebar kiri dengan item yang sama.
-import { Link, useRouterState } from '@tanstack/react-router';
+import {
+  Link,
+  useRouter,
+  useRouterState,
+  type StaticDataRouteOption,
+} from '@tanstack/react-router';
+import { ArrowLeft } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 import { SyncIndicator } from '@/components/sync-indicator';
@@ -83,21 +89,58 @@ function Sidebar() {
   );
 }
 
+declare module '@tanstack/react-router' {
+  interface StaticDataRouteOption {
+    /** Judul bilah atas. */
+    title?: string;
+    /** Layar tugas tunggal (form): tanpa navigasi bawah, dengan tombol kembali. */
+    focus?: boolean;
+    /** Tujuan tombol kembali bila tidak ada riwayat (dibuka langsung dari tautan). */
+    backTo?: '/' | '/ternak' | '/tugas' | '/lainnya';
+  }
+}
+
+function BackButton({ fallback }: { fallback: NonNullable<StaticDataRouteOption['backTo']> }) {
+  const router = useRouter();
+  return (
+    <button
+      type="button"
+      aria-label="Kembali"
+      onClick={() => {
+        if (router.history.canGoBack()) router.history.back();
+        else void router.navigate({ to: fallback });
+      }}
+      className="-ml-2 flex size-11 shrink-0 items-center justify-center rounded-md hover:bg-secondary"
+    >
+      <ArrowLeft aria-hidden="true" className="size-6" />
+    </button>
+  );
+}
+
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const data = useRouterState({
+    select: (s) => s.matches.at(-1)?.staticData ?? {},
+  });
+  const focus = data.focus ?? false;
   return (
     <div className="min-h-dvh">
       <Sidebar />
       <div className="lg:pl-62">
         <header className="sticky top-0 z-10 border-b-(length:--bw) bg-card/95 backdrop-blur">
-          <div className="mx-auto flex min-h-14 max-w-240 items-center justify-between gap-3 px-4">
-            <h1 className="truncate text-lg font-bold">{titleFor(pathname)}</h1>
-            <SyncIndicator />
+          <div className="mx-auto flex min-h-14 max-w-240 items-center justify-between gap-2 px-4">
+            <div className="flex min-w-0 items-center gap-1">
+              {focus && <BackButton fallback={data.backTo ?? '/'} />}
+              <h1 className="truncate text-lg font-bold">{data.title ?? titleFor(pathname)}</h1>
+            </div>
+            <SyncIndicator compact={focus} />
           </div>
         </header>
-        <main className="mx-auto max-w-240 px-4 pt-4 pb-28 lg:pb-10">{children}</main>
+        <main className={cn('mx-auto max-w-240 px-4 pt-4', focus ? 'pb-6' : 'pb-28 lg:pb-10')}>
+          {children}
+        </main>
       </div>
-      <BottomNav />
+      {!focus && <BottomNav />}
     </div>
   );
 }

@@ -7,10 +7,17 @@ import { describeSync, type SyncState } from './describe-sync';
 export interface SyncIndicatorViewProps extends SyncState {
   /** Sentuh untuk sinkron sekarang. */
   onPress?: () => void;
+  /** Hanya ikon (+ jumlah); teks lengkap tetap dibacakan pembaca layar. */
+  compact?: boolean;
   className?: string;
 }
 
-export function SyncIndicatorView({ onPress, className, ...state }: SyncIndicatorViewProps) {
+export function SyncIndicatorView({
+  onPress,
+  className,
+  compact,
+  ...state
+}: SyncIndicatorViewProps) {
   const view = describeSync(state);
   const Icon = view.icon;
   const content = (
@@ -23,7 +30,14 @@ export function SyncIndicatorView({ onPress, className, ...state }: SyncIndicato
         )}
         strokeWidth={2.5}
       />
-      <span>{view.text}</span>
+      {compact ? (
+        <>
+          <span className="sr-only">{view.text}</span>
+          {state.pending > 0 && <span aria-hidden="true">{state.pending}</span>}
+        </>
+      ) : (
+        <span>{view.text}</span>
+      )}
     </>
   );
   const classes = cn(
@@ -45,7 +59,7 @@ export function SyncIndicatorView({ onPress, className, ...state }: SyncIndicato
 }
 
 /** Indikator yang terhubung ke data lokal dan status koneksi. */
-export function SyncIndicator({ className }: { className?: string }) {
+export function SyncIndicator({ className, compact }: { className?: string; compact?: boolean }) {
   const status = useSyncStatus();
   const online = useOnline();
   const { sync } = useDataLayer();
@@ -58,6 +72,7 @@ export function SyncIndicator({ className }: { className?: string }) {
       onPress={() => {
         void sync.syncNow().catch(() => undefined);
       }}
+      compact={compact}
       className={className}
     />
   );

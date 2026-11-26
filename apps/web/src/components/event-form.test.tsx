@@ -54,7 +54,7 @@ describe('EventForm', () => {
 
   it('tanggal setelah hari ini ditolak', () => {
     const onSubmit = setup();
-    fireEvent.change(screen.getByLabelText('Tanggal kejadian'), {
+    fireEvent.change(screen.getByLabelText('Tanggal'), {
       target: { value: '2026-11-26' },
     });
     fireEvent.click(screen.getByRole('button', { name: 'Simpan Birahi' }));
