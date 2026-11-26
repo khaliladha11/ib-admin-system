@@ -1,0 +1,83 @@
+# Menguji aplikasi di HP lewat Wi-Fi
+
+Kamera (halaman **Scan**) hanya bisa dipakai lewat alamat aman `https://`, kecuali di
+`localhost`. Karena itu, untuk mencoba Scan di HP Android, jalankan server pengembangan dengan
+HTTPS dan buka dari HP yang terhubung ke Wi-Fi yang sama.
+
+## 1. Jalankan dengan HTTPS
+
+Di laptop, dari folder repo:
+
+```bash
+pnpm db:migrate
+```
+
+```bash
+pnpm dev:hp
+```
+
+Perintah ini sama dengan `pnpm dev`, tetapi Vite memakai sertifikat buatan sendiri
+(`@vitejs/plugin-basic-ssl`) dan menerima koneksi dari jaringan. Di terminal muncul alamat
+seperti:
+
+```text
+➜  Local:   https://localhost:5173/
+➜  Network: https://192.168.1.23:5173/
+```
+
+Alamat **Network** itulah yang dibuka di HP. Server API tetap di port 3000 dan diakses lewat
+proxy `/api` Vite, jadi HP hanya perlu port 5173.
+
+## 2. Buka di HP
+
+1. Sambungkan HP ke Wi-Fi yang sama dengan laptop.
+2. Buka Chrome di HP, ketik alamat Network tadi (lengkap dengan `https://` dan `:5173`).
+3. Chrome menampilkan **"Koneksi Anda tidak pribadi"**, karena sertifikatnya buatan sendiri.
+   Pilih **Lanjutan** → **Lanjutkan ke 192.168.x.x (tidak aman)**. Ini hanya perlu sekali.
+4. Masuk dengan akun contoh, misalnya petugas `081200000202`, password `contoh123`.
+5. Tekan tombol **Scan** di tengah navigasi bawah, lalu izinkan kamera.
+
+Untuk mencoba scan, cetak label dari **Lainnya → Cetak label QR**. Bisa juga dengan menampilkan
+halaman label di layar laptop lalu memindainya dari HP.
+
+## 3. Bila HP tidak bisa membuka alamatnya
+
+- **Firewall laptop**: izinkan Node.js di jaringan privat (Windows akan bertanya saat pertama
+  kali; pilih "Private networks").
+- **Wi-Fi tamu/kantor** sering memblokir koneksi antarperangkat. Pakai hotspot HP sebagai
+  gantinya: sambungkan laptop ke hotspot HP, lalu buka alamat Network baru yang muncul.
+- **WSL2 (Windows)**: alamat Network yang muncul adalah alamat internal WSL dan tidak bisa dibuka
+  dari HP. Pilih salah satu:
+  - Windows 11: aktifkan mode jaringan *mirrored*. Isi `%UserProfile%\.wslconfig`:
+    ```ini
+    [wsl2]
+    networkingMode=mirrored
+    ```
+    lalu jalankan `wsl --shutdown` di PowerShell dan buka lagi WSL. Alamat Network kini sama
+    dengan alamat Wi-Fi laptop.
+  - Atau teruskan port dari Windows ke WSL. Jalankan di PowerShell sebagai Administrator, dan
+    ganti `<IP-WSL>` dengan hasil `hostname -I` di WSL:
+    ```powershell
+    netsh interface portproxy add v4tov4 listenport=5173 listenaddress=0.0.0.0 connectport=5173 connectaddress=<IP-WSL>
+    ```
+    Buka dari HP lewat alamat Wi-Fi Windows (`ipconfig`), misalnya `https://192.168.1.23:5173`.
+    Setelah selesai, hapus aturannya dengan
+    `netsh interface portproxy delete v4tov4 listenport=5173 listenaddress=0.0.0.0`.
+
+## 4. Yang perlu dicoba di HP sungguhan
+
+Kamera tidak bisa diuji dengan benar di laptop. Coba hal berikut di HP:
+
+| Hal | Yang diharapkan |
+| --- | --- |
+| Scan label milik sapi terdaftar | Getar + bunyi bip, langsung ke profil dengan tombol **Catat IB / Catat PKB / Catat lahir** |
+| Scan label kosong | Kartu **Belum terdaftar** + tombol **Daftarkan sapi baru dengan kode ini** |
+| Scan beruntun | Kamera terus membaca; daftar bertambah; scan ulang label yang sama tidak menambah baris |
+| Mode pesawat lalu scan | Tetap bekerja (data dicari di HP); catatan baru terkirim saat online lagi |
+| Tolak izin kamera | Pesan **Izin kamera ditolak** beserta cara mengizinkannya; ketik kode tetap bisa |
+| Kandang gelap | Tombol senter muncul bila kamera HP mendukung |
+| Label kotor, miring, jarak 15–40 cm | Masih terbaca. Bila tidak, catat jenis HP-nya |
+| Target fase ini | Scan → IB tercatat dalam ≤ 30 detik |
+
+Chrome Android memakai pembaca bawaan (`BarcodeDetector`). Browser tanpa pembaca bawaan, seperti
+iPhone dan Firefox, otomatis memakai cadangan ZXing.

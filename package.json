@@ -10,6 +10,7 @@
   },
   "scripts": {
     "dev": "pnpm -r --parallel --filter \"./apps/*\" dev",
+    "dev:hp": "pnpm -r --parallel --filter \"./apps/*\" dev:hp",
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck",
     "lint": "eslint . && prettier --check .",

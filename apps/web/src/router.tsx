@@ -15,7 +15,6 @@ import { AnimalProfilePage } from '@/pages/animal-profile';
 import { AnimalsPage } from '@/pages/animals';
 import { HomePage } from '@/pages/home';
 import { MorePage } from '@/pages/more';
-import { ScanPage } from '@/pages/placeholders';
 import { RecordEventPage } from '@/pages/record-event';
 import { RequestFormPage } from '@/pages/request-form';
 import { TasksPage } from '@/pages/tasks';
@@ -34,6 +33,8 @@ const FarmersPage = lazyRouteComponent(() => import('@/pages/admin/farmers'), 'F
 const FollowUpsPage = lazyRouteComponent(() => import('@/pages/admin/follow-ups'), 'FollowUpsPage');
 const UserFormPage = lazyRouteComponent(() => import('@/pages/admin/users'), 'UserFormPage');
 const UsersPage = lazyRouteComponent(() => import('@/pages/admin/users'), 'UsersPage');
+const ScanPage = lazyRouteComponent(() => import('@/pages/scan/scan-page'), 'ScanPage');
+const AnimalNewPage = lazyRouteComponent(() => import('@/pages/animal-new'), 'AnimalNewPage');
 const LabelsPage = lazyRouteComponent(() => import('@/pages/labels/labels-page'), 'LabelsPage');
 const DevComponentsPage = lazyRouteComponent(
   () => import('@/pages/dev-components'),
@@ -70,8 +71,9 @@ const animalRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/ternak/$animalId',
   component: AnimalProfilePage,
-  validateSearch: (s: Record<string, unknown>): { tersimpan?: string } => ({
+  validateSearch: (s: Record<string, unknown>): { tersimpan?: string; scan?: '1' } => ({
     tersimpan: str(s.tersimpan),
+    scan: s.scan === '1' || s.scan === 1 ? '1' : undefined,
   }),
   staticData: { title: 'Profil ternak', focus: true, backTo: '/ternak' },
 });
@@ -89,6 +91,20 @@ const scanRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/scan',
   component: ScanPage,
+  staticData: { title: 'Scan' },
+});
+const animalNewRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/ternak/baru',
+  component: AnimalNewPage,
+  validateSearch: (
+    s: Record<string, unknown>,
+  ): { kode?: string; tag?: 'qr' | 'eartag'; kembali?: 'scan' } => ({
+    kode: str(s.kode),
+    tag: s.tag === 'qr' || s.tag === 'eartag' ? s.tag : undefined,
+    kembali: s.kembali === 'scan' ? 'scan' : undefined,
+  }),
+  staticData: { title: 'Daftarkan sapi', focus: true, backTo: '/scan' },
 });
 const tasksRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -214,6 +230,7 @@ const routeTree = rootRoute.addChildren([
   animalRoute,
   recordRoute,
   scanRoute,
+  animalNewRoute,
   tasksRoute,
   requestRoute,
   moreRoute,

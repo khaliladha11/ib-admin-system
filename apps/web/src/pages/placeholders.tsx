@@ -1,15 +1,5 @@
-// Layar Scan (dibuat di langkah 3.2) dan pengalih kontras tinggi.
-import { Contrast, ScanQrCode } from 'lucide-react';
-
-import { EmptyState } from '@/components/empty-state';
-
-export function ScanPage() {
-  return (
-    <EmptyState icon={ScanQrCode} art="meadow" title="Pemindai QR belum tersedia">
-      Pemindai kamera dibuat di langkah 3.2. Untuk sementara, cari ternak dari menu Ternak.
-    </EmptyState>
-  );
-}
+// Pengalih kontras tinggi (dipakai di Lainnya dan /dev/komponen).
+import { Contrast } from 'lucide-react';
 
 export function ContrastToggle({
   mode,

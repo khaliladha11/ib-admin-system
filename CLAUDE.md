@@ -32,7 +32,9 @@ inseminator, dan admin kelompok/dinas.
   10 temuan teratas diperbaiki, `docs/REVIEW-2.4.md`). Fase 2 selesai; tag `v0.2.0` masih perlu
   dibuat manual di GitHub.
 - Fase 3: 3.1 kode QR & cetak label selesai (daftar kode `qr_codes`, label A4 24/40, label
-  kosong, riwayat tag pasang/ganti/cabut di profil). Langkah berikutnya: 3.2 pemindai QR.
+  kosong, riwayat tag pasang/ganti/cabut di profil). 3.2 pemindai QR selesai (Scan dengan
+  BarcodeDetector/ZXing, offline, scan beruntun, daftar sapi baru dari kode). Uji di HP sungguhan
+  belum dilakukan (panduan `docs/UJI-HP.md`). Fase 3 selesai setelah uji itu; tag `v0.3.0` manual.
 
 ## Prinsip
 1. Offline-first: semua pencatatan harus bisa tanpa internet; sinkron menyusul.
@@ -92,6 +94,8 @@ inseminator, dan admin kelompok/dinas.
 
 ## Perintah
 - `pnpm dev` — web (http://localhost:5173) + server (http://localhost:3000), proxy `/api`
+- `pnpm dev:hp` — sama, tetapi Vite HTTPS (sertifikat buatan sendiri, `@vitejs/plugin-basic-ssl`)
+  dan terbuka di Wi-Fi, untuk mencoba kamera di HP. Panduan: `docs/UJI-HP.md`.
 - `pnpm test` / `pnpm typecheck` / `pnpm lint` (ESLint + Prettier check) / `pnpm format`
 - `pnpm build` — build produksi web
 - `pnpm e2e` — Playwright 360×740 (`apps/web/e2e/`): menyalakan server port 3100 dengan
@@ -99,7 +103,8 @@ inseminator, dan admin kelompok/dinas.
   `docs/screenshots/2.2-*.png` dan `2.3-*.png` (admin di 1280×800 + cek HP 360).
   `review.spec.ts` menyimpan `2.4-sesudah-*.png` (atau awalan lain lewat `SHOT_PREFIX=...`) dan
   memeriksa target sentuh ≥ 44px + tanpa scroll ke samping (`e2e/checks.ts`). `labels.spec.ts`
-  menyimpan `3.1-*.png` (halaman label, tampilan cetak A4, riwayat tag). Di luar sandbox: `pnpm --filter @ib/web exec playwright install chromium`.
+  menyimpan `3.1-*.png` (halaman label, tampilan cetak A4, riwayat tag). `scan.spec.ts` memakai
+  kamera palsu (`e2e/fake-camera.ts`: video Y4M berisi QR `IB-SCAN2`) dan menyimpan `3.2-*.png`. Di luar sandbox: `pnpm --filter @ib/web exec playwright install chromium`.
 - `pnpm db:migrate` — jalankan migrasi (`DATABASE_URL`, bawaan `apps/server/data/ib.sqlite`)
 - `pnpm db:seed` — isi data contoh fiktif; `pnpm db:seed --reset` untuk mengisi ulang
 - `pnpm db:generate` — buat file migrasi baru setelah mengubah `apps/server/src/db/schema.ts`
@@ -198,6 +203,15 @@ inseminator, dan admin kelompok/dinas.
 - Cetak label (`pages/labels/`): CSS print (`.print-root` lewat portal ke `<body>`, `@page` A4
   tanpa margin); tata letak di `sheet-layout.ts` (24 = 3×8 70×37 mm, 40 = 4×10 52,5×29,7 mm).
   Riwayat tag di profil: `components/tag-history.tsx` (`repo.attachTag/attachNewQrCode/removeTag`).
+- Scan (langkah 3.2, `pages/scan/`): `useQrScanner` = kamera belakang (`lib/scan/camera.ts`) +
+  pembaca (`lib/scan/detector.ts`: `BarcodeDetector` bila mendukung `qr_code`, selain itu
+  `@zxing/browser` yang dimuat dinamis). Kamera menyala otomatis bila izin sudah diberikan, mati saat
+  halaman disembunyikan. Hasil dicari di Dexie (`data/scan-lookup.ts`: `lookupScan`,
+  `classifyScanText`; QR dari format/URL, selain itu nomor eartag dengan pencocokan longgar).
+  Ditemukan → profil `?scan=1` dengan tombol cepat sesuai peran; belum terpakai → `/ternak/baru`
+  (`createAnimal` menerima `qrCode` atau `eartag`, satu transaksi). Scan beruntun: daftar di memori
+  (`lib/scan/batch-store.ts`), pilihan mode diingat di localStorage. Getar + bip Web Audio
+  (`lib/scan/feedback.ts`). Pesan kamera ditolak/tidak ada/https di `CAMERA_PROBLEM_TEXT`.
 - Tes web memakai `fake-indexeddb` (di `src/test/setup.ts`) dan fixture
   `src/test/data-fixtures.ts` (DB baru per tes, fetch tiruan).
 - Logika reproduksi di `packages/shared/src/domain/`: `deriveReproStatus`,

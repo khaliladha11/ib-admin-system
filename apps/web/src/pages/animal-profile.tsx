@@ -2,7 +2,15 @@ import type { UserRole } from '@ib/shared';
 import { Link, useParams, useSearch } from '@tanstack/react-router';
 import { DetailSkeleton } from '@/components/skeletons';
 import { Cow } from '@/components/icons/cow';
-import { Camera, ClipboardPlus, History, PencilLine, SearchX, Trash2 } from 'lucide-react';
+import {
+  Camera,
+  ClipboardPlus,
+  History,
+  PencilLine,
+  ScanQrCode,
+  SearchX,
+  Trash2,
+} from 'lucide-react';
 import { useRef, useState } from 'react';
 
 import { CycleTrack } from '@/components/cycle-track';
@@ -29,7 +37,7 @@ import { resizeImage } from '@/lib/resize-image';
 
 export function AnimalProfilePage() {
   const { animalId } = useParams({ from: '/ternak/$animalId' });
-  const { tersimpan } = useSearch({ from: '/ternak/$animalId' });
+  const { tersimpan, scan } = useSearch({ from: '/ternak/$animalId' });
   const timeline = useAnimalTimeline(animalId);
   const session = useSession();
   const defaults = useEventDefaults(animalId);
@@ -81,6 +89,10 @@ export function AnimalProfilePage() {
           {animal.sireCode && <Fact label="Pejantan">{animal.sireCode}</Fact>}
         </dl>
       </section>
+
+      {scan && !exited && (
+        <ScanQuickActions animalId={animal.id} female={animal.sex === 'F'} role={role} />
+      )}
 
       <StatusBlock timeline={timeline} today={today} role={role} />
 
@@ -263,5 +275,61 @@ function PhotoBlock({ animalId, name }: { animalId: string; name: string }) {
       )}
       {error !== null && <ErrorMessage error={error} />}
     </div>
+  );
+}
+
+type QuickType = 'BH' | 'IB' | 'PKB' | 'LH' | 'BB';
+
+/** Tombol cepat setelah scan: tindakan yang paling sering di kandang, sesuai peran. */
+function ScanQuickActions({
+  animalId,
+  female,
+  role,
+}: {
+  animalId: string;
+  female: boolean;
+  role: UserRole | undefined;
+}) {
+  const actions: [QuickType, string][] = !female
+    ? [['BB', 'Catat berat']]
+    : role === 'farmer'
+      ? [
+          ['BH', 'Catat birahi'],
+          ['LH', 'Catat lahir'],
+        ]
+      : [
+          ['IB', 'Catat IB'],
+          ['PKB', 'Catat PKB'],
+          ['LH', 'Catat lahir'],
+        ];
+  return (
+    <section aria-label="Tindakan cepat dari scan" className="surface flex flex-col gap-2 p-3">
+      <p className="flex items-center gap-2 px-1 text-sm font-semibold text-muted-foreground">
+        <ScanQrCode aria-hidden="true" className="size-4" />
+        Ditemukan lewat scan
+      </p>
+      <div className="grid grid-cols-3 gap-2">
+        {actions.map(([jenis, text]) => (
+          <Button
+            key={jenis}
+            asChild
+            size="lg"
+            variant={jenis === actions[0]?.[0] ? 'accent' : 'outline'}
+            className="px-2 has-[>svg]:px-2"
+          >
+            <Link to="/ternak/$animalId/catat" params={{ animalId }} search={{ jenis }}>
+              {text}
+            </Link>
+          </Button>
+        ))}
+        {role === 'farmer' && female && (
+          <Button asChild size="lg" variant="outline" className="px-2">
+            <Link to="/tugas/ajukan" search={{ ternak: animalId }}>
+              Minta IB/PKB
+            </Link>
+          </Button>
+        )}
+      </div>
+    </section>
   );
 }
