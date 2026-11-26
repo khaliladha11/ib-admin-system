@@ -258,7 +258,7 @@ Lakukan review UI menyeluruh pada `apps/web`: konsistensi komponen, kontras warn
 
 Target fase ini: dari scan label sampai event IB tercatat dalam waktu 30 detik atau kurang, tanpa internet. Setelah prompt 3.2, uji pemindai di HP sungguhan; kamera tidak bisa dites dengan benar di laptop.
 
-- [ ] **3.1 Kode QR & cetak label**
+- [x] **3.1 Kode QR & cetak label**
 
 ```text
 Tambahkan identitas QR untuk ternak:

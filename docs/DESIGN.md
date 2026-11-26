@@ -132,6 +132,13 @@ Animasi memakai `motion/react` dan hanya pemanis; tidak ada informasi yang hanya
 | `ErrorMessage` | Menjelaskan apa yang terjadi dan apa yang bisa dilakukan, tanpa pesan teknis |
 | `ui/*` | shadcn/ui yang disesuaikan: `Button`, `Card`, `Input`, `Textarea`, `NativeSelect`, `Label` |
 
+## Label QR (cetak)
+
+- Hitam murni di putih (`--print-ink`, `--print-paper`) apa pun mode tampilannya.
+- Label: QR (sisi pendek label − 4 mm, minimal 25 mm, ECC M) + kode tebal + nama panggilan opsional.
+  QR tidak pernah berisi nama sapi atau peternak.
+- Pratinjau di layar = lembar cetak yang sama, diperkecil, dengan garis potong putus-putus.
+
 ## Menulis teks
 
 - Bahasa Indonesia sederhana, kalimat aktif. Tombol menyebut tindakannya, misalnya "Simpan IB" dan
