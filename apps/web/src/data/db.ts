@@ -8,6 +8,8 @@ import type {
   Assignment,
   Farmer,
   Location,
+  AuditLog,
+  PublicUser,
   SemenStock,
   ServiceRequest,
   UserRole,
@@ -83,6 +85,8 @@ export const MIRROR_TABLES = [
   'serviceRequests',
   'assignments',
   'semenStock',
+  'users',
+  'auditLogs',
 ] as const;
 export type MirrorTable = (typeof MIRROR_TABLES)[number];
 
@@ -95,6 +99,10 @@ export interface MirrorRows {
   serviceRequests: ServiceRequest;
   assignments: Assignment;
   semenStock: SemenStock;
+  /** Tanpa hash password (dari server). */
+  users: PublicUser;
+  /** Log aksi permintaan layanan (hanya admin). */
+  auditLogs: AuditLog;
 }
 
 export class IbDb extends Dexie {
@@ -106,6 +114,8 @@ export class IbDb extends Dexie {
   serviceRequests!: Table<ServiceRequest, string>;
   assignments!: Table<Assignment, string>;
   semenStock!: Table<SemenStock, string>;
+  users!: Table<PublicUser, string>;
+  auditLogs!: Table<AuditLog, string>;
   outbox!: Table<OutboxEntry, number>;
   animalPhotos!: Table<AnimalPhoto, string>;
   meta!: Table<MetaRow, MetaKey>;
@@ -127,6 +137,19 @@ export class IbDb extends Dexie {
     });
     // v2 (langkah 2.2): foto ternak lokal.
     this.version(2).stores({ animalPhotos: 'animalId' });
+    // v3 (langkah 2.3): pengguna dan log permintaan. Cursor diulang dari 0 agar
+    // baris lama yang belum pernah ditarik ikut masuk.
+    this.version(3)
+      .stores({ users: 'id, role, locationId, updatedAt', auditLogs: 'id, rowId, updatedAt' })
+      .upgrade(async (tx) => {
+        await tx
+          .table('meta')
+          .where('key')
+          .equals('sync')
+          .modify((row: { value: { cursor: number } }) => {
+            row.value.cursor = 0;
+          });
+      });
   }
 
   /** Tabel cermin berdasarkan nama (untuk kode yang memproses semua tabel, mis. pull). */

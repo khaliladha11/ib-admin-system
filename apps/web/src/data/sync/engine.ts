@@ -84,6 +84,9 @@ function serverRows(entry: OutboxEntry, body: unknown): ServerRows {
       return { events: parseOne(eventSchema, b.event) };
     case 'serviceRequest.create':
     case 'serviceRequest.accept':
+    case 'serviceRequest.assign':
+    case 'serviceRequest.reassign':
+    case 'serviceRequest.reject':
       return {
         serviceRequests: parseOne(serviceRequestSchema, b.request),
         assignments: (Array.isArray(b.assignments) ? b.assignments : []).flatMap((a: unknown) =>
@@ -170,7 +173,9 @@ export function createSyncEngine(
         // Baris yang masih punya perubahan lokal belum terkirim tidak ditimpa.
         const pending = await pendingRowIds(db);
         for (const table of MIRROR_TABLES) {
-          const rows = (changes[table] as { id: string }[]).filter((r) => !pending.has(r.id));
+          const rows = ((changes[table] as { id: string }[] | undefined) ?? []).filter(
+            (r) => !pending.has(r.id),
+          );
           if (rows.length === 0) continue;
           await db.mirror(table).bulkPut(rows as never[]);
           applied += rows.length;
