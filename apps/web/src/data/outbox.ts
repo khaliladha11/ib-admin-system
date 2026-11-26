@@ -104,6 +104,18 @@ export async function markRejected(db: IbDb, entry: OutboxEntry, message: string
   });
 }
 
+/**
+ * Lewati jeda backoff: kirim sekarang. Dipakai saat sinyal kembali (event `online`) atau saat
+ * pengguna menekan "Kirim sekarang", agar catatan tidak menunggu sampai 5 menit.
+ */
+export async function clearBackoff(db: IbDb, now: number): Promise<void> {
+  await db.outbox
+    .where('status')
+    .equals('pending')
+    .and((e) => e.nextAttemptAt > now)
+    .modify({ nextAttemptAt: now });
+}
+
 export async function markRetry(
   db: IbDb,
   entry: OutboxEntry,

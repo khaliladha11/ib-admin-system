@@ -78,7 +78,7 @@ export function MorePage() {
           onClick={() => {
             setSyncing(true);
             void sync
-              .syncNow()
+              .syncNow({ force: true })
               .catch(() => undefined)
               .finally(() => {
                 setSyncing(false);

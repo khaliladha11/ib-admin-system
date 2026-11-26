@@ -27,6 +27,7 @@ import {
   type SyncState,
 } from '../db';
 import {
+  clearBackoff,
   markDone,
   markRejected,
   markRetry,
@@ -223,7 +224,9 @@ export function createSyncEngine(
   }
 
   /** Push lalu pull. Panggilan saat sinkron sedang berjalan digabung menjadi satu putaran lagi. */
-  function syncNow(): Promise<SyncResult> {
+  function syncNow(options: { force?: boolean } = {}): Promise<SyncResult> {
+    // force: sinyal baru kembali atau pengguna meminta kirim sekarang → abaikan jeda backoff.
+    if (options.force) return clearBackoff(db, now()).then(() => syncNow());
     if (running) {
       queued = true;
       return running;
@@ -245,16 +248,19 @@ export function createSyncEngine(
 
   /** Jalankan sinkron di latar belakang: sekarang, saat online kembali, dan berkala. */
   function start(): () => void {
-    const kick = () => {
-      syncNow().catch((err: unknown) => {
+    const kick = (force = false) => {
+      syncNow({ force }).catch((err: unknown) => {
         console.error('Sinkron gagal', err);
       });
     };
+    const onOnline = () => {
+      kick(true);
+    };
     kick();
-    window.addEventListener('online', kick);
+    window.addEventListener('online', onOnline);
     const timer = window.setInterval(kick, intervalMs);
     return () => {
-      window.removeEventListener('online', kick);
+      window.removeEventListener('online', onOnline);
       window.clearInterval(timer);
     };
   }
