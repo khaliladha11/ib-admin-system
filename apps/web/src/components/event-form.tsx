@@ -1,7 +1,8 @@
-// Form catat event (BH, IB, PKB, BB). Validasi isian wajib di sini dengan pesan sederhana;
-// aturan urutan event (validateNextEvent) dijalankan oleh repo saat `onSubmit`.
-import { ESTRUS_SIGNS, type SemenStock } from '@ib/shared';
-import { CircleCheck } from 'lucide-react';
+// Form catat event cepat: pilih jenis dengan tombol besar, isian bawaan dari data terakhir.
+// Untuk IB dengan stok straw, semua isian muat dalam satu layar HP tanpa menggulir.
+// Aturan urutan event (validateNextEvent) dijalankan oleh repo saat `onSubmit`.
+import { ESTRUS_SIGNS } from '@ib/shared';
+import { Minus, NotebookPen, Plus } from 'lucide-react';
 import { useId, useState, type ReactNode } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -13,137 +14,56 @@ import { WarningsNeedConfirmation, type EventInput } from '@/data';
 import { cn } from '@/lib/utils';
 
 import { ErrorMessage } from './error-message';
-import { EVENT_FORM_TYPES, SIGN_LABEL, TYPE_LABEL, type EventFormType } from './event-form-model';
+import {
+  buildInput,
+  EVENT_FORM_TYPES,
+  initialFields,
+  localDate,
+  SIGN_LABEL,
+  TYPE_LABEL,
+  type CalfField,
+  type EventFormType,
+  type Fields,
+  type FormDefaults,
+} from './event-form-model';
+import { EVENT_META } from './event-text';
 
 export interface EventFormProps {
   /** Jenis yang boleh dicatat (peternak: tanpa IB dan PKB). */
   types?: readonly EventFormType[];
   defaultType?: EventFormType;
-  /** Stok straw milik petugas, untuk mengisi kode straw otomatis. */
-  stocks?: SemenStock[];
+  /** IB terakhir, stok straw, tugas aktif, umur kebuntingan. */
+  defaults?: FormDefaults;
+  /** Permintaan layanan yang dikerjakan (dari layar Tugas). */
+  taskId?: string | null;
   /** Biasanya `repo.recordEvent` untuk ternak ini. */
   onSubmit: (input: EventInput) => Promise<unknown>;
+  /** Setelah tersimpan. Tanpa ini, form menampilkan pesan dan kosong lagi. */
+  onSaved?: (type: EventFormType) => void;
   now?: () => number;
 }
 
-type Fields = Record<string, string>;
-
-const pad = (n: number) => String(n).padStart(2, '0');
-const localDate = (ms: number) => {
-  const d = new Date(ms);
-  return `${String(d.getFullYear())}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-};
-
-/** Hari ini: pakai jam sekarang. Hari lain: pukul 12.00 waktu HP. */
-function occurredAtFor(date: string, now: number): number {
-  if (date === localDate(now)) return now;
-  const [y, m, d] = date.split('-').map(Number);
-  return new Date(y ?? 1970, (m ?? 1) - 1, d ?? 1, 12).getTime();
-}
-
-function buildInput(
-  type: EventFormType,
-  f: Fields,
-  signs: string[],
-  now: number,
-): { input?: EventInput; errors: Fields } {
-  const errors: Fields = {};
-  const notes = f.notes?.trim() ? f.notes.trim() : undefined;
-  if (!f.date) errors.date = 'Isi tanggal kejadian.';
-  else if (f.date > localDate(now)) errors.date = 'Tanggal tidak boleh setelah hari ini.';
-  const occurredAt = f.date ? occurredAtFor(f.date, now) : now;
-
-  switch (type) {
-    case 'BH':
-      return {
-        errors,
-        input: {
-          type,
-          occurredAt,
-          payload: { signs: signs as (typeof ESTRUS_SIGNS)[number][], notes },
-        },
-      };
-    case 'IB': {
-      for (const [key, label] of [
-        ['strawCode', 'kode straw'],
-        ['bullId', 'ID pejantan'],
-        ['batch', 'nomor batch'],
-      ] as const) {
-        if (!f[key]?.trim()) errors[key] = `Isi ${label}.`;
-      }
-      return {
-        errors,
-        input: {
-          type,
-          occurredAt,
-          semenStockId: f.semenStockId === '' ? null : (f.semenStockId ?? null),
-          payload: {
-            strawCode: f.strawCode?.trim() ?? '',
-            bullId: f.bullId?.trim() ?? '',
-            batch: f.batch?.trim() ?? '',
-            notes,
-          },
-        },
-      };
-    }
-    case 'PKB': {
-      const pregnant = f.result === 'pregnant';
-      if (!f.result) errors.result = 'Pilih hasil pemeriksaan.';
-      if (pregnant && !f.fetalAgeMonths) errors.fetalAgeMonths = 'Pilih umur janin.';
-      return {
-        errors,
-        input: {
-          type,
-          occurredAt,
-          payload: {
-            result: pregnant ? 'pregnant' : 'not_pregnant',
-            fetalAgeMonths: pregnant && f.fetalAgeMonths ? Number(f.fetalAgeMonths) : undefined,
-            method: f.method === 'usg' ? 'usg' : f.method === 'palpation' ? 'palpation' : undefined,
-            notes,
-          },
-        },
-      };
-    }
-    case 'BB': {
-      const kg = Number((f.weightKg ?? '').replace(',', '.'));
-      if (!f.weightKg?.trim()) errors.weightKg = 'Isi berat badan.';
-      else if (!Number.isFinite(kg) || kg <= 0 || kg >= 2000) {
-        errors.weightKg = 'Berat harus angka antara 1 dan 1999 kg.';
-      }
-      return {
-        errors,
-        input: {
-          type,
-          occurredAt,
-          payload: { weightKg: kg, method: f.method === 'tape' ? 'tape' : 'scale', notes },
-        },
-      };
-    }
-  }
-}
+const NEW_CALF: CalfField = { sex: 'F', condition: 'alive', weightKg: '' };
 
 function Field({
   id,
   label,
   error,
-  hint,
   children,
+  inline,
 }: {
   id: string;
   label: string;
   error?: string;
-  hint?: string;
   children: ReactNode;
+  inline?: boolean;
 }) {
   return (
-    <div className="flex flex-col gap-1.5">
-      <Label htmlFor={id}>{label}</Label>
-      {hint && (
-        <p id={`${id}-hint`} className="text-sm text-muted-foreground">
-          {hint}
-        </p>
-      )}
-      {children}
+    <div className={cn('flex gap-1.5', inline ? 'items-center justify-between gap-3' : 'flex-col')}>
+      <Label htmlFor={id} className={cn(inline && 'shrink-0')}>
+        {label}
+      </Label>
+      <div className={cn(inline && 'min-w-0 flex-1')}>{children}</div>
       {error && (
         <p id={`${id}-error`} className="font-semibold text-alarm">
           {error}
@@ -153,23 +73,88 @@ function Field({
   );
 }
 
+/** Pilihan dengan tombol besar (radio tersembunyi agar tetap terbaca pembaca layar). */
+function Choice<T extends string>({
+  name,
+  legend,
+  options,
+  value,
+  onChange,
+  error,
+  columns = 2,
+}: {
+  name: string;
+  legend: string;
+  options: readonly (readonly [T, string])[];
+  value: string;
+  onChange: (v: T) => void;
+  error?: string;
+  columns?: 2 | 3;
+}) {
+  return (
+    <fieldset className="flex flex-col gap-1.5">
+      <legend className="mb-1.5 text-base font-semibold">{legend}</legend>
+      <div className={cn('grid gap-2', columns === 3 ? 'grid-cols-3' : 'grid-cols-2')}>
+        {options.map(([v, label]) => (
+          <label
+            key={v}
+            className="flex min-h-12 cursor-pointer items-center justify-center rounded-md border-(length:--bw) border-input bg-card px-2 text-center font-semibold has-checked:border-2 has-checked:border-primary has-checked:bg-secondary has-focus-visible:outline-3 has-focus-visible:outline-ring"
+          >
+            <input
+              type="radio"
+              name={name}
+              value={v}
+              checked={value === v}
+              onChange={() => {
+                onChange(v);
+              }}
+              className="sr-only"
+            />
+            {label}
+          </label>
+        ))}
+      </div>
+      {error && <p className="font-semibold text-alarm">{error}</p>}
+    </fieldset>
+  );
+}
+
 export function EventForm({
   types = EVENT_FORM_TYPES,
   defaultType,
-  stocks = [],
+  defaults = {},
+  taskId = null,
   onSubmit,
+  onSaved,
   now = () => Date.now(),
 }: EventFormProps) {
   const uid = useId();
   const id = (name: string) => `${uid}-${name}`;
-  const [type, setType] = useState<EventFormType>(defaultType ?? types[0] ?? 'BH');
-  const [fields, setFields] = useState<Fields>(() => ({ date: localDate(now()) }));
+  const [type, setType] = useState<EventFormType>(
+    defaultType && types.includes(defaultType) ? defaultType : (types[0] ?? 'BH'),
+  );
+  const [fields, setFields] = useState<Fields>(() => initialFields(defaults, now()));
   const [signs, setSigns] = useState<string[]>([]);
+  const [calves, setCalves] = useState<CalfField[]>([NEW_CALF]);
+  const [manualStraw, setManualStraw] = useState(false);
+  const [showNotes, setShowNotes] = useState(false);
   const [errors, setErrors] = useState<Fields>({});
   const [failure, setFailure] = useState<unknown>(null);
   const [pending, setPending] = useState<EventInput | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState<string | null>(null);
+
+  const stocks = defaults.stocks ?? [];
+  const task = taskId ?? defaults.openTask?.id ?? null;
+  const taskType = defaults.openTask?.type ?? null;
+  const [attachTask, setAttachTask] = useState(true);
+  const serviceRequestId =
+    task &&
+    attachTask &&
+    (taskType === null || taskType === type) &&
+    (type === 'IB' || type === 'PKB')
+      ? task
+      : null;
 
   const set = (name: string) => (value: string) => {
     setFields((f) => ({ ...f, [name]: value }));
@@ -188,9 +173,14 @@ export function EventForm({
     try {
       await onSubmit(input);
       setPending(null);
+      if (onSaved) {
+        onSaved(type);
+        return;
+      }
       setSaved(`${TYPE_LABEL[type]} tersimpan di HP ini.`);
-      setFields({ date: fields.date ?? localDate(now()) });
+      setFields(initialFields(defaults, now()));
       setSigns([]);
+      setCalves([NEW_CALF]);
     } catch (err) {
       if (err instanceof WarningsNeedConfirmation) setPending(input);
       setFailure(err);
@@ -201,7 +191,12 @@ export function EventForm({
 
   function handleSubmit(e: { preventDefault: () => void }) {
     e.preventDefault();
-    const { input, errors: found } = buildInput(type, fields, signs, now());
+    const { input, errors: found } = buildInput(type, fields, {
+      signs,
+      calves,
+      serviceRequestId,
+      now: now(),
+    });
     setErrors(found);
     if (Object.keys(found).length > 0 || !input) return;
     void save(input);
@@ -212,49 +207,57 @@ export function EventForm({
     setFields((f) => ({
       ...f,
       semenStockId: stockId,
-      strawCode: stock?.strawCode ?? f.strawCode ?? '',
-      bullId: stock?.bullId ?? f.bullId ?? '',
-      batch: stock?.batch ?? f.batch ?? '',
+      strawCode: stock?.strawCode ?? '',
+      bullId: stock?.bullId ?? '',
+      batch: stock?.batch ?? '',
     }));
+    setManualStraw(!stock);
     setErrors({});
   }
 
+  const stock = stocks.find((s) => s.id === fields.semenStockId);
+  const strawFieldsVisible = type === 'IB' && (manualStraw || !stock);
+
   return (
-    <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-5">
-      <fieldset className="flex flex-col gap-2">
-        <legend className="mb-2 text-base font-semibold">Jenis catatan</legend>
-        <div className="grid grid-cols-4 gap-1 rounded-lg bg-secondary p-1">
-          {types.map((t) => (
-            <label
-              key={t}
-              className={cn(
-                'flex min-h-12 cursor-pointer items-center justify-center rounded-md px-1 text-base font-semibold has-focus-visible:outline-3 has-focus-visible:outline-ring',
-                t === type
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-secondary-foreground hover:bg-card',
-              )}
-            >
-              <input
-                type="radio"
-                name={id('type')}
-                value={t}
-                checked={t === type}
-                onChange={() => {
-                  setType(t);
-                  setErrors({});
-                  setFailure(null);
-                  setPending(null);
-                  setSaved(null);
-                }}
-                className="sr-only"
-              />
-              {TYPE_LABEL[t]}
-            </label>
-          ))}
+    <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-3">
+      <fieldset>
+        <legend className="sr-only">Jenis kejadian</legend>
+        <div className={cn('grid gap-2', types.length > 4 ? 'grid-cols-3' : 'grid-cols-2')}>
+          {types.map((t) => {
+            const Icon = EVENT_META[t].icon;
+            return (
+              <label
+                key={t}
+                className={cn(
+                  'flex min-h-14 cursor-pointer flex-col items-center justify-center gap-0.5 rounded-lg border-(length:--bw) px-1 text-base font-bold has-focus-visible:outline-3 has-focus-visible:outline-ring',
+                  t === type
+                    ? 'border-primary bg-primary text-primary-foreground'
+                    : 'border-input bg-card text-foreground hover:bg-secondary',
+                )}
+              >
+                <input
+                  type="radio"
+                  name={id('type')}
+                  value={t}
+                  checked={t === type}
+                  onChange={() => {
+                    setType(t);
+                    setErrors({});
+                    setFailure(null);
+                    setPending(null);
+                    setSaved(null);
+                  }}
+                  className="sr-only"
+                />
+                <Icon aria-hidden="true" className="size-5" strokeWidth={2.25} />
+                {TYPE_LABEL[t]}
+              </label>
+            );
+          })}
         </div>
       </fieldset>
 
-      <Field id={id('date')} label="Tanggal kejadian" error={errors.date}>
+      <Field id={id('date')} label="Tanggal" error={errors.date} inline>
         <Input
           id={id('date')}
           type="date"
@@ -268,8 +271,8 @@ export function EventForm({
       </Field>
 
       {type === 'BH' && (
-        <fieldset className="flex flex-col gap-1">
-          <legend className="mb-1 text-base font-semibold">Tanda birahi yang terlihat</legend>
+        <fieldset className="flex flex-col">
+          <legend className="mb-1 text-base font-semibold">Tanda yang terlihat</legend>
           {ESTRUS_SIGNS.map((sign) => (
             <label key={sign} className="flex min-h-11 cursor-pointer items-center gap-3">
               <input
@@ -289,7 +292,7 @@ export function EventForm({
       {type === 'IB' && (
         <>
           {stocks.length > 0 && (
-            <Field id={id('stock')} label="Straw yang dipakai">
+            <Field id={id('stock')} label="Straw dari stok">
               <NativeSelect
                 id={id('stock')}
                 value={fields.semenStockId ?? ''}
@@ -297,118 +300,218 @@ export function EventForm({
                   chooseStock(e.target.value);
                 }}
               >
-                <option value="">Isi sendiri</option>
                 {stocks.map((s) => (
                   <option key={s.id} value={s.id}>
-                    {s.strawCode}, {s.bullName ?? s.bullId}
+                    {s.strawCode}, {s.bullName ?? s.bullId} (sisa {s.remaining})
                   </option>
                 ))}
+                <option value="">Straw lain, isi sendiri</option>
               </NativeSelect>
+              {stock && !manualStraw && (
+                <p className="mt-1 flex flex-wrap items-center justify-between gap-x-2 text-muted-foreground">
+                  <span>
+                    Pejantan {stock.bullId}, batch {stock.batch}
+                  </span>
+                  <button
+                    type="button"
+                    className="min-h-11 font-semibold text-primary underline underline-offset-4"
+                    onClick={() => {
+                      setManualStraw(true);
+                    }}
+                  >
+                    Ubah isian
+                  </button>
+                </p>
+              )}
             </Field>
           )}
-          <Field id={id('strawCode')} label="Kode straw" error={errors.strawCode}>
-            <Input
-              id={id('strawCode')}
-              value={fields.strawCode ?? ''}
-              autoCapitalize="characters"
-              onChange={(e) => {
-                set('strawCode')(e.target.value);
-              }}
-              {...invalid('strawCode')}
-            />
-          </Field>
-          <div className="grid grid-cols-2 gap-3">
-            <Field id={id('bullId')} label="ID pejantan" error={errors.bullId}>
-              <Input
-                id={id('bullId')}
-                value={fields.bullId ?? ''}
-                autoCapitalize="characters"
-                onChange={(e) => {
-                  set('bullId')(e.target.value);
-                }}
-                {...invalid('bullId')}
-              />
-            </Field>
-            <Field id={id('batch')} label="Batch" error={errors.batch}>
-              <Input
-                id={id('batch')}
-                value={fields.batch ?? ''}
-                onChange={(e) => {
-                  set('batch')(e.target.value);
-                }}
-                {...invalid('batch')}
-              />
-            </Field>
-          </div>
+          {strawFieldsVisible && (
+            <>
+              <Field id={id('strawCode')} label="Kode straw" error={errors.strawCode}>
+                <Input
+                  id={id('strawCode')}
+                  value={fields.strawCode ?? ''}
+                  autoCapitalize="characters"
+                  onChange={(e) => {
+                    set('strawCode')(e.target.value);
+                  }}
+                  {...invalid('strawCode')}
+                />
+              </Field>
+              <div className="grid grid-cols-2 gap-3">
+                <Field id={id('bullId')} label="ID pejantan" error={errors.bullId}>
+                  <Input
+                    id={id('bullId')}
+                    value={fields.bullId ?? ''}
+                    autoCapitalize="characters"
+                    onChange={(e) => {
+                      set('bullId')(e.target.value);
+                    }}
+                    {...invalid('bullId')}
+                  />
+                </Field>
+                <Field id={id('batch')} label="Batch" error={errors.batch}>
+                  <Input
+                    id={id('batch')}
+                    value={fields.batch ?? ''}
+                    onChange={(e) => {
+                      set('batch')(e.target.value);
+                    }}
+                    {...invalid('batch')}
+                  />
+                </Field>
+              </div>
+            </>
+          )}
         </>
       )}
 
       {type === 'PKB' && (
         <>
-          <fieldset className="flex flex-col gap-1.5">
-            <legend className="mb-1 text-base font-semibold">Hasil pemeriksaan</legend>
-            <div className="grid grid-cols-2 gap-2">
-              {(
-                [
-                  ['pregnant', 'Bunting'],
-                  ['not_pregnant', 'Tidak bunting'],
-                ] as const
-              ).map(([value, label]) => (
-                <label
-                  key={value}
-                  className={cn(
-                    'flex min-h-12 cursor-pointer items-center gap-3 rounded-md border-(length:--bw) border-input bg-card px-3 font-semibold has-checked:border-2 has-checked:border-primary has-checked:bg-secondary',
-                  )}
+          <Choice
+            name={id('result')}
+            legend="Hasil pemeriksaan"
+            options={[
+              ['pregnant', 'Bunting'],
+              ['not_pregnant', 'Tidak bunting'],
+            ]}
+            value={fields.result ?? ''}
+            onChange={set('result')}
+            error={errors.result}
+          />
+          <div className="grid grid-cols-2 gap-3">
+            {fields.result === 'pregnant' && (
+              <Field id={id('fetalAgeMonths')} label="Umur janin" error={errors.fetalAgeMonths}>
+                <NativeSelect
+                  id={id('fetalAgeMonths')}
+                  value={fields.fetalAgeMonths ?? ''}
+                  onChange={(e) => {
+                    set('fetalAgeMonths')(e.target.value);
+                  }}
+                  {...invalid('fetalAgeMonths')}
                 >
-                  <input
-                    type="radio"
-                    name={id('result')}
-                    value={value}
-                    checked={fields.result === value}
-                    onChange={() => {
-                      set('result')(value);
-                    }}
-                    className="size-5 accent-(--leaf)"
-                  />
-                  {label}
-                </label>
-              ))}
-            </div>
-            {errors.result && <p className="font-semibold text-alarm">{errors.result}</p>}
-          </fieldset>
-          {fields.result === 'pregnant' && (
-            <Field id={id('fetalAgeMonths')} label="Umur janin" error={errors.fetalAgeMonths}>
+                  <option value="">Pilih</option>
+                  {Array.from({ length: 10 }, (_, i) => i + 1).map((m) => (
+                    <option key={m} value={m}>
+                      {m} bulan
+                    </option>
+                  ))}
+                </NativeSelect>
+              </Field>
+            )}
+            <Field id={id('pkbMethod')} label="Cara periksa">
               <NativeSelect
-                id={id('fetalAgeMonths')}
-                value={fields.fetalAgeMonths ?? ''}
+                id={id('pkbMethod')}
+                value={fields.pkbMethod ?? ''}
                 onChange={(e) => {
-                  set('fetalAgeMonths')(e.target.value);
+                  set('pkbMethod')(e.target.value);
                 }}
-                {...invalid('fetalAgeMonths')}
               >
-                <option value="">Pilih</option>
-                {Array.from({ length: 10 }, (_, i) => i + 1).map((m) => (
-                  <option key={m} value={m}>
-                    {m} bulan
-                  </option>
-                ))}
+                <option value="">Tidak dicatat</option>
+                <option value="palpation">Palpasi</option>
+                <option value="usg">USG</option>
               </NativeSelect>
             </Field>
-          )}
-          <Field id={id('method')} label="Cara periksa">
-            <NativeSelect
-              id={id('method')}
-              value={fields.method ?? ''}
-              onChange={(e) => {
-                set('method')(e.target.value);
+          </div>
+        </>
+      )}
+
+      {type === 'KGG' && (
+        <Choice
+          name={id('trimester')}
+          legend="Umur kebuntingan saat keguguran"
+          columns={3}
+          options={[
+            ['1', '0–3 bulan'],
+            ['2', '4–6 bulan'],
+            ['3', '7 bulan +'],
+          ]}
+          value={fields.trimester ?? ''}
+          onChange={set('trimester')}
+          error={errors.trimester}
+        />
+      )}
+
+      {type === 'LH' && (
+        <div className="flex flex-col gap-3">
+          {calves.map((calf, i) => {
+            const update = (patch: Partial<CalfField>) => {
+              setCalves((list) => list.map((c, j) => (j === i ? { ...c, ...patch } : c)));
+            };
+            return (
+              <fieldset key={i} className="flex flex-col gap-2 rounded-lg border-(length:--bw) p-3">
+                <legend className="px-1 font-bold">
+                  {calves.length > 1 ? `Anak ke-${String(i + 1)}` : 'Anak'}
+                </legend>
+                <Choice
+                  name={id(`sex${String(i)}`)}
+                  legend="Jenis kelamin"
+                  options={[
+                    ['F', 'Betina'],
+                    ['M', 'Jantan'],
+                  ]}
+                  value={calf.sex}
+                  onChange={(sex) => {
+                    update({ sex });
+                  }}
+                />
+                <Choice
+                  name={id(`cond${String(i)}`)}
+                  legend="Kondisi"
+                  options={[
+                    ['alive', 'Hidup'],
+                    ['stillborn', 'Mati saat lahir'],
+                  ]}
+                  value={calf.condition}
+                  onChange={(condition) => {
+                    update({ condition });
+                  }}
+                />
+                <Field
+                  id={id(`kg${String(i)}`)}
+                  label="Berat lahir, kg (boleh kosong)"
+                  error={errors[`calf${String(i)}`]}
+                >
+                  <Input
+                    id={id(`kg${String(i)}`)}
+                    inputMode="decimal"
+                    value={calf.weightKg}
+                    onChange={(e) => {
+                      update({ weightKg: e.target.value });
+                    }}
+                  />
+                </Field>
+                {calves.length > 1 && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => {
+                      setCalves((list) => list.filter((_, j) => j !== i));
+                    }}
+                  >
+                    <Minus aria-hidden="true" />
+                    Hapus anak ini
+                  </Button>
+                )}
+              </fieldset>
+            );
+          })}
+          {calves.length < 4 && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setCalves((list) => [...list, NEW_CALF]);
               }}
             >
-              <option value="">Tidak dicatat</option>
-              <option value="palpation">Palpasi (raba)</option>
-              <option value="usg">USG</option>
-            </NativeSelect>
-          </Field>
-        </>
+              <Plus aria-hidden="true" />
+              Tambah anak (kembar)
+            </Button>
+          )}
+          <p className="text-sm text-muted-foreground">
+            Anak yang hidup otomatis didaftarkan sebagai ternak baru.
+          </p>
+        </div>
       )}
 
       {type === 'BB' && (
@@ -424,12 +527,12 @@ export function EventForm({
               {...invalid('weightKg')}
             />
           </Field>
-          <Field id={id('method')} label="Cara ukur">
+          <Field id={id('weightMethod')} label="Cara ukur">
             <NativeSelect
-              id={id('method')}
-              value={fields.method ?? 'scale'}
+              id={id('weightMethod')}
+              value={fields.weightMethod ?? 'scale'}
               onChange={(e) => {
-                set('method')(e.target.value);
+                set('weightMethod')(e.target.value);
               }}
             >
               <option value="scale">Timbangan</option>
@@ -439,15 +542,42 @@ export function EventForm({
         </div>
       )}
 
-      <Field id={id('notes')} label="Catatan (boleh kosong)">
-        <Textarea
-          id={id('notes')}
-          value={fields.notes ?? ''}
-          onChange={(e) => {
-            set('notes')(e.target.value);
+      {task && (type === 'IB' || type === 'PKB') && (taskType === null || taskType === type) && (
+        <label className="flex min-h-11 cursor-pointer items-center gap-3 font-semibold">
+          <input
+            type="checkbox"
+            className="size-6 accent-(--leaf)"
+            checked={attachTask}
+            onChange={(e) => {
+              setAttachTask(e.target.checked);
+            }}
+          />
+          Tandai permintaan {type} peternak selesai
+        </label>
+      )}
+
+      {showNotes ? (
+        <Field id={id('notes')} label="Catatan">
+          <Textarea
+            id={id('notes')}
+            value={fields.notes ?? ''}
+            onChange={(e) => {
+              set('notes')(e.target.value);
+            }}
+          />
+        </Field>
+      ) : (
+        <button
+          type="button"
+          onClick={() => {
+            setShowNotes(true);
           }}
-        />
-      </Field>
+          className="flex min-h-11 items-center gap-2 self-start font-semibold text-primary"
+        >
+          <NotebookPen aria-hidden="true" className="size-5" />
+          Tambah catatan
+        </button>
+      )}
 
       {failure !== null && (
         <ErrorMessage
@@ -468,13 +598,12 @@ export function EventForm({
       )}
 
       {saved && (
-        <p role="status" className="flex items-center gap-2 font-semibold text-primary">
-          <CircleCheck aria-hidden="true" className="size-5" />
+        <p role="status" className="font-semibold text-primary">
           {saved}
         </p>
       )}
 
-      <Button type="submit" size="lg" disabled={saving}>
+      <Button type="submit" size="lg" disabled={saving} className="h-13 text-lg">
         {saving ? 'Menyimpan…' : `Simpan ${TYPE_LABEL[type]}`}
       </Button>
     </form>

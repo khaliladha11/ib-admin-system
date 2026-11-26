@@ -498,6 +498,60 @@ export function createRepo(db: IbDb, { now = () => Date.now(), onChange }: RepoO
     return done(row);
   }
 
+  /** Petugas menerima tugas yang ditugaskan kepadanya (assigned → in_progress). */
+  async function acceptServiceRequest(id: string): Promise<ServiceRequest> {
+    const { session, deviceId, time } = await context();
+    const request = await db.serviceRequests.get(id);
+    if (request?.deletedAt !== null) {
+      throw new LocalValidationError('Permintaan layanan tidak ditemukan.');
+    }
+    const active = (await db.assignments.where('serviceRequestId').equals(id).toArray()).find(
+      (a) => a.endedAt === null && a.deletedAt === null,
+    );
+    if (session.user.role !== 'inseminator' || active?.inseminatorId !== session.user.id) {
+      throw new LocalValidationError('Hanya petugas yang ditugaskan yang bisa menerima tugas ini.');
+    }
+    if (request.status !== 'assigned') {
+      throw new LocalValidationError('Tugas ini sudah diterima atau sudah selesai.');
+    }
+    const next: ServiceRequest = { ...request, status: 'in_progress', updatedAt: time, deviceId };
+    await db.transaction('rw', [db.serviceRequests, db.assignments, db.outbox], async () => {
+      await db.serviceRequests.put(next);
+      await db.assignments.put({ ...active, acceptedAt: time, updatedAt: time, deviceId });
+      await enqueue(
+        db,
+        {
+          kind: 'serviceRequest.accept',
+          method: 'POST',
+          path: `/api/service-requests/${id}/accept`,
+          body: {},
+          table: 'serviceRequests',
+          rowId: id,
+          relatedRowIds: [active.id],
+        },
+        time,
+      );
+    });
+    return done(next);
+  }
+
+  // --- Foto (hanya di perangkat ini, belum disinkronkan) ----------------------
+
+  /** Simpan foto ternak (sudah dikecilkan oleh pemanggil). Maksimal 1 MB. */
+  async function setAnimalPhoto(animalId: string, data: ArrayBuffer, type: string) {
+    const { time } = await context();
+    await liveAnimal(animalId);
+    if (!type.startsWith('image/')) throw new LocalValidationError('File harus berupa foto.');
+    if (data.byteLength > 1_000_000) {
+      throw new LocalValidationError('Foto terlalu besar. Pilih foto lain atau ambil ulang.');
+    }
+    await db.animalPhotos.put({ animalId, data, type, updatedAt: time });
+  }
+
+  async function removeAnimalPhoto(animalId: string) {
+    await db.animalPhotos.delete(animalId);
+  }
+
   return {
     createFarmer,
     updateFarmer,
@@ -505,5 +559,8 @@ export function createRepo(db: IbDb, { now = () => Date.now(), onChange }: RepoO
     updateAnimal,
     recordEvent,
     createServiceRequest,
+    acceptServiceRequest,
+    setAnimalPhoto,
+    removeAnimalPhoto,
   };
 }

@@ -1,6 +1,6 @@
-// Data contoh fiktif untuk /dev/komponen. Status dihitung dengan deriveReproStatus,
+// Data contoh fiktif untuk /dev/komponen. Status dihitung dengan computeSchedule,
 // sama seperti data sungguhan, supaya tampilannya jujur.
-import { deriveReproStatus, type AnimalEvent, type EventBody } from '@ib/shared';
+import { computeSchedule, type AnimalEvent, type EventBody } from '@ib/shared';
 
 import type { AnimalView } from '@/data';
 
@@ -33,6 +33,11 @@ const ib: EventBody = {
 };
 const pkb: EventBody = { type: 'PKB', payload: { result: 'pregnant', fetalAgeMonths: 2 } };
 
+function splitSchedule(events: AnimalEvent[]) {
+  const { status, ...schedule } = computeSchedule(events, SAMPLE_TODAY);
+  return { status, schedule };
+}
+
 function animal(
   name: string | null,
   qrCode: string | null,
@@ -53,9 +58,12 @@ function animal(
     birthDate: '2022-03-01',
     sireCode: null,
     isikhnasAnimalId: null,
-    status: deriveReproStatus(events, SAMPLE_TODAY).status,
+    ...splitSchedule(events),
     qrCode,
+    tagCodes: qrCode ? [qrCode] : [],
     farmerName: 'Pak Suparman',
+    locationId: 'contoh',
+    locationName: 'Desa Sukamaju',
     unsynced: false,
     ...extra,
   };

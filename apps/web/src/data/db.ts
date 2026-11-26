@@ -42,11 +42,29 @@ export interface SyncState {
   needsLogin: boolean;
 }
 
+/** PIN pembuka aplikasi: hanya hash PBKDF2, tidak pernah PIN aslinya. */
+export interface PinRecord {
+  salt: string;
+  hash: string;
+  iterations: number;
+  /** Salah berturut-turut; PIN dihapus setelah batas tercapai. */
+  failures: number;
+}
+
+/** Foto ternak, hanya di perangkat ini (belum dikirim ke server; Fase 4). */
+export interface AnimalPhoto {
+  animalId: string;
+  data: ArrayBuffer;
+  type: string;
+  updatedAt: number;
+}
+
 export interface MetaValues {
   deviceId: string;
   session: Session;
   /** Akun pemilik data lokal; tetap tersimpan setelah keluar agar akun lain tidak melihatnya. */
   owner: { id: string; name: string };
+  pin: PinRecord;
   sync: SyncState;
 }
 export type MetaKey = keyof MetaValues;
@@ -89,6 +107,7 @@ export class IbDb extends Dexie {
   assignments!: Table<Assignment, string>;
   semenStock!: Table<SemenStock, string>;
   outbox!: Table<OutboxEntry, number>;
+  animalPhotos!: Table<AnimalPhoto, string>;
   meta!: Table<MetaRow, MetaKey>;
 
   constructor(name = DEFAULT_DB_NAME) {
@@ -106,6 +125,8 @@ export class IbDb extends Dexie {
       outbox: '++seq, &id, status, rowId',
       meta: 'key',
     });
+    // v2 (langkah 2.2): foto ternak lokal.
+    this.version(2).stores({ animalPhotos: 'animalId' });
   }
 
   /** Tabel cermin berdasarkan nama (untuk kode yang memproses semua tabel, mis. pull). */

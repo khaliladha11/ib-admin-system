@@ -4,6 +4,7 @@ import type { UserRole } from '@ib/shared';
 
 import { INITIAL_SYNC_STATE, MIRROR_TABLES, type IbDb, type Session } from '../db';
 import { LocalValidationError } from '../errors';
+import { lockApp, unlockApp } from '../lock';
 import type { ApiClient } from './api';
 
 interface MeResponse {
@@ -15,11 +16,12 @@ interface MeResponse {
 export async function clearLocalData(db: IbDb): Promise<void> {
   await db.transaction(
     'rw',
-    [...MIRROR_TABLES.map((t) => db.mirror(t)), db.outbox, db.meta],
+    [...MIRROR_TABLES.map((t) => db.mirror(t)), db.outbox, db.meta, db.animalPhotos],
     async () => {
       await Promise.all(MIRROR_TABLES.map((t) => db.mirror(t).clear()));
+      await db.animalPhotos.clear();
       await db.outbox.clear();
-      await db.meta.where('key').anyOf(['session', 'sync', 'owner']).delete();
+      await db.meta.where('key').anyOf(['session', 'sync', 'owner', 'pin']).delete();
     },
   );
 }
@@ -62,6 +64,7 @@ export async function signIn(
   };
   await db.setMeta('session', session);
   await db.setMeta('owner', { id: session.user.id, name: session.user.name });
+  unlockApp();
   const sync = (await db.getMeta('sync')) ?? INITIAL_SYNC_STATE;
   await db.setMeta('sync', { ...sync, needsLogin: false, lastError: null });
   return session;
@@ -74,5 +77,7 @@ export async function signOut(db: IbDb, api: ApiClient): Promise<void> {
   } catch {
     // Offline: cookie tetap kedaluwarsa sendiri; sesi lokal tetap dihapus.
   }
-  await db.meta.delete('session');
+  // PIN milik akun ini; data lokal tetap ada sampai akun lain masuk (lihat signIn).
+  await db.meta.bulkDelete(['session', 'pin']);
+  lockApp();
 }

@@ -24,6 +24,8 @@ export default defineConfig(({ mode }) => {
     test: {
       environment: 'jsdom',
       setupFiles: ['./src/test/setup.ts'],
+      // e2e/ dijalankan Playwright (pnpm e2e), bukan Vitest.
+      include: ['src/**/*.test.{ts,tsx}'],
     },
   };
 });
