@@ -7,6 +7,7 @@ import {
   auditLogSchema,
   locationSchema,
   publicUserSchema,
+  qrCodeSchema,
   semenStockSchema,
 } from '@ib/shared';
 import { and, eq, gte, inArray, isNull, or, type SQL } from 'drizzle-orm';
@@ -20,6 +21,7 @@ import {
   events,
   farmers,
   locations,
+  qrCodes,
   semenStock,
   serviceRequests,
   users,
@@ -49,6 +51,8 @@ const changesSchema = z
     farmers: z.array(farmerDtoSchema),
     animals: z.array(z.object(animalSchema.shape)),
     animalTags: z.array(tagDtoSchema),
+    /** Kode QR yang dibuat pengguna ini (label tercetak). */
+    qrCodes: z.array(z.object(qrCodeSchema.shape)),
     events: z.array(eventDtoSchema),
     serviceRequests: z.array(serviceRequestDtoSchema),
     assignments: z.array(assignmentDtoSchema),
@@ -194,6 +198,11 @@ export function registerSyncRoutes(app: OpenAPIHono<AppEnv>) {
             .select()
             .from(animalTags)
             .where(and(inIds(animalTags.animalId, animalIds), changed(animalTags.updatedAt)))
+            .all(),
+          qrCodes: db
+            .select()
+            .from(qrCodes)
+            .where(and(eq(qrCodes.issuedBy, scope.user.id), changed(qrCodes.updatedAt)))
             .all(),
           events: db
             .select()

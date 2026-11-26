@@ -8,6 +8,7 @@
 import {
   animalSchema,
   animalTagSchema,
+  qrCodeSchema,
   assignmentSchema,
   auditLogSchema,
   eventSchema,
@@ -763,6 +764,23 @@ export function insertSeedData(db: Db, data: SeedData) {
     assignments: data.assignments.map((r) => assignmentSchema.parse(r)),
     auditLogs: data.auditLogs.map((r) => auditLogSchema.parse(r)),
   };
+  // Setiap kode QR yang terpasang juga tercatat di daftar kode (label dicetak admin dinas).
+  const issuer = parsed.users.find((u) => u.role === 'agency_admin') ?? parsed.users[0];
+  const qrCodes = issuer
+    ? parsed.animalTags
+        .filter((tag) => tag.type === 'qr')
+        .map((tag) =>
+          qrCodeSchema.parse({
+            id: tag.id,
+            createdAt: tag.attachedAt,
+            updatedAt: tag.attachedAt,
+            deletedAt: null,
+            deviceId: tag.deviceId,
+            code: tag.code,
+            issuedBy: issuer.id,
+          }),
+        )
+    : [];
 
   db.transaction((tx) => {
     // events ↔ service_requests saling merujuk; FK diperiksa saat commit.
@@ -772,6 +790,7 @@ export function insertSeedData(db: Db, data: SeedData) {
     tx.insert(t.farmers).values(parsed.farmers).run();
     tx.insert(t.animals).values(parsed.animals).run();
     tx.insert(t.animalTags).values(parsed.animalTags).run();
+    if (qrCodes.length > 0) tx.insert(t.qrCodes).values(qrCodes).run();
     tx.insert(t.semenStock).values(parsed.semenStock).run();
     tx.insert(t.serviceRequests).values(parsed.serviceRequests).run();
     tx.insert(t.events).values(parsed.events).run();

@@ -5,17 +5,25 @@
 // Id dibuat di perangkat (uuidv7) sehingga kiriman ulang aman (server: 409 ALREADY_EXISTS).
 import {
   animalSchema,
+  animalTagSchema,
   deriveReproStatus,
   eventBodySchema,
   eventSchema,
   farmerSchema,
+  generateUniqueQrCodes,
+  parseQrCode,
   QR_CODE_PATTERN,
+  qrCodeSchema,
   serviceRequestSchema,
   uuidv7,
   validateNextEvent,
   type Animal,
   type AnimalEvent,
   type AnimalTag,
+  type QrCode,
+  type RandomFill,
+  type TagRemovalReason,
+  type TagType,
   type Assignment,
   type DomainEvent,
   type EventBody,
@@ -46,6 +54,19 @@ const OPEN_REQUEST_STATUSES = new Set<ServiceRequest['status']>([
   'assigned',
   'in_progress',
 ]);
+
+/** Paling banyak label per sekali buat: 10 lembar × 40 label. */
+export const MAX_NEW_QR_CODES = 400;
+
+const cryptoFill: RandomFill = (bytes) => crypto.getRandomValues(bytes);
+
+export interface AttachTagInput {
+  type: TagType;
+  /** Kode QR (IB-XXXXX, boleh hasil scan URL) atau nomor eartag. */
+  code: string;
+  /** Wajib bila ternak sudah punya tag aktif sejenis: tag lama dicabut dengan alasan ini. */
+  replaceReason?: TagRemovalReason;
+}
 
 const isoDate = (ms: number) => new Date(ms).toISOString().slice(0, 10);
 
@@ -132,13 +153,18 @@ export async function ensureDeviceId(db: IbDb): Promise<string> {
 
 export interface RepoOptions {
   now?: () => number;
+  /** Sumber acak untuk kode QR (bawaan: crypto.getRandomValues). */
+  randomFill?: RandomFill;
   /** Dipanggil setelah setiap penulisan berhasil (mis. memicu sinkron). */
   onChange?: () => void;
 }
 
 export type Repo = ReturnType<typeof createRepo>;
 
-export function createRepo(db: IbDb, { now = () => Date.now(), onChange }: RepoOptions = {}) {
+export function createRepo(
+  db: IbDb,
+  { now = () => Date.now(), onChange, randomFill = cryptoFill }: RepoOptions = {},
+) {
   async function context() {
     const session = await db.getMeta('session');
     if (!session) throw new NotSignedInError();
@@ -697,6 +723,177 @@ export function createRepo(db: IbDb, { now = () => Date.now(), onChange }: RepoO
   // --- Foto (hanya di perangkat ini, belum disinkronkan) ----------------------
 
   /** Simpan foto ternak (sudah dikecilkan oleh pemanggil). Maksimal 1 MB. */
+  // --- Kode QR dan tag ---------------------------------------------------------
+
+  /** Semua kode QR yang diketahui perangkat ini: label tercetak dan tag yang pernah dipasang. */
+  async function knownQrCodes(): Promise<Set<string>> {
+    const [codes, tags] = await Promise.all([
+      db.qrCodes.toArray(),
+      db.animalTags.where('[type+code]').between(['qr', ''], ['qr', '\uffff']).toArray(),
+    ]);
+    return new Set([...codes.map((c) => c.code), ...tags.map((t) => t.code)]);
+  }
+
+  /**
+   * Buat `count` kode QR baru untuk dicetak (label ternak atau label kosong). Kode acak dicek
+   * dengan semua kode yang diketahui perangkat, lalu didaftarkan ke server lewat outbox.
+   * Server menolak kode yang ternyata sudah dipakai perangkat lain (sangat jarang).
+   */
+  async function reserveQrCodes(count: number): Promise<QrCode[]> {
+    const { session, base } = await context();
+    if (!Number.isInteger(count) || count < 1 || count > MAX_NEW_QR_CODES) {
+      throw new LocalValidationError(`Jumlah label harus 1 sampai ${String(MAX_NEW_QR_CODES)}.`);
+    }
+    const rows: QrCode[] = [];
+    await db.transaction('rw', db.qrCodes, db.animalTags, db.outbox, async () => {
+      const known = await knownQrCodes();
+      const codes = generateUniqueQrCodes(count, (c) => known.has(c), randomFill);
+      for (const code of codes) {
+        const row = parse(qrCodeSchema, { ...base(), code, issuedBy: session.user.id });
+        rows.push(row);
+      }
+      await db.qrCodes.bulkAdd(rows);
+      const time = rows[0]?.createdAt ?? now();
+      for (const row of rows) {
+        await enqueue(
+          db,
+          {
+            kind: 'qrCode.reserve',
+            method: 'POST',
+            path: '/api/qr-codes',
+            body: { id: row.id, code: row.code },
+            table: 'qrCodes',
+            rowId: row.id,
+          },
+          time,
+        );
+      }
+    });
+    return done(rows);
+  }
+
+  /** Kode QR baru langsung dipasang ke ternak (ternak yang belum punya QR, atau ganti tag). */
+  async function attachNewQrCode(
+    animalId: string,
+    replaceReason?: TagRemovalReason,
+  ): Promise<AnimalTag> {
+    const [code] = await reserveQrCodes(1);
+    if (!code) throw new LocalValidationError('Kode QR gagal dibuat.');
+    return attachTag(animalId, { type: 'qr', code: code.code, replaceReason });
+  }
+
+  async function attachTag(animalId: string, input: AttachTagInput): Promise<AnimalTag> {
+    const { deviceId, time, base } = await context();
+    const animal = await liveAnimal(animalId);
+    const code =
+      input.type === 'qr' ? parseQrCode(input.code) : input.code.trim().slice(0, 50) || null;
+    if (!code) {
+      throw new LocalValidationError(
+        input.type === 'qr'
+          ? 'Kode QR harus berformat IB-XXXXX (tanpa huruf O dan I).'
+          : 'Isi nomor eartag.',
+      );
+    }
+    const tag = parse(animalTagSchema, {
+      ...base(),
+      animalId: animal.id,
+      type: input.type,
+      code,
+      attachedAt: time,
+      removedAt: null,
+      removalReason: null,
+    });
+    await db.transaction('rw', db.animalTags, db.qrCodes, db.outbox, async () => {
+      if ((await db.animalTags.where({ type: input.type, code }).count()) > 0) {
+        throw new LocalValidationError('Kode ini sudah pernah dipasang. Pakai label lain.');
+      }
+      if (input.type === 'qr') {
+        const label = await db.qrCodes.where('code').equals(code).first();
+        const clash = label
+          ? await db.outbox
+              .where('rowId')
+              .equals(label.id)
+              .and((e) => e.status === 'rejected')
+              .count()
+          : 0;
+        if (clash > 0) {
+          throw new LocalValidationError(
+            'Kode ini bentrok dengan label lain. Jangan pakai label ini.',
+          );
+        }
+      }
+      const active = (await db.animalTags.where('animalId').equals(animal.id).toArray()).find(
+        (t) => t.type === input.type && t.removedAt === null && t.deletedAt === null,
+      );
+      if (active && !input.replaceReason) {
+        throw new LocalValidationError(
+          `Ternak ini sudah punya ${input.type === 'qr' ? 'tag QR' : 'eartag'} ${active.code}. Pilih alasan penggantian.`,
+        );
+      }
+      if (active && input.replaceReason) {
+        await db.animalTags.put({
+          ...active,
+          removedAt: time,
+          removalReason: input.replaceReason,
+          updatedAt: time,
+          deviceId,
+        });
+      }
+      await db.animalTags.add(tag);
+      await enqueue(
+        db,
+        {
+          kind: 'tag.attach',
+          method: 'POST',
+          path: `/api/animals/${animal.id}/tags`,
+          body: {
+            id: tag.id,
+            type: input.type,
+            code,
+            ...(active && input.replaceReason ? { replaceReason: input.replaceReason } : {}),
+          },
+          table: 'animalTags',
+          rowId: tag.id,
+          relatedRowIds: active ? [active.id] : [],
+        },
+        time,
+      );
+    });
+    return done(tag);
+  }
+
+  /** Cabut tag (hilang, rusak, atau alasan lain) tanpa memasang yang baru. */
+  async function removeTag(tagId: string, reason: TagRemovalReason): Promise<AnimalTag> {
+    const { deviceId, time } = await context();
+    const tag = await db.animalTags.get(tagId);
+    if (tag?.deletedAt !== null) throw new LocalValidationError('Tag tidak ditemukan.');
+    if (tag.removedAt !== null) throw new LocalValidationError('Tag ini sudah dicabut.');
+    await liveAnimal(tag.animalId);
+    const row = parse(animalTagSchema, {
+      ...tag,
+      removedAt: time,
+      removalReason: reason,
+      updatedAt: time,
+      deviceId,
+    });
+    await db.transaction('rw', db.animalTags, db.outbox, async () => {
+      await db.animalTags.put(row);
+      await enqueue(
+        db,
+        {
+          kind: 'tag.remove',
+          method: 'POST',
+          path: `/api/tags/${tag.id}/remove`,
+          body: { reason },
+          table: 'animalTags',
+          rowId: tag.id,
+        },
+        time,
+      );
+    });
+    return done(row);
+  }
+
   async function setAnimalPhoto(animalId: string, data: ArrayBuffer, type: string) {
     const { time } = await context();
     await liveAnimal(animalId);
@@ -722,6 +919,10 @@ export function createRepo(db: IbDb, { now = () => Date.now(), onChange }: RepoO
     assignServiceRequest,
     reassignServiceRequest,
     rejectServiceRequest,
+    reserveQrCodes,
+    attachTag,
+    attachNewQrCode,
+    removeTag,
     setAnimalPhoto,
     removeAnimalPhoto,
   };

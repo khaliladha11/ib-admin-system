@@ -52,6 +52,7 @@ import {
   loadAnimal,
   loadFarmer,
   newRow,
+  registerQrCode,
   scopeOf,
   toDomainEvent,
   withStatus,
@@ -288,6 +289,7 @@ export function registerAnimalRoutes(app: OpenAPIHono<AppEnv>) {
               removalReason: null,
             })
             .run();
+          registerQrCode(c, tx, body.qrCode);
         }
         audit(c, tx, {
           tableName: 'animals',
@@ -475,6 +477,7 @@ export function registerAnimalRoutes(app: OpenAPIHono<AppEnv>) {
             .run();
         }
         tx.insert(animalTags).values(row).run();
+        if (row.type === 'qr') registerQrCode(c, tx, row.code);
       });
       return c.json(row, 201);
     },
@@ -499,12 +502,17 @@ export function registerAnimalRoutes(app: OpenAPIHono<AppEnv>) {
         .get();
       if (!tag) throw notFound('Tag');
       loadAnimal(c, scope, tag.animalId);
-      if (tag.removedAt !== null) throw conflict('Tag ini sudah dicabut.');
+      const reason = c.req.valid('json').reason;
+      if (tag.removedAt !== null) {
+        // Kiriman ulang dari outbox (alasan sama): dianggap berhasil.
+        if (tag.removalReason === reason) return c.json(tag, 200);
+        throw conflict('Tag ini sudah dicabut.');
+      }
       const time = c.var.now();
       const updated = {
         ...tag,
         removedAt: time,
-        removalReason: c.req.valid('json').reason,
+        removalReason: reason,
         updatedAt: time,
         deviceId: c.var.deviceId,
       };

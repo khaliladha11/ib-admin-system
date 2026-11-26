@@ -30,7 +30,9 @@ inseminator, dan admin kelompok/dinas.
   2.3 dashboard admin selesai (Ringkasan, Permintaan + verifikasi/tolak/ganti petugas + log,
   Tindak lanjut + WhatsApp, Peternak, Pengguna). 2.4 review UI selesai (tema "padang pagi",
   10 temuan teratas diperbaiki, `docs/REVIEW-2.4.md`). Fase 2 selesai; tag `v0.2.0` masih perlu
-  dibuat manual di GitHub. Langkah berikutnya: 3.1 kode QR & cetak label.
+  dibuat manual di GitHub.
+- Fase 3: 3.1 kode QR & cetak label selesai (daftar kode `qr_codes`, label A4 24/40, label
+  kosong, riwayat tag pasang/ganti/cabut di profil). Langkah berikutnya: 3.2 pemindai QR.
 
 ## Prinsip
 1. Offline-first: semua pencatatan harus bisa tanpa internet; sinkron menyusul.
@@ -96,7 +98,8 @@ inseminator, dan admin kelompok/dinas.
   `data/e2e.sqlite` yang diisi ulang + Vite port 5174, lalu menyimpan screenshot ke
   `docs/screenshots/2.2-*.png` dan `2.3-*.png` (admin di 1280×800 + cek HP 360).
   `review.spec.ts` menyimpan `2.4-sesudah-*.png` (atau awalan lain lewat `SHOT_PREFIX=...`) dan
-  memeriksa target sentuh ≥ 44px + tanpa scroll ke samping. Di luar sandbox: `pnpm --filter @ib/web exec playwright install chromium`.
+  memeriksa target sentuh ≥ 44px + tanpa scroll ke samping (`e2e/checks.ts`). `labels.spec.ts`
+  menyimpan `3.1-*.png` (halaman label, tampilan cetak A4, riwayat tag). Di luar sandbox: `pnpm --filter @ib/web exec playwright install chromium`.
 - `pnpm db:migrate` — jalankan migrasi (`DATABASE_URL`, bawaan `apps/server/data/ib.sqlite`)
 - `pnpm db:seed` — isi data contoh fiktif; `pnpm db:seed --reset` untuk mengisi ulang
 - `pnpm db:generate` — buat file migrasi baru setelah mengubah `apps/server/src/db/schema.ts`
@@ -183,6 +186,18 @@ inseminator, dan admin kelompok/dinas.
   fokus ke h1 + live region (`useRouteAnnouncement` di `app-shell.tsx`).
 - Tindakan pengingat per peran: `reminderAction` (`lib/reminder-actions.ts`), misalnya peternak
   "Minta PKB", petugas "Catat PKB".
+- Kode QR (langkah 3.1): `IB-` + 5 simbol dari `QR_ALPHABET` (32 simbol tanpa O/0/I/1), dibuat
+  di perangkat (`generateUniqueQrCodes`, `parseQrCode`, `qrPayload` di `@ib/shared`). Keunikan:
+  HP mengecek semua kode yang ia ketahui (label + tag), server menjaga indeks unik `qr_codes.code`.
+  Setiap label tercetak (juga label kosong) = baris `qr_codes` lewat outbox (`repo.reserveQrCodes`);
+  server menolak kode ganda (409 CONFLICT) dan label itu tampil "jangan dipakai". Tag QR yang
+  dipasang selalu terdaftar di `qr_codes` (`registerQrCode`). Sinkron: hanya kode milik pengguna.
+  Kode tidak pernah dipakai ulang, termasuk setelah tag dicabut. Cabut tag aman dikirim ulang.
+- QR hanya berisi kode (atau URL `VITE_QR_BASE_URL/t/IB-XXXXX`), tanpa nama/data pribadi.
+  Gambar QR dengan `uqr` (`lib/qr-path.ts`, `components/qr-code.tsx`), ECC M.
+- Cetak label (`pages/labels/`): CSS print (`.print-root` lewat portal ke `<body>`, `@page` A4
+  tanpa margin); tata letak di `sheet-layout.ts` (24 = 3×8 70×37 mm, 40 = 4×10 52,5×29,7 mm).
+  Riwayat tag di profil: `components/tag-history.tsx` (`repo.attachTag/attachNewQrCode/removeTag`).
 - Tes web memakai `fake-indexeddb` (di `src/test/setup.ts`) dan fixture
   `src/test/data-fixtures.ts` (DB baru per tes, fetch tiruan).
 - Logika reproduksi di `packages/shared/src/domain/`: `deriveReproStatus`,

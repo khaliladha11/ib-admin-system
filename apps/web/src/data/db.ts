@@ -10,6 +10,7 @@ import type {
   Location,
   AuditLog,
   PublicUser,
+  QrCode,
   SemenStock,
   ServiceRequest,
   UserRole,
@@ -81,6 +82,7 @@ export const MIRROR_TABLES = [
   'farmers',
   'animals',
   'animalTags',
+  'qrCodes',
   'events',
   'serviceRequests',
   'assignments',
@@ -95,6 +97,8 @@ export interface MirrorRows {
   farmers: Farmer;
   animals: Animal;
   animalTags: AnimalTag;
+  /** Kode QR yang dibuat pengguna ini (label tercetak). */
+  qrCodes: QrCode;
   events: AnimalEvent;
   serviceRequests: ServiceRequest;
   assignments: Assignment;
@@ -110,6 +114,7 @@ export class IbDb extends Dexie {
   farmers!: Table<Farmer, string>;
   animals!: Table<Animal, string>;
   animalTags!: Table<AnimalTag, string>;
+  qrCodes!: Table<QrCode, string>;
   events!: Table<AnimalEvent, string>;
   serviceRequests!: Table<ServiceRequest, string>;
   assignments!: Table<Assignment, string>;
@@ -141,6 +146,18 @@ export class IbDb extends Dexie {
     // baris lama yang belum pernah ditarik ikut masuk.
     this.version(3)
       .stores({ users: 'id, role, locationId, updatedAt', auditLogs: 'id, rowId, updatedAt' })
+      .upgrade(async (tx) => {
+        await tx
+          .table('meta')
+          .where('key')
+          .equals('sync')
+          .modify((row: { value: { cursor: number } }) => {
+            row.value.cursor = 0;
+          });
+      });
+    // v4 (langkah 3.1): daftar kode QR milik pengguna. Cursor diulang agar kode lama ikut masuk.
+    this.version(4)
+      .stores({ qrCodes: 'id, code, issuedBy, updatedAt' })
       .upgrade(async (tx) => {
         await tx
           .table('meta')

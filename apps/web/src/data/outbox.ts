@@ -14,7 +14,10 @@ export type OutboxKind =
   | 'serviceRequest.accept'
   | 'serviceRequest.assign'
   | 'serviceRequest.reassign'
-  | 'serviceRequest.reject';
+  | 'serviceRequest.reject'
+  | 'qrCode.reserve'
+  | 'tag.attach'
+  | 'tag.remove';
 
 export interface OutboxEntry {
   /** Nomor urut otomatis (urutan kirim). */

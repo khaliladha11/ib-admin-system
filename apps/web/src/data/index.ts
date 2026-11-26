@@ -15,6 +15,8 @@ export {
   useRequestActivity,
   useUsers,
   useAnimalTimeline,
+  useAnimalTags,
+  useQrLabels,
   useEventDefaults,
   useHasPin,
   useServiceRequestViews,
@@ -54,8 +56,10 @@ export type {
   SyncStatusView,
   TimelineEvent,
 } from './queries';
+export type { QrLabelState, QrLabelView, TagView } from './tag-queries';
 export type {
   AnimalInput,
+  AttachTagInput,
   AnimalPatch,
   EventInput,
   FarmerInput,
@@ -64,6 +68,7 @@ export type {
   Repo,
   ServiceRequestInput,
 } from './repo';
+export { MAX_NEW_QR_CODES } from './repo';
 export { ApiRequestError, NetworkError } from './sync/api';
 export { childrenMap, covers, descendantsOf } from './locations';
 export {
