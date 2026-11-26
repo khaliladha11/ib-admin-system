@@ -9,23 +9,22 @@ const view = (
   status: ServiceRequest['status'],
   type: ServiceRequest['type'],
   extra: Partial<ServiceRequestView> = {},
-): ServiceRequestView =>
-  ({
-    request: { id: `${status}-${type}`, status, type } as ServiceRequest,
-    animalName: 'Melati',
-    qrCode: 'IB-7K3QX',
-    farmerName: 'Suparman',
-    locationName: 'Desa Sukamaju',
-    farmerLocationId: 'desa-1',
-    farmerPhone: null,
-    activeAssignment: null,
-    inseminatorName: null,
-    inseminatorPhone: null,
-    requestedByName: null,
-    assignedToMe: false,
-    unsynced: false,
-    ...extra,
-  });
+): ServiceRequestView => ({
+  request: { id: `${status}-${type}`, status, type } as ServiceRequest,
+  animalName: 'Melati',
+  qrCode: 'IB-7K3QX',
+  farmerName: 'Suparman',
+  locationName: 'Desa Sukamaju',
+  farmerLocationId: 'desa-1',
+  farmerPhone: null,
+  activeAssignment: null,
+  inseminatorName: null,
+  inseminatorPhone: null,
+  requestedByName: null,
+  assignedToMe: false,
+  unsynced: false,
+  ...extra,
+});
 
 const list = [
   view('submitted', 'IB'),
