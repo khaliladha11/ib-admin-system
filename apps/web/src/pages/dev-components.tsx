@@ -1,7 +1,8 @@
 // /dev/komponen: semua komponen dasar dalam semua keadaan, untuk direview.
 // Data di halaman ini fiktif dan tidak disimpan.
+import { Cow } from '@/components/icons/cow';
 import type { SemenStock } from '@ib/shared';
-import { Inbox, PawPrint, Plus, RefreshCw } from 'lucide-react';
+import { Inbox, Plus, RefreshCw } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 
 import { AnimalCard } from '@/components/animal-card';
@@ -121,10 +122,7 @@ export function DevComponentsPage() {
       >
         <ul className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           {SWATCHES.map(([name, cls, use]) => (
-            <li
-              key={name}
-              className="flex items-center gap-3 rounded-lg border-(length:--bw) bg-card p-2"
-            >
+            <li key={name} className="surface flex items-center gap-3 p-2">
               <span
                 className={`size-10 shrink-0 rounded-md border-(length:--bw) border-line-strong ${cls}`}
               />
@@ -141,7 +139,7 @@ export function DevComponentsPage() {
         title="Huruf"
         note="Atkinson Hyperlegible Next: huruf mirip (I, l, 1, O, 0) mudah dibedakan."
       >
-        <div className="flex flex-col gap-2 rounded-xl border-(length:--bw) bg-card p-4">
+        <div className="surface flex flex-col gap-2 p-4">
           <p className="text-2xl font-bold">Judul halaman 31px</p>
           <p className="text-xl font-bold">Judul bagian 25px</p>
           <p className="text-lg font-bold">Nama ternak 20px</p>
@@ -178,7 +176,7 @@ export function DevComponentsPage() {
             <StatusBadge key={animal.id} status={animal.status} />
           ))}
         </div>
-        <div className="grid gap-4 rounded-xl border-(length:--bw) bg-card p-4 sm:grid-cols-2">
+        <div className="surface grid gap-4 p-4 sm:grid-cols-2">
           {(Object.keys(STATUS_META) as (keyof typeof STATUS_META)[]).map((kind) => (
             <div key={kind} className="flex flex-col gap-2">
               <StatusBadge status={{ kind }} className="self-start" />
@@ -204,7 +202,7 @@ export function DevComponentsPage() {
         note="Contoh: Birahi memunculkan peringatan seolah sapinya bunting; jenis lain langsung tersimpan."
       >
         <div className="grid gap-4 lg:grid-cols-[minmax(0,28rem)_1fr]">
-          <div className="rounded-xl border-(length:--bw) bg-card p-4">
+          <div className="surface p-4">
             <EventForm
               defaults={{ stocks: SAMPLE_STOCKS.map((s) => ({ ...s, remaining: 12 })) }}
               now={() => SAMPLE_TODAY}
@@ -215,7 +213,7 @@ export function DevComponentsPage() {
             />
           </div>
           {lastInput && (
-            <pre className="overflow-x-auto rounded-xl border-(length:--bw) bg-card p-4 text-sm">
+            <pre className="surface overflow-x-auto p-4 text-sm">
               {JSON.stringify(lastInput, null, 2)}
             </pre>
           )}
@@ -223,7 +221,7 @@ export function DevComponentsPage() {
       </Section>
 
       <Section title="Status sinkron" note="Tampil di bilah atas. Sentuh untuk mengirim sekarang.">
-        <ul className="flex flex-col gap-2 rounded-xl border-(length:--bw) bg-card p-4">
+        <ul className="surface flex flex-col gap-2 p-4">
           {SYNC_STATES.map(([label, state]) => (
             <li key={label} className="flex flex-wrap items-center justify-between gap-2">
               <span className="text-muted-foreground">{label}</span>
@@ -236,7 +234,7 @@ export function DevComponentsPage() {
       <Section title="Tampilan kosong">
         <div className="grid gap-3 md:grid-cols-2">
           <EmptyState
-            icon={PawPrint}
+            icon={Cow}
             title="Belum ada ternak"
             action={<Button>Daftarkan ternak</Button>}
           >

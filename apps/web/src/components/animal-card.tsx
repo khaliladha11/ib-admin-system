@@ -15,15 +15,52 @@ export interface AnimalCardProps {
   onOpen?: () => void;
   actions?: ReactNode;
   className?: string;
+  /** 'compact' untuk daftar: satu baris nama + status, lintasan siklus tipis. */
+  variant?: 'full' | 'compact';
 }
 
 const SEX_LABEL = { F: 'Betina', M: 'Jantan' } as const;
 
 /** Kartu ternak: siapa sapinya, milik siapa, dan sedang di tahap mana siklusnya. */
-export function AnimalCard({ animal, nextLabel, onOpen, actions, className }: AnimalCardProps) {
+export function AnimalCard({
+  animal,
+  nextLabel,
+  onOpen,
+  actions,
+  className,
+  variant = 'full',
+}: AnimalCardProps) {
   const name = animal.name ?? 'Tanpa nama';
+  const compact = variant === 'compact';
   const facts = [SEX_LABEL[animal.sex], animal.breed, animal.farmerName].filter(Boolean).join(', ');
-  const body = (
+  const body = compact ? (
+    <>
+      <div className="flex items-center justify-between gap-3">
+        <p className="min-w-0 truncate">
+          <span className="text-lg font-bold">{name}</span>
+          {animal.qrCode && (
+            <span className="ml-2 font-semibold tracking-wide text-muted-foreground">
+              {animal.qrCode}
+            </span>
+          )}
+        </p>
+        <StatusBadge status={animal.status} showDetail={false} className="shrink-0" />
+      </div>
+      {animal.sex === 'F' && <CycleTrack kind={animal.status.kind} compact />}
+      {(nextLabel !== undefined || animal.unsynced || animal.farmerName !== null) && (
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-sm">
+          <span className="min-w-0 truncate text-muted-foreground">{animal.farmerName}</span>
+          {nextLabel && <span className="font-semibold">{nextLabel}</span>}
+          {animal.unsynced && (
+            <span className="inline-flex items-center gap-1.5 font-semibold text-info">
+              <CloudUpload aria-hidden="true" className="size-4" />
+              Belum terkirim
+            </span>
+          )}
+        </div>
+      )}
+    </>
+  ) : (
     <>
       <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
         <div className="min-w-0">
@@ -56,7 +93,8 @@ export function AnimalCard({ animal, nextLabel, onOpen, actions, className }: An
   return (
     <article
       className={cn(
-        'relative flex flex-col gap-3 rounded-xl border-(length:--bw) bg-card p-4 text-card-foreground',
+        'surface relative flex flex-col text-card-foreground',
+        compact ? 'gap-2 px-4 py-3' : 'gap-3 p-4',
         className,
       )}
     >
@@ -64,7 +102,10 @@ export function AnimalCard({ animal, nextLabel, onOpen, actions, className }: An
         <button
           type="button"
           onClick={onOpen}
-          className="flex flex-col gap-3 text-left after:absolute after:inset-0 after:rounded-xl after:content-['']"
+          className={cn(
+            "flex flex-col text-left after:absolute after:inset-0 after:rounded-2xl after:content-['']",
+            compact ? 'gap-2' : 'gap-3',
+          )}
           aria-label={`Buka ${name}`}
         >
           {body}
