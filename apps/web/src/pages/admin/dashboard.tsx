@@ -2,9 +2,11 @@
 import { SERVICE_REQUEST_STATUSES } from '@ib/shared';
 import { Link } from '@tanstack/react-router';
 import { ChevronRight, Inbox, MapPin, TriangleAlert } from 'lucide-react';
-import type { ReactNode } from 'react';
 
+import { DashboardSkeleton } from '@/components/skeletons';
 import { EmptyState } from '@/components/empty-state';
+import { Meadow } from '@/components/illustrations/meadow';
+import { Panel } from '@/components/ui/panel';
 import { REQUEST_STATUS_META } from '@/components/request-status';
 import { useAdminSummary, useDataLayer, useFollowUps, useServiceRequestViews } from '@/data';
 import { formatDate, formatLongToday, relativeDay } from '@/lib/format';
@@ -40,7 +42,7 @@ function Figure({
     </>
   );
   const cls = cn(
-    'flex min-h-28 flex-col gap-0.5 rounded-xl border-(length:--bw) bg-card p-4',
+    'flex min-h-28 flex-col gap-0.5 surface p-4',
     tone === 'action' && value > 0 && 'border-l-[6px] border-l-straw',
     tone === 'alarm' && value > 0 && 'border-l-[6px] border-l-alarm',
   );
@@ -57,26 +59,6 @@ function Figure({
   );
 }
 
-function Panel({
-  title,
-  action,
-  children,
-}: {
-  title: string;
-  action?: ReactNode;
-  children: ReactNode;
-}) {
-  return (
-    <section className="flex flex-col gap-3 rounded-xl border-(length:--bw) bg-card p-4">
-      <div className="flex items-center justify-between gap-2">
-        <h2 className="text-lg font-bold">{title}</h2>
-        {action}
-      </div>
-      {children}
-    </section>
-  );
-}
-
 export function AdminDashboard() {
   const { now } = useDataLayer();
   const today = now();
@@ -84,7 +66,7 @@ export function AdminDashboard() {
   const requests = useServiceRequestViews();
   const followUps = useFollowUps();
   const scope = useAdminScope();
-  if (!summary || !requests || !followUps || !scope) return null;
+  if (!summary || !requests || !followUps || !scope) return <DashboardSkeleton />;
 
   const counts = summary.requestsByStatus;
   const total = SERVICE_REQUEST_STATUSES.reduce((n, s) => n + counts[s], 0);
@@ -96,7 +78,7 @@ export function AdminDashboard() {
       <div className="flex flex-wrap items-end justify-between gap-2">
         <div>
           <p className="text-muted-foreground">{formatLongToday(today)}</p>
-          <p className="flex items-center gap-2 text-xl font-bold">
+          <p className="display flex items-center gap-2 text-[2.25rem]">
             <MapPin aria-hidden="true" className="size-5 text-primary" />
             {scope.root?.name ?? 'Semua wilayah'}
           </p>
@@ -143,7 +125,11 @@ export function AdminDashboard() {
           }
         >
           {waiting.length === 0 ? (
-            <EmptyState icon={Inbox} title="Tidak ada permintaan baru" className="border-0 p-0">
+            <EmptyState
+              icon={Inbox}
+              title="Tidak ada permintaan baru"
+              className="border-0 shadow-none"
+            >
               Permintaan IB dan PKB dari peternak muncul di sini untuk diverifikasi.
             </EmptyState>
           ) : (
@@ -173,6 +159,10 @@ export function AdminDashboard() {
                 </li>
               ))}
             </ul>
+          )}
+          {/* Mengisi ruang kosong saat permintaan baru sedikit. */}
+          {waiting.length < 4 && (
+            <Meadow className="-mx-4 mt-auto -mb-4 h-28 w-[calc(100%+2rem)] rounded-b-2xl sm:-mx-5 sm:-mb-5 sm:w-[calc(100%+2.5rem)]" />
           )}
         </Panel>
 

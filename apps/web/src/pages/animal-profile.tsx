@@ -1,18 +1,13 @@
+import type { UserRole } from '@ib/shared';
 import { Link, useParams, useSearch } from '@tanstack/react-router';
-import {
-  Camera,
-  CircleCheck,
-  ClipboardPlus,
-  History,
-  PawPrint,
-  PencilLine,
-  SearchX,
-  Trash2,
-} from 'lucide-react';
+import { DetailSkeleton } from '@/components/skeletons';
+import { Cow } from '@/components/icons/cow';
+import { Camera, ClipboardPlus, History, PencilLine, SearchX, Trash2 } from 'lucide-react';
 import { useRef, useState } from 'react';
 
 import { CycleTrack } from '@/components/cycle-track';
 import { EmptyState } from '@/components/empty-state';
+import { SavedCheck } from '@/components/saved-check';
 import { ErrorMessage } from '@/components/error-message';
 import { EventTimeline } from '@/components/event-timeline';
 import { StatusBadge } from '@/components/status-badge';
@@ -26,7 +21,9 @@ import {
   useSession,
   type AnimalTimeline,
 } from '@/data';
+import { ReminderActionLink } from '@/components/reminder-action-link';
 import { ageFrom, formatDate, relativeDay } from '@/lib/format';
+import { reminderAction } from '@/lib/reminder-actions';
 import { resizeImage } from '@/lib/resize-image';
 
 export function AnimalProfilePage() {
@@ -37,7 +34,7 @@ export function AnimalProfilePage() {
   const defaults = useEventDefaults(animalId);
   const { now } = useDataLayer();
 
-  if (timeline === undefined) return null;
+  if (timeline === undefined) return <DetailSkeleton label="Memuat profil ternak…" />;
   if (timeline === null) {
     return (
       <EmptyState icon={SearchX} title="Ternak tidak ditemukan">
@@ -58,7 +55,7 @@ export function AnimalProfilePage() {
           role="status"
           className="flex items-center gap-2 rounded-lg bg-(--st-bunting-bg) px-3 py-2 font-semibold text-(--st-bunting-fg)"
         >
-          <CircleCheck aria-hidden="true" className="size-5" />
+          <SavedCheck className="size-6 shrink-0" />
           {tersimpan} tersimpan di HP ini.
         </p>
       )}
@@ -67,7 +64,7 @@ export function AnimalProfilePage() {
         <div className="flex items-start gap-4">
           <PhotoBlock animalId={animal.id} name={animal.name ?? 'ternak'} />
           <div className="min-w-0 pt-1">
-            <h2 className="text-2xl font-bold break-words">{animal.name ?? 'Tanpa nama'}</h2>
+            <h2 className="display text-[2.5rem] break-words">{animal.name ?? 'Tanpa nama'}</h2>
             {animal.tagCodes.length > 0 && (
               <p className="text-lg font-semibold tracking-wide">{animal.tagCodes.join(', ')}</p>
             )}
@@ -84,7 +81,7 @@ export function AnimalProfilePage() {
         </dl>
       </section>
 
-      <StatusBlock timeline={timeline} today={today} />
+      <StatusBlock timeline={timeline} today={today} role={role} />
 
       {!exited && (
         <div className="flex flex-col gap-2">
@@ -126,9 +123,9 @@ export function AnimalProfilePage() {
           Riwayat
         </h2>
         {timeline.events.length === 0 ? (
-          <p className="text-muted-foreground">
-            Belum ada catatan. Mulai dengan mencatat birahi atau IB.
-          </p>
+          <EmptyState icon={History} title="Belum ada catatan" className="shadow-none">
+            Mulai dengan mencatat birahi atau IB lewat tombol Catat kejadian.
+          </EmptyState>
         ) : (
           <EventTimeline events={timeline.events} anomalies={timeline.anomalies} />
         )}
@@ -146,7 +143,15 @@ function Fact({ label, children }: { label: string; children: React.ReactNode })
   );
 }
 
-function StatusBlock({ timeline, today }: { timeline: AnimalTimeline; today: number }) {
+function StatusBlock({
+  timeline,
+  today,
+  role,
+}: {
+  timeline: AnimalTimeline;
+  today: number;
+  role: UserRole | undefined;
+}) {
   const { animal, schedule } = timeline;
   const rows: [string, string][] = [];
   if (schedule.nextEstrusAt)
@@ -166,17 +171,23 @@ function StatusBlock({ timeline, today }: { timeline: AnimalTimeline; today: num
     ]);
   }
   return (
-    <section
-      aria-label="Status saat ini"
-      className="flex flex-col gap-3 rounded-xl border-(length:--bw) bg-card p-4"
-    >
+    <section aria-label="Status saat ini" className="surface flex flex-col gap-3 p-4">
       <StatusBadge status={animal.status} className="self-start" />
       {animal.sex === 'F' && <CycleTrack kind={animal.status.kind} />}
-      {schedule.reminders.map((r) => (
-        <p key={r.code} role="alert" className="font-semibold text-alarm">
-          {r.message}
-        </p>
-      ))}
+      {schedule.reminders.map((r) => {
+        const { title, action } = reminderAction(r.code, role, animal.id);
+        return (
+          <div
+            key={r.code}
+            className="flex flex-col items-start gap-2 rounded-xl bg-(--st-keguguran-bg) p-3"
+          >
+            <p role="alert" className="font-semibold text-alarm">
+              {title} (terlambat {r.overdueDays} hari).
+            </p>
+            {action && <ReminderActionLink target={action.target} label={action.label} />}
+          </div>
+        );
+      })}
       {rows.length > 0 && (
         <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">
           {rows.map(([k, v]) => (
@@ -218,7 +229,7 @@ function PhotoBlock({ animalId, name }: { animalId: string; name: string }) {
         {url ? (
           <img src={url} alt={`Foto ${name}`} className="size-full object-cover" />
         ) : (
-          <PawPrint aria-hidden="true" className="size-10 text-muted-foreground" />
+          <Cow aria-hidden="true" className="size-10 text-muted-foreground" />
         )}
       </div>
       <input

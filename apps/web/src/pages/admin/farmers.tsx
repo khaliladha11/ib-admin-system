@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from '@tanstack/react-router';
 import { ChevronRight, KeyRound, Plus, Search, Users } from 'lucide-react';
 import { useId, useState } from 'react';
 
+import { FormSkeleton, ListSkeleton } from '@/components/skeletons';
 import { EmptyState } from '@/components/empty-state';
 import { ErrorMessage } from '@/components/error-message';
 import { Button } from '@/components/ui/button';
@@ -18,7 +19,7 @@ import { useAdminScope } from './scope';
 export function FarmersPage() {
   const farmers = useFarmerViews();
   const [q, setQ] = useState('');
-  if (!farmers) return null;
+  if (!farmers) return <ListSkeleton label="Memuat peternak…" />;
   const query = normalizeSearch(q);
   const shown = farmers.filter(
     (f) =>
@@ -58,7 +59,7 @@ export function FarmersPage() {
         </EmptyState>
       ) : (
         <>
-          <div className="hidden overflow-hidden rounded-xl border-(length:--bw) bg-card lg:block">
+          <div className="surface hidden overflow-hidden lg:block">
             <table className="w-full border-collapse text-left">
               <caption className="sr-only">Daftar peternak</caption>
               <thead className="bg-secondary">
@@ -104,7 +105,7 @@ export function FarmersPage() {
                 <Link
                   to="/peternak/$farmerId"
                   params={{ farmerId: f.id }}
-                  className="flex items-center gap-3 rounded-xl border-(length:--bw) bg-card p-4"
+                  className="surface flex items-center gap-3 p-4"
                 >
                   <span className="min-w-0 flex-1">
                     <span className="block font-bold">{f.name}</span>
@@ -130,7 +131,7 @@ export function FarmerFormPage() {
   const farmerId = (params as { farmerId?: string }).farmerId;
   const farmers = useFarmerViews();
   const scope = useAdminScope();
-  if (!farmers || !scope) return null;
+  if (!farmers || !scope) return <FormSkeleton />;
   const farmer = farmerId ? farmers.find((f) => f.id === farmerId) : undefined;
   if (farmerId && !farmer) {
     return <EmptyState icon={Users} title="Peternak tidak ditemukan" />;

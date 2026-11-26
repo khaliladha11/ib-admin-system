@@ -2,21 +2,17 @@ import {
   createRootRoute,
   createRoute,
   createRouter,
+  lazyRouteComponent,
   type RouterHistory,
 } from '@tanstack/react-router';
 import { SearchX } from 'lucide-react';
 
 import { EmptyState } from '@/components/empty-state';
 import { RootLayout } from '@/layout/root-layout';
-import { AdminRequestDetailPage } from '@/pages/admin/request-detail';
-import { AdminRequestsPage } from '@/pages/admin/requests';
+import { RootError, RouteError } from '@/layout/route-error';
 import type { RequestFilter } from '@/pages/admin/request-filter';
-import { FarmerFormPage, FarmersPage } from '@/pages/admin/farmers';
-import { FollowUpsPage } from '@/pages/admin/follow-ups';
-import { UserFormPage, UsersPage } from '@/pages/admin/users';
 import { AnimalProfilePage } from '@/pages/animal-profile';
 import { AnimalsPage } from '@/pages/animals';
-import { DevComponentsPage } from '@/pages/dev-components';
 import { HomePage } from '@/pages/home';
 import { MorePage } from '@/pages/more';
 import { ScanPage } from '@/pages/placeholders';
@@ -24,8 +20,28 @@ import { RecordEventPage } from '@/pages/record-event';
 import { RequestFormPage } from '@/pages/request-form';
 import { TasksPage } from '@/pages/tasks';
 
+// Halaman admin dan pengembang dimuat saat dibuka (bundel awal HP lebih kecil).
+const AdminRequestDetailPage = lazyRouteComponent(
+  () => import('@/pages/admin/request-detail'),
+  'AdminRequestDetailPage',
+);
+const AdminRequestsPage = lazyRouteComponent(
+  () => import('@/pages/admin/requests'),
+  'AdminRequestsPage',
+);
+const FarmerFormPage = lazyRouteComponent(() => import('@/pages/admin/farmers'), 'FarmerFormPage');
+const FarmersPage = lazyRouteComponent(() => import('@/pages/admin/farmers'), 'FarmersPage');
+const FollowUpsPage = lazyRouteComponent(() => import('@/pages/admin/follow-ups'), 'FollowUpsPage');
+const UserFormPage = lazyRouteComponent(() => import('@/pages/admin/users'), 'UserFormPage');
+const UsersPage = lazyRouteComponent(() => import('@/pages/admin/users'), 'UsersPage');
+const DevComponentsPage = lazyRouteComponent(
+  () => import('@/pages/dev-components'),
+  'DevComponentsPage',
+);
+
 const rootRoute = createRootRoute({
   component: RootLayout,
+  errorComponent: RootError,
   notFoundComponent: () => (
     <EmptyState icon={SearchX} title="Halaman tidak ditemukan">
       Alamat ini tidak ada. Pilih menu di bawah untuk melanjutkan.
@@ -197,7 +213,13 @@ const routeTree = rootRoute.addChildren([
 ]);
 
 export function createAppRouter(history?: RouterHistory) {
-  return createRouter({ routeTree, history, defaultPreload: 'intent' });
+  return createRouter({
+    routeTree,
+    history,
+    defaultPreload: 'intent',
+    // Error di halaman tampil di dalam kerangka (navigasi tetap ada).
+    defaultErrorComponent: RouteError,
+  });
 }
 
 declare module '@tanstack/react-router' {

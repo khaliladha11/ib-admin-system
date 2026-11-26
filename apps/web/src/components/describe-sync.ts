@@ -37,7 +37,7 @@ export function describeSync({ online, pending, rejected, needsLogin }: SyncStat
     return {
       kind: 'offline',
       icon: CloudOff,
-      text: unsent ? `Offline, ${unsent}` : 'Offline',
+      text: unsent ? `Tanpa sinyal, ${unsent}` : 'Tanpa sinyal',
       className: 'text-soil',
     };
   }
@@ -45,7 +45,7 @@ export function describeSync({ online, pending, rejected, needsLogin }: SyncStat
     return {
       kind: 'rejected',
       icon: TriangleAlert,
-      text: `${String(rejected)} data ditolak server`,
+      text: `${String(rejected)} catatan tidak diterima`,
       className: 'text-alarm',
     };
   }
@@ -53,7 +53,7 @@ export function describeSync({ online, pending, rejected, needsLogin }: SyncStat
     return {
       kind: 'sending',
       icon: RefreshCw,
-      text: `Mengirim ${String(pending)} data`,
+      text: `Mengirim ${String(pending)} catatan`,
       className: 'text-info',
     };
   }

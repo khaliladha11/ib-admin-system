@@ -1,5 +1,8 @@
 import { useNavigate } from '@tanstack/react-router';
-import { PawPrint, Search, SearchX, X } from 'lucide-react';
+import { ListSkeleton } from '@/components/skeletons';
+import { Cow } from '@/components/icons/cow';
+import { Search, SearchX, X } from 'lucide-react';
+import { motion } from 'motion/react';
 import { useState } from 'react';
 
 import { AnimalCard } from '@/components/animal-card';
@@ -32,12 +35,12 @@ export function AnimalsPage() {
   const [query, setQuery] = useState('');
   const [status, setStatus] = useState<StatusFilter>('semua');
 
-  if (!animals) return null;
+  if (!animals) return <ListSkeleton label="Memuat daftar ternak…" />;
   if (animals.length === 0) {
     return (
-      <EmptyState icon={PawPrint} title="Belum ada ternak di HP ini">
-        Data ternak muncul setelah tersinkron dengan server. Pastikan ada sinyal, lalu sentuh status
-        sinkron di kanan atas.
+      <EmptyState icon={Cow} art="meadow" title="Belum ada ternak di HP ini">
+        Daftar ternak muncul otomatis saat HP ada sinyal. Untuk memperbarui sekarang, sentuh tulisan
+        di kanan atas.
       </EmptyState>
     );
   }
@@ -140,17 +143,25 @@ export function AnimalsPage() {
           Coba kata lain, misalnya sebagian kode QR atau nama peternak.
         </EmptyState>
       ) : (
-        <ul className="grid gap-3 md:grid-cols-2">
-          {shown.map((animal) => (
-            <li key={animal.id}>
+        <ul className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          {shown.map((animal, i) => (
+            <motion.li
+              key={animal.id}
+              className="min-w-0"
+              // Muncul berurutan sekali saat daftar pertama dibuka (8 kartu pertama saja).
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.25, delay: Math.min(i, 8) * 0.03 }}
+            >
               <AnimalCard
+                variant="compact"
                 animal={animal}
                 nextLabel={nextStepLabel(animal, today)}
                 onOpen={() => {
                   void navigate({ to: '/ternak/$animalId', params: { animalId: animal.id } });
                 }}
               />
-            </li>
+            </motion.li>
           ))}
         </ul>
       )}

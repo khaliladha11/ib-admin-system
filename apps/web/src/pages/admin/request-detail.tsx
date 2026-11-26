@@ -4,9 +4,11 @@ import { Link, useParams } from '@tanstack/react-router';
 import { CloudUpload, MessageCircle, SearchX } from 'lucide-react';
 import { useId, useState, type ReactNode } from 'react';
 
+import { DetailSkeleton } from '@/components/skeletons';
 import { EmptyState } from '@/components/empty-state';
 import { ErrorMessage } from '@/components/error-message';
 import { Button } from '@/components/ui/button';
+import { Panel } from '@/components/ui/panel';
 import { Label } from '@/components/ui/label';
 import { NativeSelect } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
@@ -25,19 +27,10 @@ import { RequestStatusBadge } from '@/components/request-status-badge';
 
 const TYPE_TEXT = { IB: 'Inseminasi (IB)', PKB: 'Periksa bunting (PKB)' } as const;
 
-function Section({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <section className="flex flex-col gap-3 rounded-xl border-(length:--bw) bg-card p-4">
-      <h2 className="text-lg font-bold">{title}</h2>
-      {children}
-    </section>
-  );
-}
-
 export function AdminRequestDetailPage() {
   const { requestId } = useParams({ from: '/permintaan/$requestId' });
   const views = useServiceRequestViews();
-  if (!views) return null;
+  if (!views) return <DetailSkeleton label="Memuat permintaan…" />;
   const view = views.find((v) => v.request.id === requestId);
   if (!view) {
     return (
@@ -78,7 +71,7 @@ function Details({ view: v }: { view: ServiceRequestView }) {
     ['Petugas', v.inseminatorName ?? '–'],
   ];
   return (
-    <Section title={TYPE_TEXT[request.type]}>
+    <Panel title={TYPE_TEXT[request.type]}>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <Link
           to="/ternak/$animalId"
@@ -110,7 +103,7 @@ function Details({ view: v }: { view: ServiceRequestView }) {
           </a>
         </Button>
       )}
-    </Section>
+    </Panel>
   );
 }
 
@@ -147,7 +140,7 @@ function Actions({ view: v }: { view: ServiceRequestView }) {
   }
 
   return (
-    <Section title={reassign ? 'Ganti petugas' : 'Verifikasi permintaan'}>
+    <Panel title={reassign ? 'Ganti petugas' : 'Verifikasi permintaan'}>
       {options.length === 0 ? (
         <p className="text-muted-foreground">
           Belum ada petugas aktif lain yang wilayahnya mencakup lokasi peternak ini. Tambahkan di
@@ -246,14 +239,14 @@ function Actions({ view: v }: { view: ServiceRequestView }) {
         </p>
       )}
       {error !== null && <ErrorMessage error={error} />}
-    </Section>
+    </Panel>
   );
 }
 
 function Activity({ requestId }: { requestId: string }) {
   const entries = useRequestActivity(requestId);
   return (
-    <Section title="Log aktivitas">
+    <Panel title="Log aktivitas">
       {!entries || entries.length === 0 ? (
         <p className="text-muted-foreground">Belum ada aktivitas.</p>
       ) : (
@@ -289,6 +282,6 @@ function Activity({ requestId }: { requestId: string }) {
           ))}
         </ol>
       )}
-    </Section>
+    </Panel>
   );
 }

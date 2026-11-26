@@ -15,6 +15,11 @@ const STATUSES = ['kosong', 'birahi', 'ib', 'bunting', 'keguguran', 'lahir', 'ke
 /** [teks/garis, latar, minimum]. 4,5 = teks biasa; 3 = garis input, ikon, tepi (WCAG 1.4.11). */
 const PAIRS: [string, string, number][] = [
   ['foreground', 'background', 4.5],
+  ['foreground', 'sky-wash', 4.5],
+  ['muted-foreground', 'sky-wash', 4.5],
+  ['leaf-deep', 'background', 4.5],
+  ['leaf-deep', 'sky-wash', 4.5],
+  ['primary', 'sky-wash', 4.5],
   ['foreground', 'card', 4.5],
   ['muted-foreground', 'background', 4.5],
   ['muted-foreground', 'card', 4.5],

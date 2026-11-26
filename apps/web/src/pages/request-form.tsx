@@ -1,6 +1,8 @@
 // Peternak mengajukan permintaan IB atau PKB untuk salah satu sapinya.
+import { FormSkeleton } from '@/components/skeletons';
+import { Cow } from '@/components/icons/cow';
 import { useNavigate, useSearch } from '@tanstack/react-router';
-import { PawPrint } from 'lucide-react';
+
 import { useId, useState } from 'react';
 
 import { EmptyState } from '@/components/empty-state';
@@ -13,6 +15,7 @@ import { Label } from '@/components/ui/label';
 import { NativeSelect } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useAnimals, useDataLayer, useRepo } from '@/data';
+import { errorIdOf, fieldA11y } from '@/lib/a11y';
 import { cn } from '@/lib/utils';
 
 export function RequestFormPage() {
@@ -30,11 +33,11 @@ export function RequestFormPage() {
   const [missing, setMissing] = useState(false);
   const [busy, setBusy] = useState(false);
 
-  if (!animals) return null;
+  if (!animals) return <FormSkeleton />;
   const females = animals.filter((a) => a.sex === 'F');
   if (females.length === 0) {
     return (
-      <EmptyState icon={PawPrint} title="Belum ada sapi betina">
+      <EmptyState icon={Cow} title="Belum ada sapi betina">
         Permintaan IB dan PKB hanya untuk sapi betina yang terdaftar.
       </EmptyState>
     );
@@ -113,7 +116,7 @@ export function RequestFormPage() {
         <NativeSelect
           id={`${id}-animal`}
           value={chosen?.id ?? ''}
-          aria-invalid={missing && !chosen ? true : undefined}
+          {...fieldA11y(`${id}-animal`, missing && !chosen ? 'Pilih sapinya dulu.' : null)}
           onChange={(e) => {
             setAnimalId(e.target.value);
             setMissing(false);
@@ -127,7 +130,11 @@ export function RequestFormPage() {
             </option>
           ))}
         </NativeSelect>
-        {missing && !chosen && <p className="font-semibold text-alarm">Pilih sapinya dulu.</p>}
+        {missing && !chosen && (
+          <p id={errorIdOf(`${id}-animal`)} role="alert" className="font-semibold text-alarm">
+            Pilih sapinya dulu.
+          </p>
+        )}
         {chosen && <StatusBadge status={chosen.status} className="mt-1 self-start" />}
       </div>
 

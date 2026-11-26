@@ -2,6 +2,8 @@
 @import 'tw-animate-css';
 /* Huruf dipasang lokal (bukan CDN) agar tetap jalan offline. */
 @import '@fontsource-variable/atkinson-hyperlegible-next';
+/* Serif hanya untuk judul besar (≥ 25px), mengikuti referensi desain langkah 2.4. */
+@import '@fontsource/instrument-serif/latin-400.css';
 
 /*
  * Sistem desain "kartu lapangan" (lihat docs/DESIGN.md).
@@ -20,7 +22,18 @@
   --ink-muted: #4a5a4f;
   --leaf: #2e6b34;
   --leaf-strong: #22522a;
-  --straw: #f2c230;
+  /* Aksen kuning-lime (tombol Scan, aksi utama); selalu dengan teks tinta. */
+  --straw: #e2f05c;
+  /* Latar halaman: gradasi lembut langit → putih → lime (teks tetap di atas kartu putih). */
+  --sky-wash: #e6f0f8;
+  --lime-wash: #eef5d2;
+  --leaf-deep: #1f4d26;
+  /* Ilustrasi padang (hiasan, bukan teks). */
+  --hill-back: #d6e9a4;
+  --hill-front: #a9cf6e;
+  --barn: #b54a3a;
+  --barn-roof: #7a2e24;
+  --tree: #3f7a3a;
   --soil: #6e4524;
   --sky: #1d5a86;
   --alarm: #b3261e;
@@ -30,10 +43,12 @@
 
   /* Tebal garis tepi: 1px, 2px di kontras tinggi */
   --bw: 1px;
+  --card-shadow: 0 1px 2px rgb(20 38 26 / 0.06), 0 8px 24px rgb(20 38 26 / 0.06);
 
   /* Peta ke token shadcn/ui */
-  --radius: 0.75rem;
-  --background: var(--field);
+  --radius: 0.875rem;
+  /* Ujung gradasi yang paling gelap; dipakai tes kontras sebagai latar terburuk. */
+  --background: var(--lime-wash);
   --foreground: var(--ink);
   --card: var(--paper);
   --card-foreground: var(--ink);
@@ -89,6 +104,10 @@
   --line: #000000;
   --line-strong: #000000;
   --bw: 2px;
+  --card-shadow: none;
+  --sky-wash: #ffffff;
+  --lime-wash: #ffffff;
+  --leaf-deep: #000000;
   --secondary: #ffffff;
   --ring: #000000;
 
@@ -117,6 +136,8 @@
 
 @theme inline {
   --font-sans: 'Atkinson Hyperlegible Next Variable', system-ui, sans-serif;
+  --font-display: 'Instrument Serif', Georgia, serif;
+  --shadow-card: var(--card-shadow);
 
   /* Skala huruf: dasar 16px, rasio ±1,25. Terkecil 14px hanya untuk keterangan. */
   --text-sm: 0.875rem;
@@ -141,6 +162,11 @@
   --color-leaf: var(--leaf);
   --color-leaf-strong: var(--leaf-strong);
   --color-straw: var(--straw);
+  --color-sky-wash: var(--sky-wash);
+  --color-lime-wash: var(--lime-wash);
+  --color-leaf-deep: var(--leaf-deep);
+  --color-hill-back: var(--hill-back);
+  --color-hill-front: var(--hill-front);
   --color-soil: var(--soil);
   --color-sky: var(--sky);
   --color-alarm: var(--alarm);
@@ -179,6 +205,13 @@
   body {
     @apply bg-background font-sans text-base text-foreground antialiased;
     font-variant-numeric: tabular-nums;
+    background-image: linear-gradient(
+      165deg,
+      var(--sky-wash) 0%,
+      var(--paper) 42%,
+      var(--lime-wash) 100%
+    );
+    background-attachment: fixed;
   }
   /* Fokus keyboard selalu terlihat. */
   :focus-visible {
@@ -197,5 +230,17 @@
       animation-duration: 0.01ms !important;
       transition-duration: 0.01ms !important;
     }
+  }
+}
+
+@layer components {
+  /* Permukaan kartu standar: putih, sudut 2xl, garis tipis, bayangan halus. */
+  .surface {
+    @apply rounded-2xl border-(length:--bw) bg-card text-card-foreground shadow-card;
+  }
+  /* Judul serif besar (layar Masuk, judul halaman utama, tampilan kosong). */
+  .display {
+    @apply font-display font-normal tracking-tight text-leaf-deep;
+    line-height: 1.05;
   }
 }

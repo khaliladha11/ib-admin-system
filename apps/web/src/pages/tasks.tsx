@@ -4,6 +4,7 @@ import { Link } from '@tanstack/react-router';
 import { CalendarDays, ClipboardList, Inbox, Plus } from 'lucide-react';
 import { useState } from 'react';
 
+import { ListSkeleton } from '@/components/skeletons';
 import { EmptyState } from '@/components/empty-state';
 import { ErrorMessage } from '@/components/error-message';
 import { RequestStatusBadge } from '@/components/request-status-badge';
@@ -17,7 +18,7 @@ const TYPE_TEXT = { IB: 'Inseminasi (IB)', PKB: 'Periksa bunting (PKB)' } as con
 export function TasksPage() {
   const session = useSession();
   const views = useServiceRequestViews();
-  if (!session || !views) return null;
+  if (!session || !views) return <ListSkeleton label="Memuat tugas…" />;
   if (session.user.role === 'inseminator') return <InseminatorTasks views={views} />;
   if (session.user.role === 'farmer') return <FarmerRequests views={views} />;
   return <AdminRequests views={views} />;
@@ -34,7 +35,7 @@ function FarmerRequests({ views }: { views: ServiceRequestView[] }) {
       </Button>
       <h2 className="text-xl font-bold">Permintaan saya</h2>
       {views.length === 0 ? (
-        <EmptyState icon={Inbox} title="Belum ada permintaan">
+        <EmptyState icon={Inbox} art="meadow" title="Belum ada permintaan">
           Saat sapi birahi, minta petugas datang untuk IB. Sekitar 2 bulan setelah IB, minta PKB.
         </EmptyState>
       ) : (
@@ -84,11 +85,12 @@ function InseminatorTasks({ views }: { views: ServiceRequestView[] }) {
       </div>
       {list.length === 0 ? (
         <EmptyState
+          art="meadow"
           icon={ClipboardList}
           title={tab === 'aktif' ? 'Tidak ada tugas' : 'Belum ada tugas selesai'}
         >
           {tab === 'aktif'
-            ? 'Tugas IB dan PKB dari admin kelompok muncul di sini. Sentuh status sinkron untuk memeriksa tugas baru.'
+            ? 'Tugas IB dan PKB dari admin kelompok muncul di sini. Tugas baru muncul otomatis saat HP ada sinyal.'
             : 'Tugas yang sudah Anda kerjakan tampil di sini.'}
         </EmptyState>
       ) : (
@@ -131,7 +133,7 @@ function RequestCard({ view, actions }: { view: ServiceRequestView; actions?: bo
   const [error, setError] = useState<unknown>(null);
   const { request } = view;
   return (
-    <article className="flex flex-col gap-2 rounded-xl border-(length:--bw) bg-card p-4">
+    <article className="surface flex flex-col gap-2 p-4">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="text-lg font-bold">{TYPE_TEXT[request.type]}</p>
@@ -159,7 +161,7 @@ function RequestCard({ view, actions }: { view: ServiceRequestView; actions?: bo
       {request.status === 'rejected' && request.rejectionReason && (
         <p className="font-semibold text-alarm">Alasan ditolak: {request.rejectionReason}</p>
       )}
-      {view.unsynced && <p className="text-sm font-semibold text-info">Belum terkirim ke server</p>}
+      {view.unsynced && <p className="text-sm font-semibold text-info">Belum terkirim</p>}
       {actions && request.status === 'assigned' && (
         <Button
           size="lg"

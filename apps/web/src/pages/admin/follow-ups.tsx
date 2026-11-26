@@ -4,6 +4,7 @@ import { Link } from '@tanstack/react-router';
 import { MessageCircle, PartyPopper } from 'lucide-react';
 import { useState } from 'react';
 
+import { ListSkeleton } from '@/components/skeletons';
 import { EmptyState } from '@/components/empty-state';
 import { Button } from '@/components/ui/button';
 import { useFollowUps, useSession, type FollowUp } from '@/data';
@@ -84,7 +85,7 @@ function WaButtons({ item }: { item: FollowUp }) {
 export function FollowUpsPage() {
   const items = useFollowUps();
   const [filter, setFilter] = useState<Filter>('semua');
-  if (!items) return null;
+  if (!items) return <ListSkeleton label="Memuat laporan terlambat…" />;
   const shown = items.filter((i) => filter === 'semua' || i.code === filter);
   const count = (code: FollowUp['code']) => items.filter((i) => i.code === code).length;
 
@@ -126,12 +127,12 @@ export function FollowUpsPage() {
       </div>
 
       {shown.length === 0 ? (
-        <EmptyState icon={PartyPopper} title="Tidak ada laporan terlambat">
+        <EmptyState icon={PartyPopper} art="meadow" title="Tidak ada laporan terlambat">
           Semua hasil IB dan kelahiran di wilayah Anda sudah dilaporkan tepat waktu.
         </EmptyState>
       ) : (
         <>
-          <div className="hidden overflow-hidden rounded-xl border-(length:--bw) bg-card lg:block">
+          <div className="surface hidden overflow-hidden lg:block">
             <table className="w-full border-collapse text-left">
               <caption className="sr-only">Laporan terlambat</caption>
               <thead className="bg-secondary">
@@ -153,7 +154,7 @@ export function FollowUpsPage() {
                       <Link
                         to="/ternak/$animalId"
                         params={{ animalId: item.animal.id }}
-                        className="font-semibold underline underline-offset-4"
+                        className="inline-flex min-h-11 items-center font-semibold underline underline-offset-4"
                       >
                         {item.animal.name ?? 'Tanpa nama'}
                       </Link>
@@ -193,7 +194,7 @@ export function FollowUpsPage() {
             {shown.map((item) => (
               <li
                 key={`${item.code}-${item.animal.id}`}
-                className="flex flex-col gap-2 rounded-xl border-(length:--bw) bg-card p-4"
+                className="surface flex flex-col gap-2 p-4"
               >
                 <p className="flex items-start justify-between gap-2">
                   <span className="font-bold">{PROBLEM[item.code].title}</span>
@@ -202,7 +203,7 @@ export function FollowUpsPage() {
                 <Link
                   to="/ternak/$animalId"
                   params={{ animalId: item.animal.id }}
-                  className="font-semibold underline underline-offset-4"
+                  className="inline-flex min-h-11 items-center font-semibold underline underline-offset-4"
                 >
                   {item.animal.name ?? 'Tanpa nama'} {item.animal.qrCode}
                 </Link>

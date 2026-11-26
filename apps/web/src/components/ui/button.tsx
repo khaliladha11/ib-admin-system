@@ -8,12 +8,12 @@ import type * as React from 'react';
 import { cn } from '@/lib/utils';
 
 const buttonVariants = cva(
-  "inline-flex shrink-0 items-center justify-center gap-2 rounded-md text-base font-semibold whitespace-nowrap transition-colors disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-5",
+  "inline-flex shrink-0 items-center justify-center gap-2 rounded-full text-base font-semibold whitespace-nowrap transition-colors disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-5",
   {
     variants: {
       variant: {
         default: 'bg-primary text-primary-foreground hover:bg-leaf-strong',
-        accent: 'bg-accent text-accent-foreground hover:brightness-95',
+        accent: 'bg-accent text-accent-foreground shadow-card hover:brightness-95',
         destructive: 'bg-destructive text-destructive-foreground hover:brightness-90',
         outline: 'border-(length:--bw) border-input bg-card text-foreground hover:bg-secondary',
         secondary: 'bg-secondary text-secondary-foreground hover:brightness-95',
@@ -21,7 +21,7 @@ const buttonVariants = cva(
         link: 'text-primary underline underline-offset-4',
       },
       size: {
-        default: 'h-11 px-5 py-2 has-[>svg]:px-4',
+        default: 'h-11 px-6 py-2 has-[>svg]:px-5',
         sm: 'h-11 gap-1.5 px-3 has-[>svg]:px-2.5',
         lg: 'h-12 px-6 has-[>svg]:px-5',
         icon: 'size-11',

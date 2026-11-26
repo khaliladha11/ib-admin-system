@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ApiRequestError, NetworkError, signIn, useDataLayer } from '@/data';
+import { errorIdOf, fieldA11y } from '@/lib/a11y';
 
 import { AuthFrame } from './auth-frame';
 
@@ -18,11 +19,15 @@ export function LoginPage({ onSignedIn, notice }: { onSignedIn?: () => void; not
   const [show, setShow] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<unknown>(null);
-  const [missing, setMissing] = useState<string | null>(null);
+  const [missing, setMissing] = useState<{ field: 'user' | 'pass'; text: string } | null>(null);
 
   async function submit() {
     if (!identifier.trim() || !password) {
-      setMissing(!identifier.trim() ? 'Isi email atau nomor HP.' : 'Isi password.');
+      setMissing(
+        !identifier.trim()
+          ? { field: 'user', text: 'Isi email atau nomor HP.' }
+          : { field: 'pass', text: 'Isi password.' },
+      );
       return;
     }
     setMissing(null);
@@ -64,6 +69,7 @@ export function LoginPage({ onSignedIn, notice }: { onSignedIn?: () => void; not
               setIdentifier(e.target.value);
             }}
             placeholder="0812… atau nama@contoh.test"
+            {...fieldA11y(`${id}-user`, missing?.field === 'user' ? missing.text : null)}
           />
         </div>
         <div className="flex flex-col gap-1.5">
@@ -78,6 +84,7 @@ export function LoginPage({ onSignedIn, notice }: { onSignedIn?: () => void; not
                 setPassword(e.target.value);
               }}
               className="pr-14"
+              {...fieldA11y(`${id}-pass`, missing?.field === 'pass' ? missing.text : null)}
             />
             <button
               type="button"
@@ -91,7 +98,15 @@ export function LoginPage({ onSignedIn, notice }: { onSignedIn?: () => void; not
             </button>
           </div>
         </div>
-        {missing && <p className="font-semibold text-alarm">{missing}</p>}
+        {missing && (
+          <p
+            id={errorIdOf(`${id}-${missing.field}`)}
+            role="alert"
+            className="font-semibold text-alarm"
+          >
+            {missing.text}
+          </p>
+        )}
         {error !== null && <LoginError error={error} />}
         <Button type="submit" size="lg" disabled={busy}>
           {busy ? 'Memeriksa…' : 'Masuk'}

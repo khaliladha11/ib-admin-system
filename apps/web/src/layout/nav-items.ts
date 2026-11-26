@@ -1,4 +1,5 @@
 import type { UserRole } from '@ib/shared';
+import { Cow } from '@/components/icons/cow';
 import {
   BellRing,
   ClipboardList,
@@ -6,7 +7,6 @@ import {
   House,
   Inbox,
   LayoutDashboard,
-  PawPrint,
   ScanQrCode,
   UserCog,
   Users,
@@ -33,7 +33,7 @@ export interface NavItem {
 /** Navigasi lapangan (peternak, petugas): urutan sama di HP (bawah) dan PC (sidebar). */
 export const FIELD_NAV: readonly NavItem[] = [
   { to: '/', label: 'Beranda', icon: House },
-  { to: '/ternak', label: 'Ternak', icon: PawPrint },
+  { to: '/ternak', label: 'Ternak', icon: Cow },
   { to: '/scan', label: 'Scan', icon: ScanQrCode },
   { to: '/tugas', label: 'Tugas', icon: ClipboardList },
   { to: '/lainnya', label: 'Lainnya', icon: Ellipsis },
@@ -44,7 +44,7 @@ export const ADMIN_NAV_BOTTOM: readonly NavItem[] = [
   { to: '/', label: 'Ringkasan', icon: LayoutDashboard },
   { to: '/permintaan', label: 'Permintaan', shortLabel: 'Layanan', icon: Inbox },
   { to: '/tindak-lanjut', label: 'Tindak lanjut', shortLabel: 'Terlambat', icon: BellRing },
-  { to: '/ternak', label: 'Ternak', icon: PawPrint },
+  { to: '/ternak', label: 'Ternak', icon: Cow },
   { to: '/lainnya', label: 'Lainnya', icon: Ellipsis },
 ];
 
@@ -53,7 +53,7 @@ export const ADMIN_NAV_SIDE: readonly NavItem[] = [
   { to: '/', label: 'Ringkasan', icon: LayoutDashboard },
   { to: '/permintaan', label: 'Permintaan', icon: Inbox },
   { to: '/tindak-lanjut', label: 'Tindak lanjut', icon: BellRing },
-  { to: '/ternak', label: 'Ternak', icon: PawPrint },
+  { to: '/ternak', label: 'Ternak', icon: Cow },
   { to: '/peternak', label: 'Peternak', icon: Users },
   { to: '/pengguna', label: 'Pengguna', icon: UserCog },
   { to: '/lainnya', label: 'Lainnya', icon: Ellipsis },

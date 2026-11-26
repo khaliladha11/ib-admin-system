@@ -5,6 +5,7 @@ import { Link, useNavigate, useParams, useSearch } from '@tanstack/react-router'
 import { ChevronRight, CloudOff, Plus, UserCog } from 'lucide-react';
 import { useId, useState } from 'react';
 
+import { FormSkeleton, ListSkeleton } from '@/components/skeletons';
 import { EmptyState } from '@/components/empty-state';
 import { ErrorMessage } from '@/components/error-message';
 import { ROLE_LABEL } from '@/components/request-status';
@@ -56,7 +57,7 @@ export function UsersPage() {
   const users = useUsers();
   const scope = useAdminScope();
   const [role, setRole] = useState<UserRole | 'semua'>('semua');
-  if (!users || !scope) return null;
+  if (!users || !scope) return <ListSkeleton label="Memuat pengguna…" />;
   const shown = users.filter((u) => role === 'semua' || u.role === role);
   return (
     <div className="flex flex-col gap-4">
@@ -94,7 +95,7 @@ export function UsersPage() {
         <EmptyState icon={UserCog} title="Belum ada pengguna dengan peran ini" />
       ) : (
         <>
-          <div className="hidden overflow-hidden rounded-xl border-(length:--bw) bg-card lg:block">
+          <div className="surface hidden overflow-hidden lg:block">
             <table className="w-full border-collapse text-left">
               <caption className="sr-only">Daftar pengguna</caption>
               <thead className="bg-secondary">
@@ -142,7 +143,7 @@ export function UsersPage() {
                 <Link
                   to="/pengguna/$userId"
                   params={{ userId: u.id }}
-                  className="flex items-center gap-3 rounded-xl border-(length:--bw) bg-card p-4"
+                  className="surface flex items-center gap-3 p-4"
                 >
                   <span className="min-w-0 flex-1">
                     <span className="block font-bold">{u.name}</span>
@@ -174,7 +175,7 @@ export function UserFormPage() {
   const scope = useAdminScope();
   const farmers = useFarmerViews();
   // Isian awal dihitung sekali; tunggu sesi, wilayah, dan peternak terbaca dulu.
-  if (!users || !scope || !farmers) return null;
+  if (!users || !scope || !farmers) return <FormSkeleton />;
   const user = userId ? users.find((u) => u.id === userId) : undefined;
   if (userId && !user) return <EmptyState icon={UserCog} title="Pengguna tidak ditemukan" />;
   return <UserForm key={user?.id ?? 'baru'} user={user} scope={scope} farmers={farmers} />;
@@ -289,7 +290,7 @@ function UserForm({
     <div className="grid max-w-4xl gap-4 lg:grid-cols-2">
       <form
         noValidate
-        className="flex flex-col gap-4 rounded-xl border-(length:--bw) bg-card p-4"
+        className="surface flex flex-col gap-4 p-4"
         onSubmit={(e) => {
           e.preventDefault();
           void save();
@@ -393,7 +394,7 @@ function UserForm({
       </form>
 
       {user && !self && (
-        <section className="flex flex-col gap-3 self-start rounded-xl border-(length:--bw) bg-card p-4">
+        <section className="surface flex flex-col gap-3 self-start p-4">
           <h2 className="text-lg font-bold">Atur ulang password</h2>
           <p className="text-muted-foreground">
             Pakai bila pengguna lupa password. Sampaikan password baru secara langsung, lalu minta

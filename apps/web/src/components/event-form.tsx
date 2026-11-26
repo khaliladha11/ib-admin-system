@@ -65,7 +65,7 @@ function Field({
       </Label>
       <div className={cn(inline && 'min-w-0 flex-1')}>{children}</div>
       {error && (
-        <p id={`${id}-error`} className="font-semibold text-alarm">
+        <p id={`${id}-error`} role="alert" className="font-semibold text-alarm">
           {error}
         </p>
       )}
@@ -92,7 +92,11 @@ function Choice<T extends string>({
   columns?: 2 | 3;
 }) {
   return (
-    <fieldset className="flex flex-col gap-1.5">
+    <fieldset
+      className="flex flex-col gap-1.5"
+      aria-invalid={error ? true : undefined}
+      aria-describedby={error ? `${name}-error` : undefined}
+    >
       <legend className="mb-1.5 text-base font-semibold">{legend}</legend>
       <div className={cn('grid gap-2', columns === 3 ? 'grid-cols-3' : 'grid-cols-2')}>
         {options.map(([v, label]) => (
@@ -114,7 +118,11 @@ function Choice<T extends string>({
           </label>
         ))}
       </div>
-      {error && <p className="font-semibold text-alarm">{error}</p>}
+      {error && (
+        <p id={`${name}-error`} role="alert" className="font-semibold text-alarm">
+          {error}
+        </p>
+      )}
     </fieldset>
   );
 }

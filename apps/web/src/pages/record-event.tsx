@@ -2,6 +2,7 @@
 import { useNavigate, useParams, useSearch } from '@tanstack/react-router';
 import { SearchX } from 'lucide-react';
 
+import { FormSkeleton } from '@/components/skeletons';
 import { EmptyState } from '@/components/empty-state';
 import { EventForm } from '@/components/event-form';
 import { EVENT_FORM_TYPES, FARMER_FORM_TYPES, TYPE_LABEL } from '@/components/event-form-model';
@@ -18,7 +19,8 @@ export function RecordEventPage() {
   const { now } = useDataLayer();
   const navigate = useNavigate();
 
-  if (animal === undefined || defaults === undefined || session === undefined) return null;
+  if (animal === undefined || defaults === undefined || session === undefined)
+    return <FormSkeleton />;
   if (animal === null) {
     return (
       <EmptyState icon={SearchX} title="Ternak tidak ditemukan">

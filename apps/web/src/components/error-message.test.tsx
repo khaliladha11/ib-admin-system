@@ -24,7 +24,7 @@ describe('describeError', () => {
       'Periksa dulu sebelum menyimpan',
       ['Sapi tercatat bunting.'],
     ],
-    [new NetworkError(), 'Tidak ada koneksi ke server', []],
+    [new NetworkError(), 'Tidak ada sinyal', []],
     [new NotSignedInError(), 'Anda perlu masuk lagi', []],
     [new ApiRequestError(401, 'UNAUTHENTICATED', 'x'), 'Anda perlu masuk lagi', []],
     [
@@ -34,10 +34,10 @@ describe('describeError', () => {
     ],
     [
       new ApiRequestError(422, 'INVALID_EVENT', 'PKB terlalu cepat.'),
-      'Server menolak data ini',
+      'Catatan ini tidak diterima',
       ['PKB terlalu cepat.'],
     ],
-    [new ApiRequestError(500, 'INTERNAL_ERROR', 'x'), 'Server sedang bermasalah', ['x']],
+    [new ApiRequestError(500, 'INTERNAL_ERROR', 'x'), 'Sedang ada gangguan', []],
     [new Error('boom'), 'Terjadi kesalahan di aplikasi', []],
   ])('%s', (error, title, items) => {
     expect(describeError(error)).toMatchObject({ title, items });
@@ -53,7 +53,7 @@ describe('describeError', () => {
 describe('ErrorMessage', () => {
   it('memakai role alert dan tombol Coba lagi bila diberikan', () => {
     render(<ErrorMessage error={new NetworkError()} onRetry={() => undefined} />);
-    expect(screen.getByRole('alert')).toHaveTextContent('Tidak ada koneksi ke server');
+    expect(screen.getByRole('alert')).toHaveTextContent('Tidak ada sinyal');
     expect(screen.getByRole('button', { name: 'Coba lagi' })).toBeInTheDocument();
   });
 });

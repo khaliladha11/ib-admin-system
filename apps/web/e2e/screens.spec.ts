@@ -129,8 +129,8 @@ test('petugas: masuk, hari ini, ternak, profil, catat IB, tugas', async ({ page 
 
   // 6. Lainnya + pasang PIN
   await page.goto('/lainnya');
-  await expect(page.getByRole('heading', { name: 'Sinkron data' })).toBeVisible();
-  await expect(page.getByText('Semua data sudah terkirim.')).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByRole('heading', { name: 'Pengiriman data' })).toBeVisible();
+  await expect(page.getByText('Semua catatan sudah terkirim.')).toBeVisible({ timeout: 15_000 });
   await shot(page, '13-lainnya');
   await page.getByRole('button', { name: 'Pasang PIN' }).click();
   for (const d of '2468') await page.getByRole('button', { name: d, exact: true }).click();
