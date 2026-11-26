@@ -107,11 +107,13 @@ describe('aksi admin lewat outbox', () => {
       'Petugas ini sudah ditugaskan.',
     );
     await t.repo.reassignServiceRequest(t.request.id, t.other);
-    const list = await t.db.assignments.orderBy('id').toArray();
-    expect(list.map((a) => [a.inseminatorId, a.endReason])).toEqual([
-      [IDS.inseminator, 'reassigned'],
-      [t.other, null],
-    ]);
+    const list = await t.db.assignments.toArray();
+    expect(list.map((a) => [a.inseminatorId, a.endReason]).sort()).toEqual(
+      [
+        [IDS.inseminator, 'reassigned'],
+        [t.other, null],
+      ].sort(),
+    );
     const activity = await loadRequestActivity(t.db, t.request.id);
     expect(activity.map((a) => a.kind)).toEqual(['submit', 'assign', 'reassign']);
     expect(activity[2]).toMatchObject({

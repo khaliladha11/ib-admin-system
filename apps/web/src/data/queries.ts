@@ -441,7 +441,11 @@ export async function loadRequestActivity(db: IbDb, requestId: string): Promise<
       unsynced: false,
     },
   ];
-  const ordered = alive(assignments).sort((a, b) => a.assignedAt - b.assignedAt);
+  // Urut waktu; bila sama (mis. dicatat cepat saat offline), penugasan yang sudah ditutup dulu.
+  const ordered = alive(assignments).sort(
+    (a, b) =>
+      a.assignedAt - b.assignedAt || Number(a.endedAt === null) - Number(b.endedAt === null),
+  );
   ordered.forEach((a, i) => {
     const insName = name(a.inseminatorId) ?? 'petugas';
     entries.push({
