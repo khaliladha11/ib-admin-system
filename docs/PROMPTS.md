@@ -248,7 +248,7 @@ Bangun tampilan admin (kelompok/dinas) untuk layar 1024px ke atas:
 Pastikan tetap bisa dipakai (walau lebih sederhana) di layar HP. Ambil screenshot 1280x800 ke `docs/screenshots/`.
 ```
 
-- [ ] **2.4 Review UI**
+- [x] **2.4 Review UI**
 
 ```text
 Lakukan review UI menyeluruh pada `apps/web`: konsistensi komponen, kontras warna, ukuran target sentuh, label form untuk pembaca layar, teks yang membingungkan atau terlalu teknis untuk peternak, dan tampilan saat data kosong atau error. Buat daftar temuan berurutan dari yang paling penting, perbaiki 10 teratas, lalu tunjukkan screenshot sebelum dan sesudah.

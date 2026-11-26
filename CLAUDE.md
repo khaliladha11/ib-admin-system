@@ -28,7 +28,9 @@ inseminator, dan admin kelompok/dinas.
   2.1 sistem desain selesai (`docs/DESIGN.md`, review di `/dev/komponen`).
   2.2 layar HP selesai (masuk + PIN, Hari ini, Ternak, profil, catat event, Tugas).
   2.3 dashboard admin selesai (Ringkasan, Permintaan + verifikasi/tolak/ganti petugas + log,
-  Tindak lanjut + WhatsApp, Peternak, Pengguna). Langkah berikutnya: 2.4 review UI.
+  Tindak lanjut + WhatsApp, Peternak, Pengguna). 2.4 review UI selesai (tema "padang pagi",
+  10 temuan teratas diperbaiki, `docs/REVIEW-2.4.md`). Fase 2 selesai; tag `v0.2.0` masih perlu
+  dibuat manual di GitHub. Langkah berikutnya: 3.1 kode QR & cetak label.
 
 ## Prinsip
 1. Offline-first: semua pencatatan harus bisa tanpa internet; sinkron menyusul.
@@ -92,7 +94,9 @@ inseminator, dan admin kelompok/dinas.
 - `pnpm build` — build produksi web
 - `pnpm e2e` — Playwright 360×740 (`apps/web/e2e/`): menyalakan server port 3100 dengan
   `data/e2e.sqlite` yang diisi ulang + Vite port 5174, lalu menyimpan screenshot ke
-  `docs/screenshots/2.2-*.png` dan `2.3-*.png` (admin di 1280×800 + cek HP 360). Di luar sandbox: `pnpm --filter @ib/web exec playwright install chromium`.
+  `docs/screenshots/2.2-*.png` dan `2.3-*.png` (admin di 1280×800 + cek HP 360).
+  `review.spec.ts` menyimpan `2.4-sesudah-*.png` (atau awalan lain lewat `SHOT_PREFIX=...`) dan
+  memeriksa target sentuh ≥ 44px + tanpa scroll ke samping. Di luar sandbox: `pnpm --filter @ib/web exec playwright install chromium`.
 - `pnpm db:migrate` — jalankan migrasi (`DATABASE_URL`, bawaan `apps/server/data/ib.sqlite`)
 - `pnpm db:seed` — isi data contoh fiktif; `pnpm db:seed --reset` untuk mengisi ulang
 - `pnpm db:generate` — buat file migrasi baru setelah mengubah `apps/server/src/db/schema.ts`
@@ -167,6 +171,18 @@ inseminator, dan admin kelompok/dinas.
   `/api/users`); data pengguna tanpa hash password ikut sinkron (Dexie v3: `users`, `auditLogs`).
 - WhatsApp: hanya tautan `wa.me` dengan pesan terisi (`lib/whatsapp.ts`); tidak ada pengiriman
   otomatis dan tidak ada API WhatsApp.
+- Tema 2.4: gradasi `--sky-wash` → `--lime-wash`, aksen `--straw` #e2f05c, kelas `.surface`
+  (kartu) dan `.display` (judul serif Instrument Serif, hanya ≥ 25px), komponen `Panel`, tombol pil.
+  Ikon ternak = `Cow` (`components/icons/cow.tsx`), bukan Paw.
+- Animasi: library Motion (`motion/react`), dibungkus `<MotionConfig reducedMotion="user">` di
+  `main.tsx`. Skeleton di `components/skeletons.tsx`, ilustrasi `components/illustrations/meadow.tsx`
+  (`aria-hidden`). Halaman tidak boleh `return null` saat memuat: pakai skeleton.
+- Error rute: `RouteError`/`RootError` (`layout/route-error.tsx`). Halaman admin dan `/dev/*`
+  dimuat lazy (`lazyRouteComponent`).
+- Form: `fieldA11y(id, error)` (`lib/a11y.ts`) + pesan error `role="alert"`. Pindah halaman:
+  fokus ke h1 + live region (`useRouteAnnouncement` di `app-shell.tsx`).
+- Tindakan pengingat per peran: `reminderAction` (`lib/reminder-actions.ts`), misalnya peternak
+  "Minta PKB", petugas "Catat PKB".
 - Tes web memakai `fake-indexeddb` (di `src/test/setup.ts`) dan fixture
   `src/test/data-fixtures.ts` (DB baru per tes, fetch tiruan).
 - Logika reproduksi di `packages/shared/src/domain/`: `deriveReproStatus`,

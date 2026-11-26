@@ -4,6 +4,11 @@ Pengguna utama: inseminator dan peternak dengan HP Android 5,5 inci, sering di k
 di atas motor, di bawah sinar matahari. Karena itu: kontras tinggi, huruf besar, target sentuh
 besar, dan status yang terbaca tanpa membedakan warna.
 
+Sejak langkah 2.4 tampilannya bertema "padang pagi": latar gradasi langit ke lime yang lembut,
+kartu putih bulat dengan bayangan halus, tombol berbentuk pil, aksen kuning-lime, judul besar
+serif, dan ilustrasi padang beranimasi. Hasil review dan screenshot sebelum/sesudah ada di
+[`REVIEW-2.4.md`](REVIEW-2.4.md).
+
 Review semua komponen di **`/dev/komponen`** (`pnpm dev`, lalu buka
 http://localhost:5173/dev/komponen). Screenshot ada di [`screenshots/`](screenshots/).
 
@@ -18,17 +23,20 @@ Made Good Designs. Tulis warna sebagai `#rrggbb` agar terbaca tes.
 | --- | --- | --- | --- |
 | Tinta `ink` | #14261A | `text-foreground`, `bg-ink` | Teks utama (15,9:1 di putih) |
 | Daun `leaf` | #2E6B34 | `bg-primary`, `text-primary` | Tombol utama, tab aktif, tautan |
-| Jerami `straw` | #F2C230 | `bg-accent`, `bg-straw` | Tombol Scan, sorotan. Selalu dengan teks tinta |
+| Jerami `straw` | #E2F05C | `bg-accent`, `bg-straw` | Tombol Scan, tombol aksen, sorotan. Selalu dengan teks tinta |
+| Daun tua `leaf-deep` | #1F4D26 | `text-leaf-deep` | Judul serif besar |
 | Tanah `soil` | #6E4524 | `text-soil` | Peringatan ringan, offline |
 | Langit `sky` | #1D5A86 | `text-info` | Info, sedang mengirim, cincin fokus |
 | Bahaya `alarm` | #B3261E | `text-alarm`, `bg-destructive` | Error, terlambat |
-| Ladang `field` | #EEF3EA | `bg-background` | Latar halaman |
+| Ladang `field` | #EEF3EA | `bg-secondary` | Kepala tabel, latar sekunder |
+| Langit pagi `sky-wash` → `lime-wash` | #E6F0F8 → #EEF5D2 | latar `body` | Gradasi latar halaman (`--background` = ujung lime). Teks diuji di kedua ujung |
 | Kertas `paper` | #FFFFFF | `bg-card` | Latar kartu dan isian |
 | Garis `line` / `line-strong` | #D3DDCF / #6F7F73 | `border-border` / `border-input` | Tepi kartu (hiasan) / tepi isian (≥ 3:1) |
 
 **Kontras tinggi** (`<html data-contrast="high">`, diatur dari menu Lainnya, disimpan per HP):
 teks hitam pada putih, latar halaman putih, semua garis hitam dan tebalnya 2px (`--bw`),
-primer #0F3D16, fokus = garis hitam 3px + lingkaran jerami.
+primer #0F3D16, fokus = garis hitam 3px + lingkaran jerami. Gradasi menjadi putih polos dan
+bayangan kartu dihapus.
 
 Untuk tepi, pakai `border-(length:--bw)` (bukan `border`), supaya tebalnya ikut mode kontras tinggi.
 
@@ -65,6 +73,11 @@ jelas berbeda, sehingga cocok untuk kode QR `IB-XXXXX` dan kode straw. Huruf dip
 | `text-base` | 16px | Isi, isian form (ukuran dasar; Android tidak zoom) |
 | `text-sm` | 14px | Keterangan saja; paling kecil |
 
+**Judul serif**: `Instrument Serif` (`@fontsource/instrument-serif`, lokal) lewat kelas `.display`
+(warna daun tua, rapat). Hanya untuk teks besar **≥ 25px**: nama ternak di profil, angka
+besar di Hari ini, judul layar Masuk, nama wilayah di Ringkasan, judul tampilan kosong. Isi,
+label, dan tombol tetap Atkinson.
+
 Angka memakai `tabular-nums`. Hindari huruf kapital semua untuk label.
 
 ## Ukuran dan sentuhan
@@ -80,8 +93,28 @@ Angka memakai `tabular-nums`. Hindari huruf kapital semua untuk label.
   navigasi bawah berisi Beranda, Ternak, **Scan**, Tugas, Lainnya.
 - **PC (≥ 1024px)**: sidebar kiri 248px. Tombol "Scan ternak" ada di atas, lalu menu lain.
   Lebar konten maksimal 960px.
-- Rata kiri di semua tempat. Kartu memakai tepi tipis tanpa bayangan; bayangan hanya untuk
-  navigasi bawah.
+- Rata kiri di semua tempat. Kartu dan panel memakai kelas `.surface`: putih, sudut 2xl,
+  tepi tipis, bayangan halus (`--card-shadow`). Bagian halaman memakai `Panel` (judul + aksi + isi).
+- Tombol berbentuk pil (`rounded-full`).
+- Ruang kosong besar diisi ilustrasi `Meadow` (layar Masuk/PIN, tampilan kosong, panel
+  dashboard yang sepi, bawah sidebar PC). Ilustrasi selalu `aria-hidden`.
+
+## Ikon
+
+Ikon dari lucide-react, garis 2px. Ternak memakai ikon **sapi** buatan sendiri
+(`components/icons/cow.tsx`, gaya lucide), bukan tapak kaki.
+
+## Gerak (Motion)
+
+Animasi memakai `motion/react` dan hanya pemanis; tidak ada informasi yang hanya tampil lewat gerak.
+
+- `<MotionConfig reducedMotion="user">` di `main.tsx`: bila HP diatur "kurangi gerakan", semua
+  animasi berhenti.
+- Skeleton berkilau (`components/skeletons.tsx`) saat data lokal dibaca. Jangan biarkan layar putih.
+- Daftar masuk bertahap (stagger pendek ≤ 0,3 detik), isian ruas `CycleTrack`, tanda centang
+  tersimpan (`SavedCheck`), dan ilustrasi padang (awan, matahari, pohon, sapi) yang bergerak pelan.
+- Durasi 0,2–0,6 detik untuk transisi; gerak berulang pelan (≥ 4 detik) dan kecil.
+- Halaman admin dan pengembang dimuat saat dibuka (lazy), agar bundel awal HP tetap kecil.
 
 ## Komponen (`apps/web/src/components/`)
 
@@ -91,7 +124,11 @@ Angka memakai `tabular-nums`. Hindari huruf kapital semua untuk label.
 | `AnimalCard` | Nama, kode QR, jenis kelamin/rumpun/peternak, status, lintasan siklus, jadwal berikutnya, tanda "Belum terkirim" |
 | `EventForm` | Catat Birahi, IB, PKB, Berat. Isian wajib dicek dengan pesan sederhana. Peringatan dari aturan domain menampilkan tombol "Tetap simpan" |
 | `SyncIndicator` | Online/offline, jumlah belum terkirim, data ditolak, perlu masuk lagi. Sentuh untuk sinkron |
-| `EmptyState` | Ikon, judul, dan langkah berikutnya |
+| `EmptyState` | Ikon, judul serif, dan langkah berikutnya; `art="meadow"` menambah ilustrasi |
+| `Panel`, `.surface` | Bagian halaman dan kartu yang seragam |
+| Skeleton (`ListSkeleton`, `DetailSkeleton`, `DashboardSkeleton`, `FormSkeleton`) | Tampilan saat memuat, `role="status"` |
+| `RouteError` | Error di halaman: pesan ramah + Muat ulang + Ke beranda |
+| `ReminderActionLink` | Tombol tindak lanjut pengingat sesuai peran (`lib/reminder-actions.ts`) |
 | `ErrorMessage` | Menjelaskan apa yang terjadi dan apa yang bisa dilakukan, tanpa pesan teknis |
 | `ui/*` | shadcn/ui yang disesuaikan: `Button`, `Card`, `Input`, `Textarea`, `NativeSelect`, `Label` |
 
@@ -101,3 +138,13 @@ Angka memakai `tabular-nums`. Hindari huruf kapital semua untuk label.
   "Scan ternak", bukan "Kirim".
 - Pesan error menyebut apa yang terjadi dan apa yang harus dilakukan, tanpa minta maaf.
 - Tampilan kosong mengajak pengguna ke langkah berikutnya.
+- Hindari istilah teknis: "Pengiriman data" (bukan sinkron), "Tidak diterima" (bukan ditolak
+  server), "Tanpa sinyal" (bukan offline/error jaringan). Kode error tidak ditampilkan.
+
+## Aksesibilitas
+
+- Isian form memakai `fieldA11y(id, error)` (`lib/a11y.ts`): `aria-invalid` + `aria-describedby`
+  ke pesan error yang memakai `role="alert"`.
+- Pindah halaman: fokus ke `<h1>` dan live region mengumumkan "Halaman …".
+- `apps/web/e2e/review.spec.ts` memeriksa semua kontrol yang terlihat ≥ 44×44px dan tidak ada
+  scroll ke samping di 14 layar.
