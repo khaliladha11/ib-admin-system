@@ -286,7 +286,7 @@ Berikan juga cara saya menguji di HP lewat jaringan Wi-Fi yang sama (HTTPS lokal
 
 Ini fase paling rawan bug, jadi kerjakan per prompt dan jangan lanjut sebelum tes skenario konflik di 4.2 lulus.
 
-- [ ] **4.1 PWA yang bisa diinstal & berjalan offline**
+- [x] **4.1 PWA yang bisa diinstal & berjalan offline**
 
 ```text
 Jadikan `apps/web` PWA dengan vite-plugin-pwa:

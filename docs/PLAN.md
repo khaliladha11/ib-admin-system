@@ -213,7 +213,7 @@ Nomor langkah = nomor prompt di [`docs/PROMPTS.md`](PROMPTS.md).
 | **1. Inti data & logika** | 1.1 kerangka monorepo + CI ✅ · 1.2 model data & DB ✅ · 1.3 mesin status (TDD) ✅ · 1.4 API, login, peran ✅ | Alur IB → PKB → lahir bisa dicatat lewat API dan lulus tes integrasi |
 | **2. UI & dashboard** | 2.0 lapisan data lokal Dexie ✅ · 2.1 sistem desain ✅ · 2.2 layar HP ✅ · 2.3 dashboard admin ✅ · 2.4 review UI ✅ | Screenshot 360×740 dan 1280×800 di `docs/screenshots/` |
 | **3. Identitas QR/tag** | 3.1 kode QR & cetak label ✅ · 3.2 pemindai QR ✅ | Scan → IB tercatat ≤ 30 detik, offline, diuji di HP sungguhan |
-| **4. Offline penuh & server lokal** | 4.1 PWA · 4.2 sinkron tahan konflik · 4.3 mode pos/kelompok (Docker, HTTPS lokal, cadangan) | Tes dua perangkat offline lulus tanpa data hilang/ganda; `docs/INSTALL.md` bisa diikuti non-programmer |
+| **4. Offline penuh & server lokal** | 4.1 PWA ✅ · 4.2 sinkron tahan konflik · 4.3 mode pos/kelompok (Docker, HTTPS lokal, cadangan) | Tes dua perangkat offline lulus tanpa data hilang/ganda; `docs/INSTALL.md` bisa diikuti non-programmer |
 | **5. Pilot** | 5.1 persiapan UAT · 5.2 perbaikan dari umpan balik (mingguan) | Skenario `docs/UAT.md` dijalankan bersama inseminator & peternak |
 | **6. Rilis & lanjutan** | 6.1 rilis v1.0 open-source · 6.2 analitik & laporan · 6.3 ekspor iSIKHNAS | GitHub Release v1.0; S/C & CR cocok dengan hitungan manual |
 
@@ -242,4 +242,4 @@ langkahnya dikerjakan): ZXing (cadangan pemindai, 3.2), Docker Compose + Caddy
 3. Apakah tenggat operasional legacy (petugas merespons dalam 30 menit, laporan
    dalam 24 jam) masih dibutuhkan?
 4. Lisensi v1.0: MIT (seperti versi skripsi) atau AGPL-3.0?
-5. Nama aplikasi PWA: "IB Ternak" atau nama lain?
+5. ~~Nama aplikasi PWA: "IB Ternak" atau nama lain?~~ Terjawab di langkah 4.1: **IB Ternak**.

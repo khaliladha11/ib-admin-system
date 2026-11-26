@@ -35,6 +35,9 @@ inseminator, dan admin kelompok/dinas.
   kosong, riwayat tag pasang/ganti/cabut di profil). 3.2 pemindai QR selesai (Scan dengan
   BarcodeDetector/ZXing, offline, scan beruntun, daftar sapi baru dari kode). Uji di HP sungguhan
   belum dilakukan (panduan `docs/UJI-HP.md`). Fase 3 selesai setelah uji itu; tag `v0.3.0` manual.
+- Fase 4: 4.1 PWA selesai (nama **IB Ternak**, manifest + ikon, service worker precache semua
+  aset, "Perbarui sekarang", bundel awal 735 KB / 228 KB gzip, `docs/BUNDLE.md`).
+  Langkah berikutnya: 4.2 sinkron tahan konflik (rencana dulu).
 
 ## Prinsip
 1. Offline-first: semua pencatatan harus bisa tanpa internet; sinkron menyusul.
@@ -96,6 +99,10 @@ inseminator, dan admin kelompok/dinas.
 - `pnpm dev` — web (http://localhost:5173) + server (http://localhost:3000), proxy `/api`
 - `pnpm dev:hp` — sama, tetapi Vite HTTPS (sertifikat buatan sendiri, `@vitejs/plugin-basic-ssl`)
   dan terbuka di Wi-Fi, untuk mencoba kamera di HP. Panduan: `docs/UJI-HP.md`.
+- `pnpm --filter @ib/web build` lalu `pnpm --filter @ib/web preview:hp` — build produksi dengan
+  service worker (PWA), HTTPS di Wi-Fi port 4173. SW tidak ada di `pnpm dev`.
+- Ukuran bundel: `pnpm --filter @ib/web exec tsx scripts/bundle-size.ts` setelah build;
+  `ANALYZE=1 pnpm build` menampilkan isi bundel awal per paket.
 - `pnpm test` / `pnpm typecheck` / `pnpm lint` (ESLint + Prettier check) / `pnpm format`
 - `pnpm build` — build produksi web
 - `pnpm e2e` — Playwright 360×740 (`apps/web/e2e/`): menyalakan server port 3100 dengan
@@ -104,7 +111,9 @@ inseminator, dan admin kelompok/dinas.
   `review.spec.ts` menyimpan `2.4-sesudah-*.png` (atau awalan lain lewat `SHOT_PREFIX=...`) dan
   memeriksa target sentuh ≥ 44px + tanpa scroll ke samping (`e2e/checks.ts`). `labels.spec.ts`
   menyimpan `3.1-*.png` (halaman label, tampilan cetak A4, riwayat tag). `scan.spec.ts` memakai
-  kamera palsu (`e2e/fake-camera.ts`: video Y4M berisi QR `IB-SCAN2`) dan menyimpan `3.2-*.png`. Di luar sandbox: `pnpm --filter @ib/web exec playwright install chromium`.
+  kamera palsu (`e2e/fake-camera.ts`: video Y4M berisi QR `IB-SCAN2`) dan menyimpan `3.2-*.png`.
+  Project `pwa` (`pwa.spec.ts`) memakai build produksi + `vite preview` port 5175: manifest, buka
+  ulang offline dari cache SW, catat event offline, online → terkirim ke server (`4.1-*.png`). Di luar sandbox: `pnpm --filter @ib/web exec playwright install chromium`.
 - `pnpm db:migrate` — jalankan migrasi (`DATABASE_URL`, bawaan `apps/server/data/ib.sqlite`)
 - `pnpm db:seed` — isi data contoh fiktif; `pnpm db:seed --reset` untuk mengisi ulang
 - `pnpm db:generate` — buat file migrasi baru setelah mengubah `apps/server/src/db/schema.ts`
@@ -212,6 +221,17 @@ inseminator, dan admin kelompok/dinas.
   (`createAnimal` menerima `qrCode` atau `eartag`, satu transaksi). Scan beruntun: daftar di memori
   (`lib/scan/batch-store.ts`), pilihan mode diingat di localStorage. Getar + bip Web Audio
   (`lib/scan/feedback.ts`). Pesan kamera ditolak/tidak ada/https di `CAMERA_PROBLEM_TEXT`.
+- PWA (langkah 4.1): `vite-plugin-pwa` `generateSW`, `registerType: 'prompt'`, `injectRegister: false`;
+  `UpdatePrompt` (`components/update-prompt.tsx`, `useRegisterSW`) di `root-layout.tsx`: "Perbarui
+  sekarang"/"Nanti" + pesan "Siap dipakai tanpa sinyal"; cek versi tiap jam. Precache semua
+  js/css/html/svg/png/woff2 (termasuk chunk lazy) agar semua layar terbuka offline. `/api` TIDAK
+  di-cache SW (denylist navigasi): data offline hanya Dexie + outbox. Manifest di `vite.config.ts`,
+  ikon dari `public/icons/*.svg` lewat `scripts/render-icons.ts`. Dev server tanpa SW.
+- Sinkron: event `online` dan tombol "Kirim sekarang" memanggil `syncNow({ force: true })` yang
+  menghapus jeda backoff (`clearBackoff`), agar catatan langsung terkirim saat sinyal kembali.
+- Bundel: Motion lewat `LazyMotion` (`lib/motion-features.ts`, dimuat terpisah) dan komponen
+  `m` dari `motion/react-m` (jangan impor `motion` dari `motion/react` di komponen). Halaman form
+  catat, minta IB/PKB, Lainnya, Scan, label, admin dimuat lazy. Ukuran: `docs/BUNDLE.md`.
 - Tes web memakai `fake-indexeddb` (di `src/test/setup.ts`) dan fixture
   `src/test/data-fixtures.ts` (DB baru per tes, fetch tiruan).
 - Logika reproduksi di `packages/shared/src/domain/`: `deriveReproStatus`,
