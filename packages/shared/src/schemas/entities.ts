@@ -98,6 +98,16 @@ export const animalTagSchema = baseRowSchema
     path: ['removalReason'],
   });
 
+/**
+ * Daftar kode QR yang sudah dibuat (dicetak sebagai label, termasuk label kosong).
+ * Kode tidak pernah dipakai ulang; ternak yang memakainya tercatat di `animal_tags`.
+ */
+export const qrCodeSchema = baseRowSchema.extend({
+  code: z.string().regex(QR_CODE_PATTERN, 'Kode QR harus berformat IB-XXXXX'),
+  /** Pengguna yang membuat/mencetak kode. */
+  issuedBy: idSchema,
+});
+
 export const serviceRequestSchema = baseRowSchema.extend({
   farmerId: idSchema,
   animalId: idSchema,
@@ -153,6 +163,7 @@ export type PublicUser = z.infer<typeof publicUserSchema>;
 export type Farmer = z.infer<typeof farmerSchema>;
 export type Animal = z.infer<typeof animalSchema>;
 export type AnimalTag = z.infer<typeof animalTagSchema>;
+export type QrCode = z.infer<typeof qrCodeSchema>;
 export type ServiceRequest = z.infer<typeof serviceRequestSchema>;
 export type Assignment = z.infer<typeof assignmentSchema>;
 export type SemenStock = z.infer<typeof semenStockSchema>;

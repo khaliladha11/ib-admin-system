@@ -15,6 +15,13 @@
       "when": 1795583365633,
       "tag": "0001_sessions",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1795677209881,
+      "tag": "0002_qr_codes",
+      "breakpoints": true
     }
   ]
 }

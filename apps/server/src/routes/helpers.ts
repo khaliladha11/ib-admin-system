@@ -5,7 +5,7 @@ import type { Context } from 'hono';
 import { canAccessFarmer, loadScope, type Scope } from '../auth/scope';
 import { requireUser } from '../auth/session';
 import type { Db } from '../db/client';
-import { animals, animalTags, auditLogs, events, farmers } from '../db/schema';
+import { animals, animalTags, auditLogs, events, farmers, qrCodes } from '../db/schema';
 import { alreadyExists, notFound } from '../http/errors';
 import type { AppEnv } from '../http/env';
 import { toStatusDto } from '../http/schemas';
@@ -131,4 +131,29 @@ export function changedFields<T extends Record<string, unknown>>(before: T, patc
     }
   }
   return { before: b, after: a, changed: Object.keys(a).length > 0 };
+}
+
+type Tx = Parameters<Parameters<Db['transaction']>[0]>[0];
+
+/** Kode QR sudah ada di daftar kode atau pernah dipasang sebagai tag. */
+export function qrCodeTaken(db: Db | Tx, code: string) {
+  return (
+    !!db.select({ id: qrCodes.id }).from(qrCodes).where(eq(qrCodes.code, code)).get() ||
+    !!db
+      .select({ id: animalTags.id })
+      .from(animalTags)
+      .where(and(eq(animalTags.type, 'qr'), eq(animalTags.code, code)))
+      .get()
+  );
+}
+
+/**
+ * Tag QR yang dipasang harus ada di daftar kode. Label dari perangkat lain sudah terdaftar
+ * (kirimannya lebih dulu di outbox); kode yang diketik dari label lama didaftarkan di sini.
+ */
+export function registerQrCode(c: AppContext, tx: Tx, code: string) {
+  if (tx.select({ id: qrCodes.id }).from(qrCodes).where(eq(qrCodes.code, code)).get()) return;
+  tx.insert(qrCodes)
+    .values({ ...newRow(c), code, issuedBy: requireUser(c).id })
+    .run();
 }

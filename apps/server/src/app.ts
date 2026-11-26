@@ -14,6 +14,7 @@ import { registerReminderRoutes } from './routes/reminders';
 import { registerServiceRequestRoutes } from './routes/service-requests';
 import { registerSyncRoutes } from './routes/sync';
 import { registerUserRoutes } from './routes/users';
+import { registerQrCodeRoutes } from './routes/qr-codes';
 
 export const SERVICE_NAME = 'ib-server';
 export const API_VERSION = '0.1.0';
@@ -53,6 +54,7 @@ export function createApp({ db, now = () => Date.now(), config }: AppDeps) {
   registerReminderRoutes(app);
   registerSyncRoutes(app);
   registerUserRoutes(app);
+  registerQrCodeRoutes(app);
 
   app.openAPIRegistry.registerComponent('securitySchemes', 'cookieAuth', {
     type: 'apiKey',

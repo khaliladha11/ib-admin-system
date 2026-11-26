@@ -39,6 +39,7 @@ describe('migrasi', () => {
         'events',
         'farmers',
         'locations',
+        'qr_codes',
         'semen_stock',
         'service_requests',
         'sessions',

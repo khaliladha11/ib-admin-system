@@ -160,6 +160,26 @@ export const animalTags = sqliteTable(
   ],
 );
 
+/**
+ * Daftar kode QR yang pernah dibuat (label tercetak, termasuk label kosong). Kode dibuat
+ * di perangkat; indeks unik di sini yang menjamin tidak ada dua label dengan kode sama.
+ */
+export const qrCodes = sqliteTable(
+  'qr_codes',
+  {
+    ...baseColumns,
+    code: text().notNull(),
+    issuedBy: text()
+      .notNull()
+      .references(() => users.id),
+  },
+  (t) => [
+    uniqueIndex('qr_codes_code_unique').on(t.code),
+    index('qr_codes_issued_by_idx').on(t.issuedBy),
+    updatedAtIndex('qr_codes', t.updatedAt),
+  ],
+);
+
 export const semenStock = sqliteTable(
   'semen_stock',
   {
@@ -311,6 +331,7 @@ export const allTables = [
   serviceRequests,
   semenStock,
   animalTags,
+  qrCodes,
   animals,
   farmers,
   users,
