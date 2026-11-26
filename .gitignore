@@ -18,3 +18,7 @@ coverage/
 
 # Database SQLite lokal
 apps/server/data/
+
+# Hasil Playwright
+apps/web/test-results/
+apps/web/playwright-report/
