@@ -269,7 +269,7 @@ Tambahkan identitas QR untuk ternak:
 - Tes untuk pembuatan kode dan keunikan
 ```
 
-- [ ] **3.2 Pemindai QR di aplikasi**
+- [x] **3.2 Pemindai QR di aplikasi**
 
 ```text
 Buat halaman Scan (tombol tengah di navigasi bawah):
