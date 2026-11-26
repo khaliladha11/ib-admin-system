@@ -14,9 +14,6 @@ import type { RequestFilter } from '@/pages/admin/request-filter';
 import { AnimalProfilePage } from '@/pages/animal-profile';
 import { AnimalsPage } from '@/pages/animals';
 import { HomePage } from '@/pages/home';
-import { MorePage } from '@/pages/more';
-import { RecordEventPage } from '@/pages/record-event';
-import { RequestFormPage } from '@/pages/request-form';
 import { TasksPage } from '@/pages/tasks';
 
 // Halaman admin dan pengembang dimuat saat dibuka (bundel awal HP lebih kecil).
@@ -33,6 +30,11 @@ const FarmersPage = lazyRouteComponent(() => import('@/pages/admin/farmers'), 'F
 const FollowUpsPage = lazyRouteComponent(() => import('@/pages/admin/follow-ups'), 'FollowUpsPage');
 const UserFormPage = lazyRouteComponent(() => import('@/pages/admin/users'), 'UserFormPage');
 const UsersPage = lazyRouteComponent(() => import('@/pages/admin/users'), 'UsersPage');
+// Halaman yang lebih jarang dibuka (form, Lainnya) juga dimuat saat dibuka; semuanya ada di
+// cache service worker sehingga tetap terbuka tanpa sinyal.
+const MorePage = lazyRouteComponent(() => import('@/pages/more'), 'MorePage');
+const RecordEventPage = lazyRouteComponent(() => import('@/pages/record-event'), 'RecordEventPage');
+const RequestFormPage = lazyRouteComponent(() => import('@/pages/request-form'), 'RequestFormPage');
 const ScanPage = lazyRouteComponent(() => import('@/pages/scan/scan-page'), 'ScanPage');
 const AnimalNewPage = lazyRouteComponent(() => import('@/pages/animal-new'), 'AnimalNewPage');
 const LabelsPage = lazyRouteComponent(() => import('@/pages/labels/labels-page'), 'LabelsPage');

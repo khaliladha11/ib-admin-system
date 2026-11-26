@@ -2,7 +2,7 @@
 // Tahap sekarang terisi penuh, tahap yang sudah lewat bergaris, tahap berikutnya kosong.
 import type { ReproStatusKind } from '@ib/shared';
 
-import { motion } from 'motion/react';
+import * as m from 'motion/react-m';
 
 import { cn } from '@/lib/utils';
 
@@ -29,7 +29,7 @@ export function CycleTrack({
           const state = i < current ? 'past' : i === current ? 'now' : 'next';
           return (
             <div key={stage} className="flex flex-col gap-1">
-              <motion.div
+              <m.div
                 data-stage-state={state}
                 // Tahap sekarang "mengisi" dari kiri sekali saat muncul.
                 initial={state === 'now' ? { scaleX: 0 } : false}

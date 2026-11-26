@@ -1,5 +1,5 @@
 import { RouterProvider } from '@tanstack/react-router';
-import { MotionConfig } from 'motion/react';
+import { LazyMotion, MotionConfig } from 'motion/react';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 
@@ -11,6 +11,7 @@ import './index.css';
 
 restoreContrastMode();
 const layer = createDataLayer();
+const motionFeatures = () => import('@/lib/motion-features').then((mod) => mod.default);
 const router = createAppRouter();
 
 const root = document.getElementById('root');
@@ -20,9 +21,11 @@ createRoot(root).render(
   <StrictMode>
     {/* Animasi mengikuti setelan "kurangi gerakan" di HP. */}
     <MotionConfig reducedMotion="user">
-      <DataProvider layer={layer}>
-        <RouterProvider router={router} />
-      </DataProvider>
+      <LazyMotion features={motionFeatures} strict>
+        <DataProvider layer={layer}>
+          <RouterProvider router={router} />
+        </DataProvider>
+      </LazyMotion>
     </MotionConfig>
   </StrictMode>,
 );
