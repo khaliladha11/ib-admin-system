@@ -1,9 +1,17 @@
 // Uji end-to-end di viewport HP 360×740 terhadap server sungguhan berisi data contoh fiktif.
 // Jalankan: pnpm e2e (dari root). Screenshot setiap layar disimpan ke docs/screenshots/.
+import path from 'node:path';
+
 import { defineConfig } from '@playwright/test';
+
+import { FAKE_CAMERA_CODE, writeQrVideo } from './e2e/fake-camera';
 
 const SERVER_PORT = 3100;
 const WEB_PORT = 5174;
+
+// Kamera palsu (halaman Scan): QR berisi URL label agar parseQrCode ikut teruji.
+const FAKE_VIDEO = path.resolve(import.meta.dirname, 'node_modules/.cache/ib-e2e/fake-camera.y4m');
+writeQrVideo(FAKE_VIDEO, `https://ib.contoh.test/t/${FAKE_CAMERA_CODE}`);
 
 export default defineConfig({
   testDir: './e2e',
@@ -19,6 +27,13 @@ export default defineConfig({
     locale: 'id-ID',
     timezoneId: 'Asia/Jakarta',
     trace: 'off',
+    launchOptions: {
+      args: [
+        '--use-fake-ui-for-media-stream',
+        '--use-fake-device-for-media-stream',
+        `--use-file-for-fake-video-capture=${FAKE_VIDEO}`,
+      ],
+    },
   },
   webServer: [
     {
