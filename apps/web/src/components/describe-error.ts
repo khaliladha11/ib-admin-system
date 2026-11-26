@@ -48,8 +48,8 @@ export function describeError(error: unknown): FriendlyError {
   if (error instanceof NetworkError) {
     return {
       icon: CloudOff,
-      title: 'Tidak ada koneksi ke server',
-      body: 'Data yang sudah dicatat tetap aman di HP ini dan dikirim otomatis saat ada sinyal.',
+      title: 'Tidak ada sinyal',
+      body: 'Catatan Anda tetap aman di HP ini dan dikirim otomatis saat ada sinyal.',
       items: [],
       tone: 'warn',
     };
@@ -78,12 +78,13 @@ export function describeError(error: unknown): FriendlyError {
   if (error instanceof ApiRequestError) {
     return {
       icon: OctagonAlert,
-      title: error.status >= 500 ? 'Server sedang bermasalah' : 'Server menolak data ini',
+      title: error.status >= 500 ? 'Sedang ada gangguan' : 'Catatan ini tidak diterima',
       body:
         error.status >= 500
-          ? 'Data tetap tersimpan di HP ini. Pengiriman dicoba lagi otomatis.'
-          : 'Periksa pesan dari server di bawah ini.',
-      items: [error.message],
+          ? 'Catatan tetap aman di HP ini. Pengiriman dicoba lagi otomatis.'
+          : 'Alasannya:',
+      // Kode gangguan teknis (5xx) tidak ditampilkan; alasan penolakan (4xx) ditampilkan.
+      items: error.status >= 500 ? [] : [error.message],
       tone: 'alarm',
     };
   }

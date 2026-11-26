@@ -1,6 +1,7 @@
 // Beranda "Hari ini": pengingat dari computeSchedule (lewat listReminders), per desa.
-import type { ReminderKind } from '@ib/shared';
+import type { ReminderKind, UserRole } from '@ib/shared';
 import { Link } from '@tanstack/react-router';
+import { lazy, Suspense } from 'react';
 import {
   ChevronRight,
   ClipboardClock,
@@ -13,7 +14,9 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 
+import { DashboardSkeleton, ListSkeleton } from '@/components/skeletons';
 import { EmptyState } from '@/components/empty-state';
+import { ReminderActionLink } from '@/components/reminder-action-link';
 import {
   useDataLayer,
   useReminders,
@@ -22,27 +25,26 @@ import {
   type ReminderView,
 } from '@/data';
 import { dayDiff, formatDate, formatLongToday, relativeDay } from '@/lib/format';
+import { reminderAction } from '@/lib/reminder-actions';
 import { cn } from '@/lib/utils';
 
 import { isAdminRole } from '@/layout/nav-items';
 
-import { AdminDashboard } from './admin/dashboard';
 import { groupByVillage } from './reminder-groups';
 
-const KIND_META: Record<ReminderKind, { title: string; icon: LucideIcon; tone: string }> = {
+/** Ikon dan warna per jenis pengingat; judulnya dari reminderAction (sesuai peran). */
+const KIND_META: Record<ReminderKind, { icon: LucideIcon; tone: string }> = {
   IB_RESULT_OVERDUE: {
-    title: 'Hasil IB belum dilaporkan',
     icon: ClipboardClock,
     tone: 'text-alarm',
   },
   BIRTH_REPORT_OVERDUE: {
-    title: 'Kelahiran belum dilaporkan',
     icon: TriangleAlert,
     tone: 'text-alarm',
   },
-  ESTRUS_EXPECTED: { title: 'Perkiraan birahi', icon: Flame, tone: 'text-(--st-birahi-fg)' },
-  PKB_DUE: { title: 'Jadwal periksa bunting (PKB)', icon: Stethoscope, tone: 'text-(--st-ib-fg)' },
-  CALVING_EXPECTED: { title: 'Perkiraan lahir', icon: Sprout, tone: 'text-(--st-lahir-fg)' },
+  ESTRUS_EXPECTED: { icon: Flame, tone: 'text-(--st-birahi-fg)' },
+  PKB_DUE: { icon: Stethoscope, tone: 'text-(--st-ib-fg)' },
+  CALVING_EXPECTED: { icon: Sprout, tone: 'text-(--st-lahir-fg)' },
 };
 
 export const REMINDER_WINDOW_DAYS = 7;
@@ -54,9 +56,20 @@ function when(item: ReminderView, today: number) {
     : relativeDay(item.dueAt, today).replace(/^./, (c) => c.toUpperCase());
 }
 
+// Dashboard admin dimuat terpisah: HP peternak/petugas tidak perlu mengunduhnya.
+const AdminDashboard = lazy(() =>
+  import('./admin/dashboard').then((m) => ({ default: m.AdminDashboard })),
+);
+
 export function HomePage() {
   const role = useSession()?.user.role;
-  return isAdminRole(role) ? <AdminDashboard /> : <FieldHome />;
+  return isAdminRole(role) ? (
+    <Suspense fallback={<DashboardSkeleton />}>
+      <AdminDashboard />
+    </Suspense>
+  ) : (
+    <FieldHome />
+  );
 }
 
 function FieldHome() {
@@ -70,7 +83,7 @@ function FieldHome() {
       ? (requests ?? []).filter((r) => r.assignedToMe && r.request.status === 'assigned').length
       : 0;
 
-  if (!reminders) return null;
+  if (!reminders) return <ListSkeleton label="Memuat jadwal hari ini…" />;
   const overdue = reminders.filter((r) => r.overdue).length;
   const groups = groupByVillage(reminders);
 
@@ -78,7 +91,7 @@ function FieldHome() {
     <div className="flex flex-col gap-5">
       <div>
         <p className="text-muted-foreground">{formatLongToday(today)}</p>
-        <p className="text-xl font-bold">
+        <p className="display text-[2.25rem]">
           {reminders.length === 0
             ? 'Tidak ada jadwal'
             : `${String(reminders.length)} hal perlu diperhatikan`}
@@ -91,7 +104,7 @@ function FieldHome() {
       {waitingTasks > 0 && (
         <Link
           to="/tugas"
-          className="flex min-h-14 items-center justify-between gap-3 rounded-xl bg-straw px-4 py-3 font-bold text-ink"
+          className="flex min-h-14 items-center justify-between gap-3 rounded-2xl bg-straw px-5 py-3 font-bold text-ink shadow-card"
         >
           <span>{String(waitingTasks)} tugas baru menunggu Anda terima</span>
           <ChevronRight aria-hidden="true" className="size-6 shrink-0" />
@@ -99,7 +112,7 @@ function FieldHome() {
       )}
 
       {reminders.length === 0 ? (
-        <EmptyState icon={PartyPopper} title="Tidak ada jadwal 7 hari ke depan">
+        <EmptyState icon={PartyPopper} art="meadow" title="Tidak ada jadwal 7 hari ke depan">
           Birahi, jadwal PKB, perkiraan lahir, dan laporan terlambat akan muncul di sini. Catat
           kejadian di menu Ternak supaya jadwalnya terhitung.
         </EmptyState>
@@ -115,9 +128,14 @@ function FieldHome() {
               {group.name}
               <span className="font-normal text-muted-foreground">({group.items.length})</span>
             </h2>
-            <ul className="flex flex-col overflow-hidden rounded-xl border-(length:--bw) bg-card">
+            <ul className="surface flex flex-col overflow-hidden">
               {group.items.map((item) => (
-                <ReminderRow key={`${item.kind}-${item.animal.id}`} item={item} today={today} />
+                <ReminderRow
+                  key={`${item.kind}-${item.animal.id}`}
+                  item={item}
+                  today={today}
+                  role={session?.user.role}
+                />
               ))}
             </ul>
           </section>
@@ -127,9 +145,21 @@ function FieldHome() {
   );
 }
 
-function ReminderRow({ item, today }: { item: ReminderView; today: number }) {
+function ReminderRow({
+  item,
+  today,
+  role,
+}: {
+  item: ReminderView;
+  today: number;
+  role: UserRole | undefined;
+}) {
   const meta = KIND_META[item.kind];
   const Icon = meta.icon;
+  const { title, action } = reminderAction(item.kind, role, item.animal.id);
+  // Tombol hanya untuk yang perlu dikerjakan sekarang: terlambat, atau jatuh tempo hari ini.
+  const showAction =
+    action && (item.overdue || dayDiff(item.dueAt, today) <= 0 || item.kind === 'PKB_DUE');
   return (
     <li className="border-b-(length:--bw) last:border-b-0">
       <Link
@@ -143,7 +173,7 @@ function ReminderRow({ item, today }: { item: ReminderView; today: number }) {
           strokeWidth={2.25}
         />
         <span className="flex min-w-0 flex-1 flex-col">
-          <span className="font-bold">{meta.title}</span>
+          <span className="font-bold">{title}</span>
           <span className={cn('font-bold', item.overdue ? 'text-alarm' : 'text-foreground')}>
             {when(item, today)}
             {item.overdue && (
@@ -164,6 +194,11 @@ function ReminderRow({ item, today }: { item: ReminderView; today: number }) {
         </span>
         <ChevronRight aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-muted-foreground" />
       </Link>
+      {showAction && (
+        <div className="-mt-1 px-4 pb-3 pl-13">
+          <ReminderActionLink target={action.target} label={action.label} />
+        </div>
+      )}
     </li>
   );
 }

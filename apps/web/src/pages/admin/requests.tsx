@@ -3,6 +3,7 @@ import { SERVICE_REQUEST_STATUSES } from '@ib/shared';
 import { Link, useNavigate, useSearch } from '@tanstack/react-router';
 import { ChevronRight, CloudUpload, Inbox, Search } from 'lucide-react';
 
+import { ListSkeleton } from '@/components/skeletons';
 import { EmptyState } from '@/components/empty-state';
 import { REQUEST_STATUS_META } from '@/components/request-status';
 import { Input } from '@/components/ui/input';
@@ -19,7 +20,7 @@ export function AdminRequestsPage() {
   const navigate = useNavigate({ from: '/permintaan' });
   const views = useServiceRequestViews();
   const scope = useAdminScope();
-  if (!views || !scope) return null;
+  if (!views || !scope) return <ListSkeleton label="Memuat permintaan…" />;
 
   const set = (patch: Partial<RequestFilter>) => {
     void navigate({ search: (prev) => ({ ...prev, ...patch }), replace: true });
@@ -114,7 +115,7 @@ export function AdminRequestsPage() {
 
 function RequestTable({ views }: { views: ServiceRequestView[] }) {
   return (
-    <div className="hidden overflow-hidden rounded-xl border-(length:--bw) bg-card lg:block">
+    <div className="surface hidden overflow-hidden lg:block">
       <table className="w-full border-collapse text-left">
         <caption className="sr-only">Daftar permintaan layanan</caption>
         <thead className="bg-secondary">
@@ -181,7 +182,7 @@ function RequestCard({ view: v }: { view: ServiceRequestView }) {
     <Link
       to="/permintaan/$requestId"
       params={{ requestId: v.request.id }}
-      className="flex items-start gap-3 rounded-xl border-(length:--bw) bg-card p-4 hover:bg-secondary"
+      className="surface flex items-start gap-3 p-4 hover:bg-secondary"
     >
       <span className="flex min-w-0 flex-1 flex-col gap-1">
         <span className="font-bold">

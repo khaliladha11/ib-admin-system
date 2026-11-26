@@ -12,8 +12,10 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 
+import { ListSkeleton } from '@/components/skeletons';
 import { ROLE_LABEL } from '@/components/request-status';
 import { Button } from '@/components/ui/button';
+import { Panel } from '@/components/ui/panel';
 import {
   clearPin,
   dismissRejected,
@@ -30,15 +32,6 @@ import { formatDateTime } from '@/lib/format';
 import { PinSetupForm } from './auth/pin-pages';
 import { ContrastToggle } from './placeholders';
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <section className="flex flex-col gap-3 rounded-xl border-(length:--bw) bg-card p-4">
-      <h2 className="text-lg font-bold">{title}</h2>
-      {children}
-    </section>
-  );
-}
-
 export function MorePage() {
   const { db, api, sync } = useDataLayer();
   const session = useSession();
@@ -50,11 +43,11 @@ export function MorePage() {
   const [syncing, setSyncing] = useState(false);
   const [confirmOut, setConfirmOut] = useState(false);
 
-  if (!session || !status) return null;
+  if (!session || !status) return <ListSkeleton rows={3} label="Memuat…" />;
 
   return (
     <div className="flex flex-col gap-4">
-      <Section title="Akun">
+      <Panel title="Akun">
         <p className="flex items-center gap-3">
           <UserRound aria-hidden="true" className="size-8 shrink-0 text-primary" />
           <span>
@@ -62,18 +55,22 @@ export function MorePage() {
             <span className="block text-muted-foreground">{ROLE_LABEL[session.user.role]}</span>
           </span>
         </p>
-      </Section>
+      </Panel>
 
-      <Section title="Sinkron data">
+      <Panel title="Pengiriman data">
         <p>
           {status.lastSyncAt
-            ? `Terakhir tersinkron ${formatDateTime(status.lastSyncAt)}.`
-            : 'Belum pernah tersinkron di HP ini.'}{' '}
+            ? `Terakhir dikirim dan diperbarui ${formatDateTime(status.lastSyncAt)}.`
+            : 'Catatan di HP ini belum pernah dikirim.'}{' '}
           {status.pending > 0
-            ? `${String(status.pending)} data menunggu dikirim.`
-            : 'Semua data sudah terkirim.'}
+            ? `${String(status.pending)} catatan menunggu dikirim.`
+            : 'Semua catatan sudah terkirim.'}
         </p>
-        {status.lastError && <p className="text-soil">Terakhir gagal: {status.lastError}</p>}
+        {status.lastError && (
+          <p className="text-soil">
+            Pengiriman terakhir belum berhasil. Akan dicoba lagi otomatis saat ada sinyal.
+          </p>
+        )}
         <Button
           variant="outline"
           disabled={syncing}
@@ -88,14 +85,15 @@ export function MorePage() {
           }}
         >
           <RefreshCw aria-hidden="true" className={syncing ? 'animate-spin' : undefined} />
-          {syncing ? 'Menyinkronkan…' : 'Sinkron sekarang'}
+          {syncing ? 'Mengirim…' : 'Kirim dan perbarui sekarang'}
         </Button>
         {status.rejected.length > 0 && (
           <div className="flex flex-col gap-2">
-            <p className="font-bold text-alarm">Ditolak server ({status.rejected.length})</p>
+            <p className="font-bold text-alarm">Tidak diterima ({status.rejected.length})</p>
             <p className="text-muted-foreground">
-              Data ini tidak diterima server dan tidak akan dikirim lagi. Periksa pesannya, perbaiki
-              datanya bila perlu, lalu hapus dari daftar.
+              Catatan ini tidak bisa disimpan, biasanya karena bertentangan dengan catatan lain
+              (mis. sudah dicatat petugas). Baca alasannya, catat ulang bila perlu, lalu hapus dari
+              daftar.
             </p>
             <ul className="flex flex-col gap-2">
               {status.rejected.map((entry) => (
@@ -120,9 +118,9 @@ export function MorePage() {
             </ul>
           </div>
         )}
-      </Section>
+      </Panel>
 
-      <Section title="PIN HP ini">
+      <Panel title="PIN HP ini">
         {settingPin ? (
           <PinSetupForm
             onDone={() => {
@@ -171,10 +169,10 @@ export function MorePage() {
             </div>
           </>
         )}
-      </Section>
+      </Panel>
 
       {isAdminRole(session.user.role) && (
-        <Section title="Data wilayah">
+        <Panel title="Data wilayah">
           <div className="flex flex-col gap-2 sm:flex-row">
             <Button asChild variant="outline" className="justify-start">
               <Link to="/peternak">
@@ -189,12 +187,12 @@ export function MorePage() {
               </Link>
             </Button>
           </div>
-        </Section>
+        </Panel>
       )}
 
       <ContrastToggle mode={mode} onChange={setMode} />
 
-      <Section title="Keluar">
+      <Panel title="Keluar">
         {confirmOut ? (
           <>
             <p>
@@ -228,7 +226,7 @@ export function MorePage() {
             Keluar dari akun
           </Button>
         )}
-      </Section>
+      </Panel>
 
       <Button variant="ghost" asChild className="justify-start">
         <Link to="/dev/komponen">

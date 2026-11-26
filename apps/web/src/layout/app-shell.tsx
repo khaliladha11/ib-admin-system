@@ -7,8 +7,9 @@ import {
   type StaticDataRouteOption,
 } from '@tanstack/react-router';
 import { ArrowLeft } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 
+import { Meadow } from '@/components/illustrations/meadow';
 import { SyncIndicator } from '@/components/sync-indicator';
 import { cn } from '@/lib/utils';
 
@@ -92,6 +93,10 @@ function Sidebar({ items }: { items: readonly NavItem[] }) {
             ))}
         </ul>
       </nav>
+      {/* Hiasan pengisi ruang di bawah menu (PC). */}
+      <div className="surface mt-auto overflow-hidden">
+        <Meadow className="h-28 bg-gradient-to-b from-sky-wash to-paper" />
+      </div>
     </aside>
   );
 }
@@ -124,6 +129,28 @@ function BackButton({ fallback }: { fallback: NonNullable<StaticDataRouteOption[
   );
 }
 
+/**
+ * Setelah pindah halaman (bukan saat pertama dibuka): umumkan judul halaman dan pindahkan
+ * fokus ke judul, agar pengguna pembaca layar tahu halaman sudah berganti.
+ */
+function useRouteAnnouncement(
+  pathname: string,
+  title: string,
+  headingRef: React.RefObject<HTMLHeadingElement | null>,
+) {
+  const first = useRef(true);
+  const [text, setText] = useState('');
+  useEffect(() => {
+    if (first.current) {
+      first.current = false;
+      return;
+    }
+    setText(`Halaman ${title}`);
+    headingRef.current?.focus({ preventScroll: true });
+  }, [pathname, title, headingRef]);
+  return text;
+}
+
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const data = useRouterState({
@@ -131,6 +158,11 @@ export function AppShell({ children }: { children: ReactNode }) {
   });
   const focus = data.focus ?? false;
   const role = useSession()?.user.role;
+  const title =
+    data.title ??
+    (pathname === '/' ? (isAdminRole(role) ? 'Ringkasan' : 'Hari ini') : titleFor(pathname));
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const announcement = useRouteAnnouncement(pathname, title, headingRef);
   return (
     <div className="min-h-dvh">
       <Sidebar items={navItemsFor(role, 'side')} />
@@ -139,13 +171,12 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div className="mx-auto flex min-h-14 max-w-300 items-center justify-between gap-2 px-4">
             <div className="flex min-w-0 items-center gap-1">
               {focus && <BackButton fallback={data.backTo ?? '/'} />}
-              <h1 className="truncate text-lg font-bold">
-                {data.title ??
-                  (pathname === '/'
-                    ? isAdminRole(role)
-                      ? 'Ringkasan'
-                      : 'Hari ini'
-                    : titleFor(pathname))}
+              <h1
+                ref={headingRef}
+                tabIndex={-1}
+                className="truncate text-lg font-bold focus:outline-none"
+              >
+                {title}
               </h1>
             </div>
             <SyncIndicator compact={focus} />
@@ -156,6 +187,10 @@ export function AppShell({ children }: { children: ReactNode }) {
         </main>
       </div>
       {!focus && <BottomNav items={navItemsFor(role, 'bottom')} />}
+      {/* Diumumkan pembaca layar setiap pindah halaman. */}
+      <p aria-live="polite" className="sr-only">
+        {announcement}
+      </p>
     </div>
   );
 }
