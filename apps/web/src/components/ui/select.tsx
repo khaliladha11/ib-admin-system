@@ -7,9 +7,14 @@ import { cn } from '@/lib/utils';
 
 import { fieldClass } from './input';
 
-function NativeSelect({ className, children, ...props }: React.ComponentProps<'select'>) {
+function NativeSelect({
+  className,
+  containerClassName,
+  children,
+  ...props
+}: React.ComponentProps<'select'> & { containerClassName?: string }) {
   return (
-    <div className="relative">
+    <div className={cn('relative', containerClassName)}>
       <select
         data-slot="select"
         className={cn(fieldClass, 'h-12 appearance-none pr-10', className)}

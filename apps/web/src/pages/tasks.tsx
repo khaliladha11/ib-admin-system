@@ -6,7 +6,7 @@ import { useState } from 'react';
 
 import { EmptyState } from '@/components/empty-state';
 import { ErrorMessage } from '@/components/error-message';
-import { REQUEST_STATUS_META } from '@/components/request-status';
+import { RequestStatusBadge } from '@/components/request-status-badge';
 import { Button } from '@/components/ui/button';
 import { useRepo, useServiceRequestViews, useSession, type ServiceRequestView } from '@/data';
 import { formatDate } from '@/lib/format';
@@ -123,26 +123,6 @@ function RequestList({ views, actions }: { views: ServiceRequestView[]; actions?
         </li>
       ))}
     </ul>
-  );
-}
-
-export function RequestStatusBadge({
-  status,
-}: {
-  status: ServiceRequestView['request']['status'];
-}) {
-  const meta = REQUEST_STATUS_META[status];
-  const Icon = meta.icon;
-  return (
-    <span
-      className={cn(
-        'inline-flex min-h-8 items-center gap-1.5 rounded-md border-(length:--bw) px-2.5 py-1 font-semibold',
-        meta.className,
-      )}
-    >
-      <Icon aria-hidden="true" className="size-4.5" strokeWidth={2.5} />
-      {meta.label}
-    </span>
   );
 }
 

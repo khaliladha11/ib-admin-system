@@ -227,7 +227,7 @@ export interface ServiceRequestView {
   farmerPhone: string | null;
   /** Penugasan yang masih berjalan (belum ditutup). */
   activeAssignment: Assignment | null;
-  /** Nama dan HP petugas yang sedang ditugaskan (bila data pengguna sudah tersinkron). */
+  /** Petugas yang sedang ditugaskan, atau yang menyelesaikan (bila data pengguna tersinkron). */
   inseminatorName: string | null;
   inseminatorPhone: string | null;
   requestedByName: string | null;
@@ -265,10 +265,18 @@ export async function loadServiceRequestViews(
       .filter((a) => a.endedAt === null)
       .map((a) => [a.serviceRequestId, a]),
   );
+  // Petugas terakhir (juga untuk permintaan yang sudah selesai/penugasannya ditutup).
+  const lastByRequest = new Map<string, Assignment>();
+  for (const a of alive(assignments).sort((x, y) => x.assignedAt - y.assignedAt)) {
+    lastByRequest.set(a.serviceRequestId, a);
+  }
   return requests
     .map((request): ServiceRequestView => {
       const animal = animalById.get(request.animalId);
       const active = activeByRequest.get(request.id) ?? null;
+      // Ditolak/dibatalkan sebelum ditugaskan: tidak ada petugas.
+      const shownIns =
+        active ?? (request.status === 'done' ? lastByRequest.get(request.id) : undefined);
       return {
         request,
         animalName: animal?.name ?? null,
@@ -278,8 +286,8 @@ export async function loadServiceRequestViews(
         farmerLocationId: farmerById.get(request.farmerId)?.locationId ?? null,
         farmerPhone: farmerById.get(request.farmerId)?.phone ?? null,
         activeAssignment: active,
-        inseminatorName: active ? (userById.get(active.inseminatorId)?.name ?? null) : null,
-        inseminatorPhone: active ? (userById.get(active.inseminatorId)?.phone ?? null) : null,
+        inseminatorName: shownIns ? (userById.get(shownIns.inseminatorId)?.name ?? null) : null,
+        inseminatorPhone: shownIns ? (userById.get(shownIns.inseminatorId)?.phone ?? null) : null,
         requestedByName: userById.get(request.requestedBy)?.name ?? null,
         assignedToMe: userId !== null && active?.inseminatorId === userId,
         unsynced: unsynced.has(request.id),

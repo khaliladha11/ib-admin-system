@@ -41,7 +41,7 @@ export function SyncIndicatorView({
     </>
   );
   const classes = cn(
-    'inline-flex min-h-11 items-center gap-2 rounded-md px-2 text-base font-semibold',
+    'inline-flex min-h-11 shrink-0 items-center gap-2 rounded-md px-2 text-base font-semibold whitespace-nowrap',
     view.className,
     className,
   );
