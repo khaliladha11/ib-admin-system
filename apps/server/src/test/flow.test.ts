@@ -113,6 +113,11 @@ describe('alur lengkap IB → PKB → lahir', () => {
     const res = await yusuf.post(`/api/service-requests/${state.requestId}/accept`);
     expect(res.status).toBe(200);
     expect(res.body.request.status).toBe('in_progress');
+
+    // Kiriman ulang (outbox HP) aman: jawaban sama, tidak error.
+    const again = await yusuf.post(`/api/service-requests/${state.requestId}/accept`);
+    expect(again.status).toBe(200);
+    expect(again.body.request.status).toBe('in_progress');
   });
 
   it('6. petugas mencatat laporan IB; permintaan selesai', async () => {

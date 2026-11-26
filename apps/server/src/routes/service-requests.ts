@@ -430,6 +430,10 @@ export function registerServiceRequestRoutes(app: OpenAPIHono<AppEnv>) {
     if (scope.user.role !== 'inseminator' || active?.inseminatorId !== scope.user.id) {
       throw forbidden('Hanya petugas yang ditugaskan yang bisa menerima tugas ini.');
     }
+    // Kiriman ulang dari outbox HP: tugas sudah diterima petugas yang sama → jawab sama.
+    if (request.status === 'in_progress' && active.acceptedAt !== null) {
+      return c.json(detail(c, request.id), 200);
+    }
     requireStatus(request.status, ['assigned'], 'Tugas ini sudah diterima atau sudah selesai.');
     const time = c.var.now();
     c.var.db.transaction((tx) => {

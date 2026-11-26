@@ -2,7 +2,7 @@
 // tampilan langsung berubah setelah penulisan lokal dan tetap jalan saat offline.
 // Nilai `undefined` berarti data lokal masih dimuat.
 import { useLiveQuery } from 'dexie-react-hooks';
-import { use } from 'react';
+import { use, useEffect, useMemo } from 'react';
 
 import { DataContext, type DataLayer } from './context';
 import {
@@ -10,6 +10,9 @@ import {
   loadAnimals,
   loadFarmers,
   loadReminders,
+  loadAnimalPhoto,
+  loadEventDefaults,
+  loadServiceRequestViews,
   loadServiceRequests,
   loadSyncStatus,
   loadTimeline,
@@ -70,4 +73,43 @@ export function useReminders(withinDays = 7) {
 export function useSyncStatus() {
   const { db } = useDataLayer();
   return useLiveQuery(() => loadSyncStatus(db), [db]);
+}
+
+/** Permintaan layanan + nama ternak/peternak/desa + penugasan aktif. */
+export function useServiceRequestViews() {
+  const { db, now } = useDataLayer();
+  const session = useSession();
+  const userId = session?.user.id ?? null;
+  return useLiveQuery(() => loadServiceRequestViews(db, userId, now()), [db, now, userId]);
+}
+
+/** Isian bawaan form event: IB terakhir, stok straw, tugas aktif untuk ternak ini. */
+export function useEventDefaults(animalId: string) {
+  const { db } = useDataLayer();
+  const session = useSession();
+  const userId = session?.user.id ?? null;
+  return useLiveQuery(() => loadEventDefaults(db, userId, animalId), [db, userId, animalId]);
+}
+
+/** URL foto ternak (lokal), atau null. URL dilepas otomatis saat foto berganti. */
+export function useAnimalPhotoUrl(animalId: string): string | null | undefined {
+  const { db } = useDataLayer();
+  const photo = useLiveQuery(() => loadAnimalPhoto(db, animalId), [db, animalId]);
+  const url = useMemo(
+    () => (photo ? URL.createObjectURL(new Blob([photo.data], { type: photo.type })) : photo),
+    [photo],
+  );
+  useEffect(
+    () => () => {
+      if (url) URL.revokeObjectURL(url);
+    },
+    [url],
+  );
+  return url;
+}
+
+/** Apakah PIN pembuka aplikasi terpasang di perangkat ini. */
+export function useHasPin() {
+  const { db } = useDataLayer();
+  return useLiveQuery(async () => (await db.getMeta('pin')) !== undefined, [db]);
 }

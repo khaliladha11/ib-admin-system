@@ -8,13 +8,20 @@
 //   4xx lain (400/403/404/409/422) → ditolak; pesan disimpan, antrean lanjut
 //   401                      → berhenti; pengguna perlu masuk lagi
 //   jaringan putus atau 5xx  → berhenti; dicoba lagi dengan backoff
-import { animalSchema, eventSchema, farmerSchema, serviceRequestSchema } from '@ib/shared';
+import {
+  animalSchema,
+  assignmentSchema,
+  eventSchema,
+  farmerSchema,
+  serviceRequestSchema,
+} from '@ib/shared';
 
 import {
   INITIAL_SYNC_STATE,
   MIRROR_TABLES,
   type IbDb,
   type MirrorRows,
+  type MirrorTable,
   type SyncState,
 } from '../db';
 import {
@@ -53,22 +60,35 @@ export interface SyncEngineOptions {
 
 export type SyncEngine = ReturnType<typeof createSyncEngine>;
 
+type ServerRows = { [T in MirrorTable]?: MirrorRows[T][] };
+
+const parseOne = <T>(
+  schema: { safeParse: (v: unknown) => { success: boolean; data?: T } },
+  v: unknown,
+) => {
+  const r = schema.safeParse(v);
+  return r.success && r.data !== undefined ? [r.data] : [];
+};
+
 /** Baris server dari respons tulis, dibersihkan dari kolom tambahan (status, qrCode, …). */
-function serverRow(entry: OutboxEntry, body: unknown) {
-  const b = body as Record<string, unknown>;
+function serverRows(entry: OutboxEntry, body: unknown): ServerRows {
+  const b = (body ?? {}) as Record<string, unknown>;
   switch (entry.kind) {
     case 'farmer.create':
     case 'farmer.update':
-      return { table: 'farmers' as const, parsed: farmerSchema.safeParse(b) };
+      return { farmers: parseOne(farmerSchema, b) };
     case 'animal.create':
     case 'animal.update':
-      return { table: 'animals' as const, parsed: animalSchema.safeParse(b) };
+      return { animals: parseOne(animalSchema, b) };
     case 'event.create':
-      return { table: 'events' as const, parsed: eventSchema.safeParse(b.event) };
+      return { events: parseOne(eventSchema, b.event) };
     case 'serviceRequest.create':
+    case 'serviceRequest.accept':
       return {
-        table: 'serviceRequests' as const,
-        parsed: serviceRequestSchema.safeParse(b.request),
+        serviceRequests: parseOne(serviceRequestSchema, b.request),
+        assignments: (Array.isArray(b.assignments) ? b.assignments : []).flatMap((a: unknown) =>
+          parseOne(assignmentSchema, a),
+        ),
       };
   }
 }
@@ -87,15 +107,15 @@ export function createSyncEngine(
 
   /** Entri diterima server: hapus dari outbox, buang baris sementara, simpan versi server. */
   async function accept(entry: OutboxEntry, body: unknown) {
-    const row = body === undefined ? null : serverRow(entry, body);
-    const tables = [
-      ...new Set([...entry.provisional.map((p) => p.table), row?.table ?? entry.table]),
-    ];
+    const rows = body === undefined ? {} : serverRows(entry, body);
+    const touched = Object.keys(rows) as MirrorTable[];
+    const tables = [...new Set([...entry.provisional.map((p) => p.table), ...touched])];
     await db.transaction('rw', [db.outbox, ...tables.map((t) => db.mirror(t))], async () => {
       await markDone(db, entry);
       for (const p of entry.provisional) await db.mirror(p.table).delete(p.id);
-      if (row?.parsed.success) {
-        await db.mirror(row.table).put(row.parsed.data);
+      for (const table of touched) {
+        const list = rows[table] ?? [];
+        if (list.length > 0) await db.mirror(table).bulkPut(list);
       }
     });
   }

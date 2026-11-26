@@ -6,7 +6,11 @@ export { LocalValidationError, NotSignedInError, WarningsNeedConfirmation } from
 export {
   useAnimal,
   useAnimals,
+  useAnimalPhotoUrl,
   useAnimalTimeline,
+  useEventDefaults,
+  useHasPin,
+  useServiceRequestViews,
   useDataLayer,
   useFarmers,
   useReminders,
@@ -16,11 +20,24 @@ export {
   useSyncStatus,
 } from './hooks';
 export { dismissRejected, type OutboxEntry } from './outbox';
+export { isUnlocked, lockApp, unlockApp, useUnlocked } from './lock';
+export {
+  clearPin,
+  hasPin,
+  PIN_MAX_FAILURES,
+  PIN_PATTERN,
+  setPin,
+  verifyPin,
+  type PinResult,
+} from './pin';
 export { DataProvider } from './provider';
 export type {
   AnimalFilter,
   AnimalTimeline,
   AnimalView,
+  EventDefaults,
+  ServiceRequestView,
+  StockView,
   ReminderView,
   ServiceRequestFilter,
   SyncStatusView,
