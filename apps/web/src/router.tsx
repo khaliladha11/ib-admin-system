@@ -34,6 +34,7 @@ const FarmersPage = lazyRouteComponent(() => import('@/pages/admin/farmers'), 'F
 const FollowUpsPage = lazyRouteComponent(() => import('@/pages/admin/follow-ups'), 'FollowUpsPage');
 const UserFormPage = lazyRouteComponent(() => import('@/pages/admin/users'), 'UserFormPage');
 const UsersPage = lazyRouteComponent(() => import('@/pages/admin/users'), 'UsersPage');
+const LabelsPage = lazyRouteComponent(() => import('@/pages/labels/labels-page'), 'LabelsPage');
 const DevComponentsPage = lazyRouteComponent(
   () => import('@/pages/dev-components'),
   'DevComponentsPage',
@@ -109,6 +110,13 @@ const moreRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/lainnya',
   component: MorePage,
+});
+const labelsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/label',
+  component: LabelsPage,
+  validateSearch: (s: Record<string, unknown>): { ternak?: string } => ({ ternak: str(s.ternak) }),
+  staticData: { title: 'Cetak label' },
 });
 const devRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -209,6 +217,7 @@ const routeTree = rootRoute.addChildren([
   tasksRoute,
   requestRoute,
   moreRoute,
+  labelsRoute,
   devRoute,
 ]);
 

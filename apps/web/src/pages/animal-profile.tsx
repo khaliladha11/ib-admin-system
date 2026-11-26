@@ -11,6 +11,7 @@ import { SavedCheck } from '@/components/saved-check';
 import { ErrorMessage } from '@/components/error-message';
 import { EventTimeline } from '@/components/event-timeline';
 import { StatusBadge } from '@/components/status-badge';
+import { TagHistory } from '@/components/tag-history';
 import { Button } from '@/components/ui/button';
 import {
   useAnimalPhotoUrl,
@@ -130,6 +131,8 @@ export function AnimalProfilePage() {
           <EventTimeline events={timeline.events} anomalies={timeline.anomalies} />
         )}
       </section>
+
+      <TagHistory animalId={animal.id} readOnly={exited} />
     </div>
   );
 }

@@ -6,6 +6,7 @@ import {
   RefreshCw,
   SwatchBook,
   Trash2,
+  Printer,
   UserCog,
   UserRound,
   Users,
@@ -189,6 +190,18 @@ export function MorePage() {
           </div>
         </Panel>
       )}
+
+      <Panel title="Label QR">
+        <p className="text-muted-foreground">
+          Cetak label QR untuk ternak, atau label kosong untuk sapi yang belum didaftarkan.
+        </p>
+        <Button asChild variant="outline" className="justify-start self-start">
+          <Link to="/label">
+            <Printer aria-hidden="true" />
+            Cetak label QR
+          </Link>
+        </Button>
+      </Panel>
 
       <ContrastToggle mode={mode} onChange={setMode} />
 

@@ -17,6 +17,9 @@
 :root {
   /* Palet dasar */
   --paper: #ffffff;
+  /* Cetak label: hitam murni di putih, apa pun mode tampilannya. */
+  --print-ink: #000000;
+  --print-paper: #ffffff;
   --field: #eef3ea;
   --ink: #14261a;
   --ink-muted: #4a5a4f;
@@ -242,5 +245,32 @@
   .display {
     @apply font-display font-normal tracking-tight text-leaf-deep;
     line-height: 1.05;
+  }
+}
+
+/* Cetak label QR (langkah 3.1): hanya lembar label yang tercetak, ukuran A4 tanpa margin. */
+.print-root {
+  display: none;
+}
+@media print {
+  @page {
+    size: A4;
+    margin: 0;
+  }
+  html,
+  body {
+    background: var(--print-paper) !important;
+  }
+  body > *:not(.print-root) {
+    display: none !important;
+  }
+  .print-root {
+    display: block;
+  }
+  .label-sheet {
+    break-after: page;
+  }
+  .label-sheet:last-child {
+    break-after: auto;
   }
 }
