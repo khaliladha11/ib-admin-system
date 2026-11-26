@@ -2,7 +2,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { ListSkeleton } from '@/components/skeletons';
 import { Cow } from '@/components/icons/cow';
 import { Search, SearchX, X } from 'lucide-react';
-import { motion } from 'motion/react';
+import * as m from 'motion/react-m';
 import { useState } from 'react';
 
 import { AnimalCard } from '@/components/animal-card';
@@ -145,7 +145,7 @@ export function AnimalsPage() {
       ) : (
         <ul className="grid grid-cols-1 gap-3 md:grid-cols-2">
           {shown.map((animal, i) => (
-            <motion.li
+            <m.li
               key={animal.id}
               className="min-w-0"
               // Muncul berurutan sekali saat daftar pertama dibuka (8 kartu pertama saja).
@@ -161,7 +161,7 @@ export function AnimalsPage() {
                   void navigate({ to: '/ternak/$animalId', params: { animalId: animal.id } });
                 }}
               />
-            </motion.li>
+            </m.li>
           ))}
         </ul>
       )}

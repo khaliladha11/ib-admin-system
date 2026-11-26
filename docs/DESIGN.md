@@ -104,6 +104,12 @@ Angka memakai `tabular-nums`. Hindari huruf kapital semua untuk label.
 Ikon dari lucide-react, garis 2px. Ternak memakai ikon **sapi** buatan sendiri
 (`components/icons/cow.tsx`, gaya lucide), bukan tapak kaki.
 
+**Ikon aplikasi (PWA)**: kepala sapi putih dengan moncong lime di atas kotak hijau daun
+(`#2e6b34`) dan bukit hijau tua. Sumbernya `apps/web/public/icons/icon.svg` (sudut bulat) dan
+`maskable.svg` (penuh, sapi di area aman 80%). PNG 192/512/maskable/apple-touch dibuat dengan
+`pnpm --filter @ib/web exec tsx scripts/render-icons.ts`. Warna tema manifest = `--leaf`, latar
+layar pembuka = `--lime-wash`.
+
 ## Gerak (Motion)
 
 Animasi memakai `motion/react` dan hanya pemanis; tidak ada informasi yang hanya tampil lewat gerak.

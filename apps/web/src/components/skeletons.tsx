@@ -1,13 +1,13 @@
 // Kerangka (skeleton) saat data lokal sedang dibaca, agar layar tidak putih kosong.
 // Kilau hijau bergerak pelan; diam bila "kurangi gerakan" aktif.
-import { motion } from 'motion/react';
+import * as m from 'motion/react-m';
 
 import { cn } from '@/lib/utils';
 
 export function Bone({ className }: { className?: string }) {
   return (
     <div className={cn('relative overflow-hidden rounded-xl bg-secondary', className)}>
-      <motion.div
+      <m.div
         className="absolute inset-y-0 w-1/2 bg-gradient-to-r from-transparent via-white/70 to-transparent"
         initial={{ x: '-100%' }}
         animate={{ x: '220%' }}

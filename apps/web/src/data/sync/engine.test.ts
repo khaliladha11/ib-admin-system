@@ -1,5 +1,5 @@
 // Sync engine dengan fetch tiruan: push FIFO, hasil per status HTTP, pull dengan cursor.
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import {
   createTestLayer,
@@ -117,6 +117,32 @@ describe('pushOutbox', () => {
     t.advance(5_000);
     t.server.setHandler(echoServer());
     expect(await t.sync.pushOutbox()).toMatchObject({ sent: 2, stopped: null });
+  });
+
+  it('sinyal kembali / "Kirim sekarang": jeda backoff diabaikan (force)', async () => {
+    const t = await createTestLayer('group_admin', () => 'network');
+    await t.repo.createAnimal({ farmerId: t.farmer.id, sex: 'F', name: 'A' });
+    await t.sync.syncNow();
+    t.advance(1_000); // masih dalam jeda 5 detik
+    t.server.setHandler(echoServer());
+    expect((await t.sync.syncNow()).stopped).toBe('backoff');
+    expect(await t.sync.syncNow({ force: true })).toMatchObject({ sent: 1, stopped: null });
+    expect(await pendingEntries(t.db)).toEqual([]);
+  });
+
+  it('event online memicu kirim tanpa menunggu backoff', async () => {
+    const t = await createTestLayer('group_admin', () => 'network');
+    await t.repo.createAnimal({ farmerId: t.farmer.id, sex: 'F', name: 'A' });
+    const stop = t.sync.start();
+    await vi.waitFor(async () => {
+      expect((await pendingEntries(t.db))[0]?.attempts).toBe(1);
+    });
+    t.server.setHandler(echoServer());
+    window.dispatchEvent(new Event('online'));
+    await vi.waitFor(async () => {
+      expect(await pendingEntries(t.db)).toEqual([]);
+    });
+    stop();
   });
 
   it('5xx: diperlakukan seperti gangguan sementara', async () => {

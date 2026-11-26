@@ -184,6 +184,8 @@ test('peternak: hari ini, permintaan IB/PKB, catat birahi', async ({ page }) => 
     .click();
   await page.locator('article button').first().click();
   await page.getByRole('link', { name: 'Catat kejadian' }).click();
+  // Form dimuat saat dibuka (lazy): tunggu halamannya, bukan teks yang juga ada di profil.
+  await expect(page.getByRole('heading', { level: 1, name: 'Catat kejadian' })).toBeVisible();
   await expect(page.getByText('Birahi', { exact: true })).toBeVisible();
   await expect(page.getByText('IB', { exact: true })).toHaveCount(0);
   await expectFits(page);

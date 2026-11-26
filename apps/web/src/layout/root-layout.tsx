@@ -1,5 +1,7 @@
 import { Outlet, useRouterState } from '@tanstack/react-router';
 
+import { UpdatePrompt } from '@/components/update-prompt';
+
 import { AppShell } from './app-shell';
 import { AuthGate } from './auth-gate';
 
@@ -10,6 +12,11 @@ export function RootLayout() {
       <Outlet />
     </AppShell>
   );
-  // Halaman pengembang bisa dibuka tanpa masuk.
-  return pathname.startsWith('/dev/') ? shell : <AuthGate>{shell}</AuthGate>;
+  // Halaman pengembang bisa dibuka tanpa masuk. Pemberitahuan versi baru tampil di semua layar.
+  return (
+    <>
+      {pathname.startsWith('/dev/') ? shell : <AuthGate>{shell}</AuthGate>}
+      <UpdatePrompt />
+    </>
+  );
 }

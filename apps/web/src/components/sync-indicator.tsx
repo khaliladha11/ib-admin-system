@@ -70,7 +70,7 @@ export function SyncIndicator({ className, compact }: { className?: string; comp
       rejected={status?.rejected.length ?? 0}
       needsLogin={status?.needsLogin ?? false}
       onPress={() => {
-        void sync.syncNow().catch(() => undefined);
+        void sync.syncNow({ force: true }).catch(() => undefined);
       }}
       compact={compact}
       className={className}

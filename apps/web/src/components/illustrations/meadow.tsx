@@ -2,7 +2,7 @@
 // Bergerak pelan dan jarang (awan bergeser, matahari berdenyut, sapi menunduk merumput).
 // Animasi otomatis berhenti bila HP disetel "kurangi gerakan" (MotionConfig di main.tsx).
 // Murni hiasan: aria-hidden; teks penjelas selalu ada di luar ilustrasi.
-import { motion } from 'motion/react';
+import * as m from 'motion/react-m';
 
 import { cn } from '@/lib/utils';
 
@@ -15,7 +15,7 @@ export function Meadow({ className }: { className?: string }) {
       className={cn('block w-full', className)}
     >
       {/* matahari */}
-      <motion.circle
+      <m.circle
         cx="288"
         cy="44"
         r="20"
@@ -25,7 +25,7 @@ export function Meadow({ className }: { className?: string }) {
         style={{ transformOrigin: '288px 44px' }}
       />
       {/* awan */}
-      <motion.g
+      <m.g
         fill="#ffffff"
         animate={{ x: [0, 22, 0] }}
         transition={{ duration: 18, repeat: Infinity, ease: 'easeInOut' }}
@@ -33,7 +33,7 @@ export function Meadow({ className }: { className?: string }) {
         <ellipse cx="70" cy="34" rx="26" ry="10" />
         <ellipse cx="88" cy="28" rx="18" ry="11" />
         <ellipse cx="190" cy="22" rx="20" ry="7" opacity="0.85" />
-      </motion.g>
+      </m.g>
       {/* bukit */}
       <path d="M0 110 C60 78 120 86 180 98 S300 82 360 92 V150 H0Z" fill="var(--hill-back)" />
       <path d="M0 128 C80 104 170 112 240 120 S330 112 360 116 V150 H0Z" fill="var(--hill-front)" />
@@ -53,7 +53,7 @@ export function Meadow({ className }: { className?: string }) {
       {/* pohon */}
       <g transform="translate(118 70)">
         <rect x="9" y="22" width="5" height="22" rx="2" fill="var(--soil)" />
-        <motion.circle
+        <m.circle
           cx="11.5"
           cy="16"
           r="16"
@@ -83,7 +83,7 @@ export function Meadow({ className }: { className?: string }) {
           strokeWidth="2.5"
           strokeLinecap="round"
         />
-        <motion.g
+        <m.g
           animate={{ rotate: [0, 0, 24, 24, 0] }}
           transition={{ duration: 6, repeat: Infinity, times: [0, 0.55, 0.65, 0.9, 1] }}
           style={{ transformOrigin: '34px 10px' }}
@@ -114,7 +114,7 @@ export function Meadow({ className }: { className?: string }) {
             strokeWidth="1.5"
             strokeLinecap="round"
           />
-        </motion.g>
+        </m.g>
       </g>
       {/* rumput */}
       <g stroke="var(--tree)" strokeWidth="2" strokeLinecap="round" opacity="0.7">
