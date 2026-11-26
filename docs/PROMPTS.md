@@ -235,7 +235,7 @@ Bangun layar mobile-first berikut memakai hook data lokal dari prompt 2.0:
 Uji di viewport 360x740 dengan Playwright, ambil screenshot setiap layar ke `docs/screenshots/`, dan tunjukkan ke saya.
 ```
 
-- [ ] **2.3 Dashboard PC untuk admin**
+- [x] **2.3 Dashboard PC untuk admin**
 
 ```text
 Bangun tampilan admin (kelompok/dinas) untuk layar 1024px ke atas:
