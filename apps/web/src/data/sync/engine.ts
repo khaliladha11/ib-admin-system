@@ -10,9 +10,11 @@
 //   jaringan putus atau 5xx  → berhenti; dicoba lagi dengan backoff
 import {
   animalSchema,
+  animalTagSchema,
   assignmentSchema,
   eventSchema,
   farmerSchema,
+  qrCodeSchema,
   serviceRequestSchema,
 } from '@ib/shared';
 
@@ -82,6 +84,11 @@ function serverRows(entry: OutboxEntry, body: unknown): ServerRows {
       return { animals: parseOne(animalSchema, b) };
     case 'event.create':
       return { events: parseOne(eventSchema, b.event) };
+    case 'qrCode.reserve':
+      return { qrCodes: parseOne(qrCodeSchema, b) };
+    case 'tag.attach':
+    case 'tag.remove':
+      return { animalTags: parseOne(animalTagSchema, b) };
     case 'serviceRequest.create':
     case 'serviceRequest.accept':
     case 'serviceRequest.assign':

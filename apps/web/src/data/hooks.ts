@@ -25,6 +25,7 @@ import {
   type AnimalFilter,
   type ServiceRequestFilter,
 } from './queries';
+import { loadAnimalTags, loadQrLabels } from './tag-queries';
 
 export function useDataLayer(): DataLayer {
   const layer = use(DataContext);
@@ -57,6 +58,20 @@ export function useAnimal(id: string) {
 export function useAnimalTimeline(id: string) {
   const { db, now } = useDataLayer();
   return useLiveQuery(() => loadTimeline(db, id, now()), [db, now, id]);
+}
+
+export function useAnimalTags(animalId: string) {
+  const { db } = useDataLayer();
+  return useLiveQuery(() => loadAnimalTags(db, animalId), [db, animalId]);
+}
+
+/** Label QR yang dibuat pengguna yang sedang masuk. */
+export function useQrLabels() {
+  const { db } = useDataLayer();
+  return useLiveQuery(async () => {
+    const session = await db.getMeta('session');
+    return session ? loadQrLabels(db, session.user.id) : [];
+  }, [db]);
 }
 
 export function useFarmers() {
