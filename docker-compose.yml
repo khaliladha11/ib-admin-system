@@ -16,6 +16,7 @@ services:
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
       REGION_NAME: ${REGION_NAME:-Wilayah pos IB}
       DEMO_DATA: ${DEMO_DATA:-0}
+      DEMO_MODE: ${DEMO_MODE:-0}
       BACKUP_KEEP: ${BACKUP_KEEP:-14}
       TZ: ${TZ:-Asia/Jakarta}
     volumes:

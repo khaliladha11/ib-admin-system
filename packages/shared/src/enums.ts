@@ -57,3 +57,11 @@ export type ExitReason = (typeof EXIT_REASONS)[number];
 
 /** device_id untuk baris yang dibuat server sendiri (bukan dari HP). */
 export const SERVER_DEVICE_ID = 'server';
+
+/** Bagian aplikasi yang dibahas di form masukan (langkah 5.1). */
+export const FEEDBACK_TOPICS = ['general', 'record', 'animals', 'tasks', 'scan', 'sync', 'other'] as const;
+export type FeedbackTopic = (typeof FEEDBACK_TOPICS)[number];
+
+/** Nilai wajah di form masukan: 1 = sulit/kecewa, 2 = biasa, 3 = mudah/senang. */
+export const FEEDBACK_RATINGS = [1, 2, 3] as const;
+export type FeedbackRating = (typeof FEEDBACK_RATINGS)[number];

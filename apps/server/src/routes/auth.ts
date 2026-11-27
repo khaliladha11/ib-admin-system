@@ -3,11 +3,19 @@ import { and, eq, isNull, or, sql } from 'drizzle-orm';
 
 import { verifyPassword } from '../auth/password';
 import { loadScope } from '../auth/scope';
-import { endSession, requireUser, startSession, toAuthUser } from '../auth/session';
+import {
+  endSession,
+  requireUser,
+  startSession,
+  toAuthUser,
+  type AuthUser,
+} from '../auth/session';
 import { users } from '../db/schema';
 import { ApiError, errorResponses } from '../http/errors';
 import type { AppEnv } from '../http/env';
 import { jsonBody, jsonContent, userDtoSchema } from '../http/schemas';
+import { dataGeneration } from '../ops/demo';
+import type { AppContext } from './helpers';
 
 const loginBodySchema = z
   .object({
@@ -17,7 +25,25 @@ const loginBodySchema = z
   })
   .openapi('LoginRequest');
 
-const meSchema = z.object({ user: userDtoSchema, farmerId: z.string().nullable() }).openapi('Me');
+const meSchema = z
+  .object({
+    user: userDtoSchema,
+    farmerId: z.string().nullable(),
+    /** Penanda isi database (berganti saat data demo direset); null di server biasa. */
+    generation: z.string().nullable(),
+    /** Server latihan (DEMO_MODE=1). */
+    demoMode: z.boolean(),
+  })
+  .openapi('Me');
+
+function meOf(c: AppContext, user: AuthUser) {
+  return {
+    user,
+    farmerId: loadScope(c.var.db, user).farmerId,
+    generation: dataGeneration(c.var.db),
+    demoMode: c.var.config.demoMode,
+  };
+}
 
 const tags = ['Autentikasi'];
 
@@ -55,7 +81,7 @@ export function registerAuthRoutes(app: OpenAPIHono<AppEnv>) {
       }
       startSession(c, row.id);
       const user = toAuthUser(row);
-      return c.json({ user, farmerId: loadScope(c.var.db, user).farmerId }, 200);
+      return c.json(meOf(c, user), 200);
     },
   );
 
@@ -84,7 +110,7 @@ export function registerAuthRoutes(app: OpenAPIHono<AppEnv>) {
     }),
     (c) => {
       const user = requireUser(c);
-      return c.json({ user, farmerId: loadScope(c.var.db, user).farmerId }, 200);
+      return c.json(meOf(c, user), 200);
     },
   );
 }

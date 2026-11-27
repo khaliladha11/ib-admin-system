@@ -19,6 +19,7 @@ export const SYNC_CHANGE_KINDS = [
   'tag.attach',
   'tag.remove',
   'syncReview.discard',
+  'feedback.create',
 ] as const;
 export type SyncChangeKind = (typeof SYNC_CHANGE_KINDS)[number];
 

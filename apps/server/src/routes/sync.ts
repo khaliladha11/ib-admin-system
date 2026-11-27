@@ -34,6 +34,7 @@ import {
   auditLogs,
   events,
   farmers,
+  feedback,
   locations,
   qrCodes,
   semenStock,
@@ -54,6 +55,7 @@ import {
   tagDtoSchema,
 } from '../http/schemas';
 import { inIds, visibilityOf } from '../sync/visibility';
+import { feedbackDtoSchema } from './feedback';
 import {
   audit,
   CHANGE_AT_HEADER,
@@ -103,6 +105,7 @@ const ROUTES: Record<SyncChangeKind, { method: 'POST' | 'PATCH'; path: RegExp }>
     method: 'POST',
     path: new RegExp(`^/api/sync/reviews/${UUID}/discard$`),
   },
+  'feedback.create': { method: 'POST', path: /^\/api\/feedback$/ },
 };
 
 interface ErrorBody {
@@ -180,6 +183,7 @@ const pullRowsSchema = z.object({
   users: z.array(z.object(publicUserSchema.shape)),
   auditLogs: z.array(z.object(auditLogSchema.shape)),
   syncReviews: z.array(reviewDtoSchema),
+  feedback: z.array(feedbackDtoSchema),
 });
 type PullRows = z.infer<typeof pullRowsSchema>;
 type PullTable = keyof PullRows;
@@ -211,6 +215,7 @@ const PULL_TABLES: readonly PullTable[] = [
   'users',
   'auditLogs',
   'syncReviews',
+  'feedback',
 ];
 
 const DEFAULT_PULL_LIMIT = 500;
@@ -553,6 +558,20 @@ export function registerSyncRoutes(app: OpenAPIHono<AppEnv>) {
             .limit(take)
             .all()
             .map(toReview),
+        // Masukan: pengirim melihat miliknya; admin melihat masukan pengguna di wilayahnya.
+        feedback: (i) =>
+          db
+            .select()
+            .from(feedback)
+            .where(
+              and(
+                admin ? inIds(feedback.userId, vis.userIds) : eq(feedback.userId, scope.user.id),
+                afterCursor(i, cursor, feedback.updatedAt, feedback.id),
+              ),
+            )
+            .orderBy(feedback.updatedAt, feedback.id)
+            .limit(take)
+            .all(),
       };
 
       const candidates = PULL_TABLES.flatMap((table, i) =>

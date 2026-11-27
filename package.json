@@ -21,6 +21,7 @@
     "db:seed": "pnpm --filter @ib/server db:seed",
     "db:backup": "pnpm --filter @ib/server db:backup",
     "db:restore": "pnpm --filter @ib/server db:restore",
+    "db:demo-reset": "pnpm --filter @ib/server db:demo-reset",
     "e2e": "pnpm --filter @ib/web e2e"
   },
   "devDependencies": {
