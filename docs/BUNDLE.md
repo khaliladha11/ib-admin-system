@@ -19,6 +19,7 @@ Cara mengukur:
 | Motion lewat `LazyMotion` + `m` (fitur animasi dimuat setelah tampil) | 751,9 KB | 230,8 KB |
 | Form catat kejadian, Minta IB/PKB, dan Lainnya dimuat saat dibuka | 731,9 KB | 227,1 KB |
 | **Akhir 4.1** (ditambah `workbox-window` dan pemberitahuan versi baru) | **735,5 KB** | **228,1 KB** |
+| Akhir 5.1 (masukan, catatan pemakaian, pita mode latihan; halaman baru dimuat lazy) | 748,4 KB | 233,4 KB |
 
 Hasilnya, bundel awal berkurang **114 KB (−13%), atau 33 KB gzip**.
 

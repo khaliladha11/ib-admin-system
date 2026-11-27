@@ -1,0 +1,144 @@
+/* Panduan satu halaman A4 (langkah 5.1). Dicetak dari Chrome: Cetak → A4, margin Default/None. */
+:root {
+  --ink: #17301f;
+  --muted: #4b5f50;
+  --green: #2e6b34;
+  --straw: #e2f05c;
+  --line: #c9d6c8;
+  --wash: #f3f7ec;
+}
+@page {
+  size: A4 portrait;
+  margin: 9mm;
+}
+* {
+  box-sizing: border-box;
+}
+html {
+  background: #fff;
+  color: var(--ink);
+  font-family: 'Atkinson Hyperlegible Next', 'Segoe UI', Roboto, Arial, sans-serif;
+  font-size: 10pt;
+  line-height: 1.3;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+body {
+  margin: 0;
+}
+.sheet {
+  width: 192mm;
+  height: 278mm;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4mm;
+  overflow: hidden;
+}
+@media screen {
+  html {
+    background: #e7eadf;
+  }
+  .sheet {
+    margin: 8mm auto;
+    padding: 9mm;
+    width: 210mm;
+    height: 297mm;
+    background: #fff;
+    box-shadow: 0 2px 12px rgb(0 0 0 / 0.15);
+  }
+}
+header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 6mm;
+  border-bottom: 1.2mm solid var(--straw);
+  padding-bottom: 2.5mm;
+}
+h1 {
+  margin: 0;
+  font-size: 21pt;
+  line-height: 1.1;
+}
+header p {
+  margin: 1mm 0 0;
+  color: var(--muted);
+}
+.address {
+  flex: none;
+  border: 0.4mm solid var(--line);
+  border-radius: 2.5mm;
+  padding: 2mm 3mm;
+  min-width: 60mm;
+  font-size: 9pt;
+  color: var(--muted);
+}
+.address strong {
+  display: block;
+  margin-top: 4mm;
+  border-bottom: 0.3mm dotted var(--muted);
+}
+ol.steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 3mm 4mm;
+  flex: 1;
+  align-content: start;
+  counter-reset: step;
+}
+ol.steps li {
+  counter-increment: step;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5mm;
+}
+ol.steps img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 360 / 500;
+  border: 0.4mm solid var(--line);
+  border-radius: 3mm;
+}
+ol.steps h2 {
+  display: flex;
+  align-items: center;
+  gap: 2mm;
+  margin: 0;
+  font-size: 12pt;
+}
+ol.steps h2::before {
+  content: counter(step);
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 7mm;
+  height: 7mm;
+  border-radius: 50%;
+  background: var(--green);
+  color: #fff;
+  font-size: 11pt;
+}
+ol.steps p {
+  margin: 0;
+}
+footer {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4mm;
+  background: var(--wash);
+  border-radius: 3mm;
+  padding: 3mm 4mm;
+  font-size: 9.5pt;
+}
+footer h3 {
+  margin: 0 0 0.5mm;
+  font-size: 10pt;
+}
+footer p {
+  margin: 0;
+}
