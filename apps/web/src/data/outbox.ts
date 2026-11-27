@@ -19,7 +19,8 @@ export type OutboxKind =
   | 'tag.attach'
   | 'tag.remove'
   | 'syncReview.discard'
-  | 'feedback.create';
+  | 'feedback.create'
+  | 'isikhnasReport.create';
 
 export interface OutboxEntry {
   /** Nomor urut otomatis (urutan kirim). */

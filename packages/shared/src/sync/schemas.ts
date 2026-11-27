@@ -20,6 +20,7 @@ export const SYNC_CHANGE_KINDS = [
   'tag.remove',
   'syncReview.discard',
   'feedback.create',
+  'isikhnasReport.create',
 ] as const;
 export type SyncChangeKind = (typeof SYNC_CHANGE_KINDS)[number];
 

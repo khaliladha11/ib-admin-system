@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Laporan celah keamanan
+    url: https://github.com/khaliladha11/ib-admin-system/security/advisories/new
+    about: Laporkan secara pribadi, jangan lewat issue publik.
+  - name: Panduan pemasangan pos IB
+    url: https://github.com/khaliladha11/ib-admin-system/blob/main/docs/INSTALL.md
+    about: Cara memasang, sertifikat HP, cadangan, dan masalah umum.

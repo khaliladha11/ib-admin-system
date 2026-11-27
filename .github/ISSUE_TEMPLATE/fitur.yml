@@ -1,0 +1,21 @@
+name: Usulan fitur
+description: Ide untuk membuat IB Ternak lebih berguna di lapangan
+labels: ['enhancement']
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Masalah di lapangan
+      description: Apa yang sulit atau belum bisa dilakukan sekarang? Siapa yang mengalaminya?
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: Usulan
+      description: Bagaimana sebaiknya aplikasi membantu?
+  - type: textarea
+    id: today
+    attributes:
+      label: Cara sekarang
+      description: Bagaimana hal ini dikerjakan saat ini (buku catatan, WhatsApp, iSIKHNAS, …)?

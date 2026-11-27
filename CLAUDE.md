@@ -43,8 +43,13 @@ inseminator, dan admin kelompok/dinas.
   image Docker, Caddy, dan skrip instal BELUM diuji di perangkat sungguhan (sandbox tidak bisa).
   Fase 4 selesai setelah uji itu; tag `v0.4.0` manual.
 - Fase 5: 5.1 persiapan UAT selesai (`docs/UAT.md`, panduan cetak `docs/panduan/`, mode demo
-  `DEMO_MODE=1` + reset, form masukan, catatan pemakaian lokal). Langkah berikutnya: jalankan
-  UAT, lalu 5.2 perbaikan dari umpan balik.
+  `DEMO_MODE=1` + reset, form masukan, catatan pemakaian lokal). 5.2 dilewati dulu (belum ada pilot).
+- Fase 6: 6.1 rilis v1.0.0 selesai di repo (lisensi AGPL-3.0, README, CONTRIBUTING, CODE_OF_CONDUCT,
+  SECURITY, template issue/PR, CHANGELOG, versi 1.0.0, catatan rilis `docs/rilis/v1.0.0.md`, header
+  keamanan, batas percobaan masuk). Tag `v1.0.0` dan GitHub Release dibuat manual oleh pemilik repo.
+  6.2 Laporan selesai (S/C, CR IB pertama, tren permintaan, waktu respons; Excel + cetak A4).
+  6.3 ekspor iSIKHNAS selesai (halaman `/isikhnas`, pesan SMS, tanda sudah dilaporkan). Semua langkah
+  di PROMPTS.md selesai kecuali 5.2 (menunggu pilot).
 
 ## Prinsip
 1. Offline-first: semua pencatatan harus bisa tanpa internet; sinkron menyusul.
@@ -286,6 +291,26 @@ inseminator, dan admin kelompok/dinas.
   bukan batal, > 30 menit durasi dibuang) dan `useScreenVisit(name)`. Ringkasan/CSV di
   `lib/usage-summary.ts`; halaman `/pemakaian` mengunduh lewat Blob (`lib/download.ts`), nama file
   tanpa id perangkat.
+- Rilis (6.1): versi di `package.json` root (semua paket sama), tampil di Lainnya → Tentang aplikasi
+  lewat `VITE_APP_VERSION` (define di `vite.config.ts`); tautan kode sumber `VITE_SOURCE_URL` (AGPL §13).
+  Perubahan terlihat pengguna dicatat di `CHANGELOG.md` bagian "Belum dirilis".
+- Keamanan (6.1): `http/security.ts` (`secureHeaders`: CSP aplikasi tanpa `unsafe-inline` untuk skrip,
+  CSP Swagger terpisah, tanpa HSTS karena pos dibuka lewat IP). `auth/login-limiter.ts` di memori,
+  dicek sebelum argon2; 429 `TOO_MANY_REQUESTS` + `Retry-After`; IP dari `X-Forwarded-For` (Caddy).
+- Laporan (6.2): rumus di `packages/shared/src/analytics/` (`serviceRecords` → layanan IB + hasil,
+  `fertilityStats`/`fertilityBy`, `requestTrend`, `responseTimes`; bulan WIB lewat `monthKey`).
+  CR = IB pertama bunting ÷ IB pertama yang ada hasilnya; S/C = layanan ada hasil ÷ bunting (keputusan
+  pemilik). Halaman `pages/admin/reports.tsx` + model murni `report-model.ts`; dihitung dari Dexie.
+  Excel: `buildXlsx` (`packages/shared/src/files/`, ZIP + XML tanpa dependensi; `zipFiles` dipindah dari
+  server ke shared, `utf8()` pengganti TextEncoder). PDF = cetak A4 (`.report-print`, dilepas saat
+  `afterprint`). Grafik satu seri batang tipis + tabel (skill dataviz).
+- iSIKHNAS (6.3): format pesan di `packages/shared/src/isikhnas/messages.ts` (`isikhnasMessages`: satu
+  pesan per event, LH satu per anak; ID memakai kolom `isikhnasOwnerId`/`isikhnasAnimalId`, spasi
+  dibuang; PKB tidak bunting = `0` dan anak lahir mati tanpa ID anak adalah ASUMSI, cocokkan dengan
+  panduan iSIKHNAS resmi). Tanda dilaporkan: tabel `isikhnas_reports` (satu per event, tambah-saja,
+  kind `isikhnasReport.create`, outbox `provisional` karena HP lain bisa menandai lebih dulu → server
+  menjawab 200 dengan tanda yang ada). Halaman `pages/isikhnas.tsx` (petugas: "Hanya catatan saya");
+  salin lewat `lib/clipboard.ts`.
 - Tes web memakai `fake-indexeddb` (di `src/test/setup.ts`) dan fixture
   `src/test/data-fixtures.ts` (DB baru per tes, fetch tiruan).
 - Logika reproduksi di `packages/shared/src/domain/`: `deriveReproStatus`,

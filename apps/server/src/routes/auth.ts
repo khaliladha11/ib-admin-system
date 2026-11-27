@@ -5,7 +5,7 @@ import { verifyPassword } from '../auth/password';
 import { loadScope } from '../auth/scope';
 import { endSession, requireUser, startSession, toAuthUser, type AuthUser } from '../auth/session';
 import { users } from '../db/schema';
-import { ApiError, errorResponses } from '../http/errors';
+import { ApiError, errorResponses, tooManyResponse } from '../http/errors';
 import type { AppEnv } from '../http/env';
 import { jsonBody, jsonContent, userDtoSchema } from '../http/schemas';
 import { dataGeneration } from '../ops/demo';
@@ -30,6 +30,15 @@ const meSchema = z
   })
   .openapi('Me');
 
+/** Alamat pengirim: X-Forwarded-For dari Caddy (pos IB), selain itu alamat koneksi. */
+function clientIp(c: AppContext): string {
+  const forwarded = c.req.header('x-forwarded-for')?.split(',')[0]?.trim();
+  if (forwarded) return forwarded;
+  const incoming = (c.env as { incoming?: { socket?: { remoteAddress?: string } } } | undefined)
+    ?.incoming;
+  return incoming?.socket?.remoteAddress ?? 'unknown';
+}
+
 function meOf(c: AppContext, user: AuthUser) {
   return {
     user,
@@ -53,10 +62,22 @@ export function registerAuthRoutes(app: OpenAPIHono<AppEnv>) {
         200: jsonContent(meSchema, 'Berhasil masuk'),
         400: errorResponses[400],
         401: errorResponses[401],
+        429: tooManyResponse,
       },
     }),
     async (c) => {
       const { identifier, password } = c.req.valid('json');
+      const ip = clientIp(c);
+      const limiter = c.var.loginLimiter;
+      const wait = limiter.retryAfter(identifier, ip, c.var.now());
+      if (wait !== null) {
+        c.header('retry-after', String(wait));
+        throw new ApiError(
+          429,
+          'TOO_MANY_REQUESTS',
+          `Terlalu banyak percobaan masuk. Coba lagi dalam ${String(Math.ceil(wait / 60))} menit.`,
+        );
+      }
       const phone = identifier.replace(/[\s-]/g, '');
       const row = c.var.db
         .select()
@@ -70,9 +91,11 @@ export function registerAuthRoutes(app: OpenAPIHono<AppEnv>) {
         .get();
       const valid = await verifyPassword(row?.isActive ? row.passwordHash : null, password);
       if (!row || !valid) {
+        limiter.failed(identifier, ip, c.var.now());
         // Pesan sama untuk akun tidak ada dan password salah (DOMAIN.md S8).
         throw new ApiError(401, 'UNAUTHENTICATED', 'Email/nomor HP atau password salah.');
       }
+      limiter.succeeded(identifier, ip);
       startSession(c, row.id);
       const user = toAuthUser(row);
       return c.json(meOf(c, user), 200);

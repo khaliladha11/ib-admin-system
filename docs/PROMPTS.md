@@ -338,7 +338,7 @@ Siapkan materi untuk uji coba lapangan (UAT) bersama 1-2 inseminator dan 5-10 pe
 - Skenario UAT di `docs/UAT.md`, diturunkan dari skenario uji end-to-end skripsi
 ```
 
-- [ ] **5.2 Perbaikan dari umpan balik** (ulangi tiap minggu pilot)
+- [ ] **5.2 Perbaikan dari umpan balik** (dilewati dulu: belum ada pilot) (ulangi tiap minggu pilot)
 
 ```text
 Ini catatan umpan balik dari pilot minggu ini:
@@ -347,7 +347,7 @@ Ini catatan umpan balik dari pilot minggu ini:
 Kelompokkan menjadi bug, kebingungan UI, dan permintaan fitur. Usulkan perbaikan untuk setiap kelompok dengan perkiraan besarnya pekerjaan. Kerjakan bug dan kebingungan UI dulu setelah saya setujui; permintaan fitur dicatat sebagai GitHub issue.
 ```
 
-- [ ] **6.1 Rilis v1.0 open-source**
+- [x] **6.1 Rilis v1.0 open-source**
 
 ```text
 Siapkan rilis v1.0:
@@ -357,7 +357,7 @@ Siapkan rilis v1.0:
 - Periksa keamanan: tidak ada rahasia di repo, dependensi tanpa kerentanan tinggi (`pnpm audit`), header keamanan di server, batas percobaan login
 ```
 
-- [ ] **6.2 Analitik & laporan**
+- [x] **6.2 Analitik & laporan**
 
 ```text
 Tambahkan halaman Laporan untuk admin:
@@ -367,7 +367,7 @@ Tambahkan halaman Laporan untuk admin:
 - Semua perhitungan berada di `packages/shared` dan punya unit test dengan data contoh yang hasilnya dihitung manual
 ```
 
-- [ ] **6.3 Ekspor format iSIKHNAS**
+- [x] **6.3 Ekspor format iSIKHNAS**
 
 ```text
 Tambahkan fitur ekspor laporan dalam format teks SMS iSIKHNAS agar petugas bisa melapor ke sistem resmi:
