@@ -39,6 +39,8 @@ const SyncQueuePage = lazyRouteComponent(() => import('@/pages/sync-queue'), 'Sy
 const ScanPage = lazyRouteComponent(() => import('@/pages/scan/scan-page'), 'ScanPage');
 const AnimalNewPage = lazyRouteComponent(() => import('@/pages/animal-new'), 'AnimalNewPage');
 const PosPage = lazyRouteComponent(() => import('@/pages/admin/pos'), 'PosPage');
+const FeedbackPage = lazyRouteComponent(() => import('@/pages/feedback'), 'FeedbackPage');
+const UsagePage = lazyRouteComponent(() => import('@/pages/usage'), 'UsagePage');
 const LabelsPage = lazyRouteComponent(() => import('@/pages/labels/labels-page'), 'LabelsPage');
 const DevComponentsPage = lazyRouteComponent(
   () => import('@/pages/dev-components'),
@@ -142,6 +144,18 @@ const syncQueueRoute = createRoute({
   path: '/data-belum-terkirim',
   component: SyncQueuePage,
   staticData: { title: 'Data belum terkirim', focus: true, backTo: '/lainnya' },
+});
+const feedbackRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/masukan',
+  component: FeedbackPage,
+  staticData: { title: 'Beri masukan', focus: true, backTo: '/lainnya' },
+});
+const usageRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/pemakaian',
+  component: UsagePage,
+  staticData: { title: 'Catatan pemakaian', focus: true, backTo: '/lainnya' },
 });
 const labelsRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -253,6 +267,8 @@ const routeTree = rootRoute.addChildren([
   labelsRoute,
   syncQueueRoute,
   posRoute,
+  feedbackRoute,
+  usageRoute,
   devRoute,
 ]);
 

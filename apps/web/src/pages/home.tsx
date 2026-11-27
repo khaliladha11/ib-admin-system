@@ -20,6 +20,7 @@ import { ReminderActionLink } from '@/components/reminder-action-link';
 import {
   useDataLayer,
   useReminders,
+  useScreenVisit,
   useServiceRequestViews,
   useSession,
   type ReminderView,
@@ -63,6 +64,7 @@ const AdminDashboard = lazy(() =>
 
 export function HomePage() {
   const role = useSession()?.user.role;
+  useScreenVisit('home');
   return isAdminRole(role) ? (
     <Suspense fallback={<DashboardSkeleton />}>
       <AdminDashboard />

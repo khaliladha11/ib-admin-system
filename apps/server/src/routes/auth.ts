@@ -3,13 +3,7 @@ import { and, eq, isNull, or, sql } from 'drizzle-orm';
 
 import { verifyPassword } from '../auth/password';
 import { loadScope } from '../auth/scope';
-import {
-  endSession,
-  requireUser,
-  startSession,
-  toAuthUser,
-  type AuthUser,
-} from '../auth/session';
+import { endSession, requireUser, startSession, toAuthUser, type AuthUser } from '../auth/session';
 import { users } from '../db/schema';
 import { ApiError, errorResponses } from '../http/errors';
 import type { AppEnv } from '../http/env';

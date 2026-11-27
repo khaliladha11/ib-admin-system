@@ -1,6 +1,7 @@
 // Pos IB (langkah 4.3): ONLINE-ONLY, langsung ke server pos (alamat, cadangan, impor).
 // Ekspor diunduh lewat tautan biasa (/api/system/export.json|zip) dengan cookie sesi.
 import type { DataLayer } from './context';
+import { clearLocalData } from './sync/auth';
 
 export interface BackupInfo {
   name: string;
@@ -14,6 +15,8 @@ export interface SystemInfo {
   addresses: string[];
   backups: BackupInfo[];
   backupKeep: number;
+  /** Server latihan (DEMO_MODE=1). */
+  demoMode: boolean;
 }
 
 export type ImportCounts = Record<string, { added: number; skipped: number }>;
@@ -27,6 +30,19 @@ export function loadSystemInfo(layer: DataLayer) {
 
 export function backupNow(layer: DataLayer) {
   return layer.api.request<BackupInfo>('POST', '/api/system/backup');
+}
+
+/**
+ * Server latihan: ganti semua data dengan data contoh baru. Semua sesi terhapus di server, jadi
+ * data lokal HP ini juga dibuang (catatan pemakaian tetap) dan pengguna masuk lagi.
+ */
+export async function resetDemo(layer: DataLayer) {
+  const result = await layer.api.request<{ backup: string; generation: string }>(
+    'POST',
+    '/api/system/demo/reset',
+  );
+  await clearLocalData(layer.db, { keepUsage: true });
+  return result;
 }
 
 export async function importData(layer: DataLayer, file: unknown) {

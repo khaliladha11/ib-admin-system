@@ -59,7 +59,15 @@ export type ExitReason = (typeof EXIT_REASONS)[number];
 export const SERVER_DEVICE_ID = 'server';
 
 /** Bagian aplikasi yang dibahas di form masukan (langkah 5.1). */
-export const FEEDBACK_TOPICS = ['general', 'record', 'animals', 'tasks', 'scan', 'sync', 'other'] as const;
+export const FEEDBACK_TOPICS = [
+  'general',
+  'record',
+  'animals',
+  'tasks',
+  'scan',
+  'sync',
+  'other',
+] as const;
 export type FeedbackTopic = (typeof FEEDBACK_TOPICS)[number];
 
 /** Nilai wajah di form masukan: 1 = sulit/kecewa, 2 = biasa, 3 = mudah/senang. */

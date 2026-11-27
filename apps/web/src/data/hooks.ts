@@ -2,7 +2,7 @@
 // tampilan langsung berubah setelah penulisan lokal dan tetap jalan saat offline.
 // Nilai `undefined` berarti data lokal masih dimuat.
 import { useLiveQuery } from 'dexie-react-hooks';
-import { use, useEffect, useMemo } from 'react';
+import { use, useCallback, useEffect, useMemo, useRef } from 'react';
 
 import { DataContext, type DataLayer } from './context';
 import {
@@ -21,6 +21,7 @@ import {
   loadServiceRequestViews,
   loadServiceRequests,
   loadServerReviews,
+  loadFeedback,
   loadSyncQueue,
   loadSyncStatus,
   loadTimeline,
@@ -28,6 +29,7 @@ import {
   type ServiceRequestFilter,
 } from './queries';
 import { lookupScan } from './scan-lookup';
+import { loadUsage, MIN_CANCEL_MS, recordUsage } from './usage';
 import { loadAnimalTags, loadQrLabels } from './tag-queries';
 
 export function useDataLayer(): DataLayer {
@@ -99,6 +101,57 @@ export function useSyncQueue() {
 export function useServerReviews() {
   const { db } = useDataLayer();
   return useLiveQuery(() => loadServerReviews(db), [db]);
+}
+
+/** Masukan peserta: milik sendiri, atau (admin) dari pengguna di wilayahnya. Terbaru dulu. */
+export function useFeedback() {
+  const { db } = useDataLayer();
+  return useLiveQuery(() => loadFeedback(db), [db]);
+}
+
+/** Catatan pemakaian anonim di perangkat ini (langkah 5.1). */
+export function useUsageRows() {
+  const { db } = useDataLayer();
+  return useLiveQuery(() => loadUsage(db), [db]);
+}
+
+/** Catat satu kali buka layar (anonim, hanya di perangkat ini). */
+export function useScreenVisit(name: string) {
+  const { db, now } = useDataLayer();
+  useEffect(() => {
+    void recordUsage(db, { kind: 'screen', name }, now());
+  }, [db, now, name]);
+}
+
+/**
+ * Lama mengisi form (anonim, hanya di perangkat ini). Panggil `done(eventType?)` setelah simpan
+ * berhasil. Form ditutup tanpa simpan dicatat sebagai batal (kecuali ditutup < 2 detik).
+ */
+export function useFormTiming(name: string) {
+  const { db, now } = useDataLayer();
+  const started = useRef<number | null>(null);
+  useEffect(() => {
+    started.current = now();
+    return () => {
+      const start = started.current;
+      started.current = null;
+      if (start === null) return;
+      const durationMs = now() - start;
+      if (durationMs >= MIN_CANCEL_MS) {
+        void recordUsage(db, { kind: 'form_cancel', name, durationMs }, now());
+      }
+    };
+  }, [db, now, name]);
+  return useCallback(
+    (eventType?: string) => {
+      const start = started.current;
+      if (start === null) return;
+      const time = now();
+      void recordUsage(db, { kind: 'form_done', name, eventType, durationMs: time - start }, time);
+      started.current = null; // sudah tersimpan: menutup form sesudahnya bukan "batal"
+    },
+    [db, now, name],
+  );
 }
 
 export function useFarmers() {

@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { NativeSelect } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { useAnimals, useDataLayer, useRepo } from '@/data';
+import { useAnimals, useDataLayer, useFormTiming, useRepo } from '@/data';
 import { errorIdOf, fieldA11y } from '@/lib/a11y';
 import { cn } from '@/lib/utils';
 
@@ -24,6 +24,7 @@ export function RequestFormPage() {
   const repo = useRepo();
   const { now } = useDataLayer();
   const navigate = useNavigate();
+  const markSaved = useFormTiming('request');
   const id = useId();
   const [animalId, setAnimalId] = useState(ternak ?? '');
   const [type, setType] = useState<'IB' | 'PKB'>(jenis ?? 'IB');
@@ -60,6 +61,7 @@ export function RequestFormPage() {
         preferredDate: date || undefined,
         notes: notes.trim() || undefined,
       });
+      markSaved();
       void navigate({ to: '/tugas', replace: true });
     } catch (err) {
       setError(err);

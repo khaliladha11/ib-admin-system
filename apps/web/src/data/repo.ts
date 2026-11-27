@@ -13,6 +13,7 @@ import {
   generateUniqueQrCodes,
   parseQrCode,
   QR_CODE_PATTERN,
+  feedbackSchema,
   qrCodeSchema,
   serviceRequestSchema,
   uuidv7,
@@ -20,6 +21,8 @@ import {
   type Animal,
   type AnimalEvent,
   type AnimalTag,
+  type Feedback,
+  type FeedbackTopic,
   type QrCode,
   type RandomFill,
   type TagRemovalReason,
@@ -1024,6 +1027,38 @@ export function createRepo(
   }
 
   /** Admin membuang catatan perlu dicek milik petugas di wilayahnya (lewat outbox). */
+  /** Masukan peserta (langkah 5.1): tersimpan di HP, terkirim saat ada sinyal. */
+  async function sendFeedback(input: {
+    topic: FeedbackTopic;
+    rating: number;
+    text?: string;
+  }): Promise<Feedback> {
+    const { session, base } = await context();
+    const row = parse(feedbackSchema, {
+      ...base(),
+      userId: session.user.id,
+      topic: input.topic,
+      rating: input.rating,
+      text: (input.text ?? '').trim(),
+    });
+    await db.transaction('rw', db.feedback, db.outbox, async () => {
+      await db.feedback.add(row);
+      await enqueue(
+        db,
+        {
+          kind: 'feedback.create',
+          method: 'POST',
+          path: '/api/feedback',
+          body: { id: row.id, topic: row.topic, rating: row.rating, text: row.text },
+          table: 'feedback',
+          rowId: row.id,
+        },
+        row.createdAt,
+      );
+    });
+    return done(row);
+  }
+
   async function discardServerReview(reviewId: string, reason?: string) {
     const { session, time, deviceId } = await context();
     requireAdmin(session);
@@ -1087,6 +1122,7 @@ export function createRepo(
     retryReview,
     discardReview,
     discardServerReview,
+    sendFeedback,
     setAnimalPhoto,
     removeAnimalPhoto,
   };

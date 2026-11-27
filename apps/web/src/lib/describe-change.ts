@@ -17,6 +17,7 @@ const KIND_TEXT: Record<OutboxEntry['kind'], string> = {
   'tag.attach': 'Pasang label/tag',
   'tag.remove': 'Cabut label/tag',
   'syncReview.discard': 'Buang catatan perlu dicek',
+  'feedback.create': 'Masukan',
 };
 
 export const EVENT_TEXT: Record<string, string> = {

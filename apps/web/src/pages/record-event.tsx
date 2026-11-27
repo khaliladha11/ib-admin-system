@@ -7,7 +7,14 @@ import { EmptyState } from '@/components/empty-state';
 import { EventForm } from '@/components/event-form';
 import { EVENT_FORM_TYPES, FARMER_FORM_TYPES, TYPE_LABEL } from '@/components/event-form-model';
 import { StatusBadge } from '@/components/status-badge';
-import { useAnimal, useDataLayer, useEventDefaults, useRepo, useSession } from '@/data';
+import {
+  useAnimal,
+  useDataLayer,
+  useEventDefaults,
+  useFormTiming,
+  useRepo,
+  useSession,
+} from '@/data';
 
 export function RecordEventPage() {
   const { animalId } = useParams({ from: '/ternak/$animalId/catat' });
@@ -18,6 +25,7 @@ export function RecordEventPage() {
   const repo = useRepo();
   const { now } = useDataLayer();
   const navigate = useNavigate();
+  const markSaved = useFormTiming('record');
 
   if (animal === undefined || defaults === undefined || session === undefined)
     return <FormSkeleton />;
@@ -51,6 +59,7 @@ export function RecordEventPage() {
         now={now}
         onSubmit={(input) => repo.recordEvent(animalId, input)}
         onSaved={(type) => {
+          markSaved(type);
           void navigate({
             to: '/ternak/$animalId',
             params: { animalId },
