@@ -1,0 +1,45 @@
+# Pos IB tanpa internet (langkah 4.3, panduan: docs/INSTALL.md).
+#   docker compose up -d --build
+# Isi .env dulu (skrip scripts/install.sh membuatnya): POS_HOST = alamat IP komputer ini.
+name: ib-ternak
+
+services:
+  app:
+    build: .
+    image: ib-ternak:lokal
+    restart: unless-stopped
+    environment:
+      PUBLIC_URL: https://${POS_HOST:?Isi POS_HOST di .env (alamat IP komputer ini)}
+      CERT_URL: http://${POS_HOST}/sertifikat
+      ADMIN_NAME: ${ADMIN_NAME:-Admin pos IB}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      REGION_NAME: ${REGION_NAME:-Wilayah pos IB}
+      DEMO_DATA: ${DEMO_DATA:-0}
+      BACKUP_KEEP: ${BACKUP_KEEP:-14}
+      TZ: ${TZ:-Asia/Jakarta}
+    volumes:
+      - ib-data:/data
+      # Cadangan harian terlihat langsung di folder backups/ di komputer ini.
+      - ./backups:/backups
+
+  caddy:
+    image: caddy:2.10-alpine
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - '80:80'
+      - '443:443'
+    environment:
+      POS_HOST: ${POS_HOST}
+      APP_UPSTREAM: app:3000
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+
+volumes:
+  ib-data:
+  caddy-data:
+  caddy-config:

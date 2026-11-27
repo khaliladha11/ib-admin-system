@@ -1,0 +1,29 @@
+# HTTPS di jaringan lokal pos IB (langkah 4.3). Kamera dan PWA hanya jalan lewat HTTPS.
+# Sertifikat dibuat oleh CA lokal Caddy (tanpa internet). Setiap HP memasang sertifikat root
+# sekali: unduh dari http://<IP>/sertifikat (panduan di docs/INSTALL.md).
+{
+	local_certs
+	skip_install_trust
+	# HP membuka lewat alamat IP (tanpa nama host): pakai sertifikat untuk IP ini.
+	default_sni {$POS_HOST}
+}
+
+# HTTP: hanya untuk mengunduh sertifikat root; selain itu dialihkan ke HTTPS.
+http:// {
+	handle /sertifikat* {
+		root * /data/caddy/pki/authorities/local
+		rewrite * /root.crt
+		header Content-Type application/x-x509-ca-cert
+		header Content-Disposition "attachment; filename=\"ib-ternak-ca.crt\""
+		file_server
+	}
+	handle {
+		redir https://{host}{uri} permanent
+	}
+}
+
+https://{$POS_HOST}, https://localhost {
+	tls internal
+	encode zstd gzip
+	reverse_proxy {$APP_UPSTREAM}
+}
