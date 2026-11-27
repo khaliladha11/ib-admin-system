@@ -69,10 +69,10 @@ export default defineConfig({
     },
   ],
   projects: [
-    { name: 'hp', testIgnore: /pwa\.spec\.ts/ },
+    { name: 'hp', testIgnore: /(pwa|two-devices)\.spec\.ts/ },
     {
       name: 'pwa',
-      testMatch: /pwa\.spec\.ts/,
+      testMatch: /(pwa|two-devices)\.spec\.ts/,
       use: { baseURL: `http://localhost:${String(PREVIEW_PORT)}`, serviceWorkers: 'allow' },
     },
   ],
