@@ -4,6 +4,7 @@ import { uuidv7 } from '@ib/shared';
 import { eq } from 'drizzle-orm';
 
 import { createApp } from '../app';
+import type { ServerConfig } from '../config';
 import { createDb } from '../db/client';
 import { runMigrations } from '../db/migrate';
 import { semenStock, users } from '../db/schema';
@@ -32,7 +33,7 @@ export interface ApiResponse<T = unknown> {
   headers: Headers;
 }
 
-export async function createHarness() {
+export async function createHarness(config: Partial<ServerConfig> = {}) {
   const { db, sqlite } = createDb(':memory:');
   runMigrations(db);
   const seed = buildSeedData(START);
@@ -40,7 +41,7 @@ export async function createHarness() {
   await setSeedPasswords(db);
 
   let clock = START;
-  const app = createApp({ db, now: () => clock, config: { cookieSecure: false } });
+  const app = createApp({ db, now: () => clock, config: { cookieSecure: false, ...config } });
 
   async function request<T = any>(
     method: string,

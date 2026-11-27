@@ -19,6 +19,8 @@
     "db:generate": "pnpm --filter @ib/server db:generate",
     "db:migrate": "pnpm --filter @ib/server db:migrate",
     "db:seed": "pnpm --filter @ib/server db:seed",
+    "db:backup": "pnpm --filter @ib/server db:backup",
+    "db:restore": "pnpm --filter @ib/server db:restore",
     "e2e": "pnpm --filter @ib/web e2e"
   },
   "devDependencies": {

@@ -10,7 +10,10 @@
     "test": "vitest run",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx --env-file-if-exists=../../.env src/db/migrate.ts",
-    "db:seed": "tsx --env-file-if-exists=../../.env src/db/seed.ts"
+    "db:seed": "tsx --env-file-if-exists=../../.env src/db/seed.ts",
+    "start": "tsx src/index.ts",
+    "db:backup": "tsx --env-file-if-exists=../../.env src/ops/backup-cli.ts",
+    "db:restore": "tsx --env-file-if-exists=../../.env src/ops/backup-cli.ts pulihkan"
   },
   "dependencies": {
     "@hono/node-server": "^2.1.11",
@@ -21,13 +24,13 @@
     "drizzle-orm": "^0.45.4",
     "hono": "^4.13.22",
     "swagger-ui-dist": "^5.36.0",
+    "tsx": "^4.23.15",
     "zod": "catalog:"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^9.6.0",
     "@types/node": "catalog:",
     "drizzle-kit": "^0.31.11",
-    "tsx": "^4.23.15",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }
