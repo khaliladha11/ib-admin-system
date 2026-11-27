@@ -18,6 +18,10 @@ export interface ServerConfig {
   backupKeep: number;
   /** Server latihan (env DEMO_MODE=1): data contoh bisa direset dari aplikasi (langkah 5.1). */
   demoMode: boolean;
+  /** Gagal masuk berturut-turut per akun sebelum dikunci (env LOGIN_MAX_ATTEMPTS, bawaan 5). */
+  loginMaxAttempts: number;
+  /** Lama kunci setelah batas tercapai, menit (env LOGIN_LOCK_MINUTES, bawaan 15). */
+  loginLockMinutes: number;
 }
 
 /** Teks env yang kosong dianggap tidak diisi. */
@@ -35,5 +39,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
     backupDir: path.resolve(SERVER_ROOT, env.BACKUP_DIR ?? 'backups'),
     backupKeep: Math.max(1, Number(env.BACKUP_KEEP ?? 14)),
     demoMode: env.DEMO_MODE === '1',
+    loginMaxAttempts: Math.max(1, Number(env.LOGIN_MAX_ATTEMPTS ?? 5)),
+    loginLockMinutes: Math.max(1, Number(env.LOGIN_LOCK_MINUTES ?? 15)),
   };
 }

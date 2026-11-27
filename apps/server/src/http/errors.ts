@@ -14,6 +14,8 @@ export const ERROR_CODES = [
   'ALREADY_EXISTS',
   'INVALID_EVENT',
   'WARNINGS_NEED_CONFIRMATION',
+  /** Terlalu banyak percobaan masuk; header Retry-After berisi detik tunggu. */
+  'TOO_MANY_REQUESTS',
   'INTERNAL_ERROR',
 ] as const;
 export type ErrorCode = (typeof ERROR_CODES)[number];
@@ -96,6 +98,11 @@ export const errorResponses = {
   403: { description: 'Tidak punya akses', content: errorContent },
   404: { description: 'Tidak ditemukan', content: errorContent },
   409: { description: 'Konflik dengan data yang ada', content: errorContent },
+} as const;
+
+export const tooManyResponse = {
+  description: 'Terlalu banyak percobaan; tunggu sesuai header Retry-After',
+  content: errorContent,
 } as const;
 
 export const eventErrorResponses = {

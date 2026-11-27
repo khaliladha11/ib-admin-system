@@ -1,12 +1,14 @@
 import { OpenAPIHono } from '@hono/zod-openapi';
 import { createHealthResponse, HEALTH_PATH, SERVER_DEVICE_ID } from '@ib/shared';
 
+import { createLoginLimiter } from './auth/login-limiter';
 import { loadSessionUser } from './auth/session';
 import { loadConfig, type ServerConfig } from './config';
 import type { Db } from './db/client';
 import { registerDocs } from './http/docs';
 import { handleError, validationHook } from './http/errors';
 import type { AppEnv } from './http/env';
+import { securityHeaders } from './http/security';
 import { registerAnimalRoutes } from './routes/animals';
 import { registerAuthRoutes } from './routes/auth';
 import { registerFarmerRoutes } from './routes/farmers';
@@ -44,7 +46,12 @@ export function monotonicClock(source: () => number = () => Date.now()): () => n
 export function createApp({ db, now = monotonicClock(), config }: AppDeps) {
   const fullConfig = { ...loadConfig(), ...config };
   const app = new OpenAPIHono<AppEnv>({ defaultHook: validationHook });
+  const loginLimiter = createLoginLimiter({
+    maxAttempts: fullConfig.loginMaxAttempts,
+    lockMs: fullConfig.loginLockMinutes * 60_000,
+  });
 
+  app.use('*', securityHeaders);
   app.onError(handleError);
   app.notFound((c) =>
     c.json({ error: { code: 'NOT_FOUND', message: 'Alamat API tidak ditemukan.' } }, 404),
@@ -54,6 +61,7 @@ export function createApp({ db, now = monotonicClock(), config }: AppDeps) {
     c.set('db', db);
     c.set('config', fullConfig);
     c.set('now', now);
+    c.set('loginLimiter', loginLimiter);
     const deviceId = c.req.header('x-device-id')?.trim().slice(0, 100);
     c.set('deviceId', deviceId?.length ? deviceId : SERVER_DEVICE_ID); // string kosong → "server"
     await next();
