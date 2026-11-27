@@ -47,6 +47,9 @@ export default defineConfig({
         DATABASE_URL: 'data/e2e.sqlite',
         PORT: String(SERVER_PORT),
         COOKIE_SECURE: 'false',
+        // Halaman Pos IB (langkah 4.3): alamat contoh dan folder cadangan khusus e2e.
+        PUBLIC_URL: 'https://192.168.1.10',
+        BACKUP_DIR: 'data/e2e-backups',
       },
       url: `http://localhost:${String(SERVER_PORT)}/api/health`,
       reuseExistingServer: false,

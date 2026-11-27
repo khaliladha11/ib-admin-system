@@ -22,3 +22,7 @@ apps/server/data/
 # Hasil Playwright
 apps/web/test-results/
 apps/web/playwright-report/
+
+# Cadangan SQLite pos IB (langkah 4.3)
+apps/server/backups/
+backups/

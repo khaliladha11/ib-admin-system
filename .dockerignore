@@ -1,0 +1,12 @@
+**/node_modules
+**/dist
+apps/server/data
+apps/server/backups
+backups
+legacy
+docs/screenshots
+apps/web/test-results
+apps/web/playwright-report
+.git
+.env
+*.env
