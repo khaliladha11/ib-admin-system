@@ -5,10 +5,11 @@ import { createRoute, z, type OpenAPIHono } from '@hono/zod-openapi';
 
 import { ADMIN_ROLES, requireRole } from '../auth/scope';
 import { requireUser } from '../auth/session';
-import { conflict, errorResponses } from '../http/errors';
+import { conflict, errorResponses, notFound } from '../http/errors';
 import type { AppEnv } from '../http/env';
 import { jsonContent } from '../http/schemas';
 import { createBackup, listBackups } from '../ops/backup';
+import { resetDemoData } from '../ops/demo';
 import {
   assertExportFile,
   EXPORT_TABLES,
@@ -43,6 +44,8 @@ const infoSchema = z
     addresses: z.array(z.string()),
     backups: z.array(backupSchema),
     backupKeep: z.int(),
+    /** Server latihan (DEMO_MODE=1): data contoh bisa direset. */
+    demoMode: z.boolean(),
   })
   .openapi('SystemInfo');
 
@@ -74,6 +77,7 @@ export function registerSystemRoutes(app: OpenAPIHono<AppEnv>) {
             createdAt,
           })),
           backupKeep: config.backupKeep,
+          demoMode: config.demoMode,
         },
         200,
       );
@@ -169,6 +173,35 @@ export function registerSystemRoutes(app: OpenAPIHono<AppEnv>) {
         after: Object.fromEntries(EXPORT_TABLES.map((n) => [n, counts[n].added])),
       });
       return c.json({ backup: backup.name, counts }, 200);
+    },
+  );
+
+  app.openapi(
+    createRoute({
+      method: 'post',
+      path: '/api/system/demo/reset',
+      tags,
+      security,
+      summary: 'Ganti semua data dengan data contoh baru (server latihan, admin dinas)',
+      description:
+        'Hanya bila server dijalankan dengan DEMO_MODE=1 (selain itu 404). Cadangan dibuat dulu. ' +
+        'Semua sesi login terhapus: semua HP perlu masuk lagi dan data lokalnya dibuang.',
+      responses: {
+        200: jsonContent(
+          z.object({ backup: z.string(), generation: z.string() }).openapi('DemoReset'),
+          'Data demo direset',
+        ),
+        ...errorResponses,
+      },
+    }),
+    async (c) => {
+      const { config, db } = c.var;
+      if (!config.demoMode) throw notFound('Halaman');
+      requireRole(requireUser(c), ['agency_admin']);
+      const now = c.var.now();
+      const backup = await createBackup(db.$client, config.backupDir, now, config.backupKeep);
+      const generation = await resetDemoData(db, now, config.demoMode);
+      return c.json({ backup: backup.name, generation }, 200);
     },
   );
 }

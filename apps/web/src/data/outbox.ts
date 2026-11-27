@@ -18,7 +18,8 @@ export type OutboxKind =
   | 'qrCode.reserve'
   | 'tag.attach'
   | 'tag.remove'
-  | 'syncReview.discard';
+  | 'syncReview.discard'
+  | 'feedback.create';
 
 export interface OutboxEntry {
   /** Nomor urut otomatis (urutan kirim). */

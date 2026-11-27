@@ -17,6 +17,7 @@ import {
   qrCodeSchema,
   serviceRequestSchema,
   syncReviewSchema,
+  feedbackSchema,
   MAX_PUSH_CHANGES,
   type SyncChangeResult,
 } from '@ib/shared';
@@ -80,6 +81,7 @@ const SCOPED_TABLES = [
   'users',
   'auditLogs',
   'syncReviews',
+  'feedback',
 ] as const satisfies readonly MirrorTable[];
 
 export interface SyncEngineOptions {
@@ -120,6 +122,8 @@ function serverRows(entry: OutboxEntry, body: unknown): ServerRows {
       return { animalTags: parseOne(animalTagSchema, b) };
     case 'syncReview.discard':
       return { syncReviews: parseOne(syncReviewSchema, b) };
+    case 'feedback.create':
+      return { feedback: parseOne(feedbackSchema, b) };
     case 'serviceRequest.create':
     case 'serviceRequest.accept':
     case 'serviceRequest.assign':

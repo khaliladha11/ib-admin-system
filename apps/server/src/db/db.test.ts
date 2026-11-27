@@ -38,6 +38,7 @@ describe('migrasi', () => {
         'audit_logs',
         'events',
         'farmers',
+        'feedback',
         'field_versions',
         'locations',
         'qr_codes',
@@ -45,6 +46,7 @@ describe('migrasi', () => {
         'service_requests',
         'sessions',
         'sync_changes',
+        'system_meta',
         'users',
       ].sort(),
     );
@@ -54,7 +56,8 @@ describe('migrasi', () => {
     for (const table of t.allTables) {
       const name = getTableName(table);
       // Tabel bantu waktu ubah per kolom (docs/SYNC.md §5): bukan data yang disinkronkan.
-      if (name === 'field_versions') continue;
+      // system_meta: nilai sistem kunci → teks (generasi data demo).
+      if (name === 'field_versions' || name === 'system_meta') continue;
       const cols = ctx.sqlite
         .prepare(`PRAGMA table_info(${name})`)
         .all()

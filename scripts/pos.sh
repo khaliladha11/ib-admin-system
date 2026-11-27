@@ -32,6 +32,10 @@ case "${1:-bantuan}" in
     compose start app
     echo "Selesai. Data kembali seperti saat cadangan $2 dibuat."
     ;;
+  reset-demo)
+    # Hanya untuk server latihan (DEMO_MODE=1 di .env): ganti semua data dengan data contoh baru.
+    cli reset-demo
+    ;;
   sertifikat)
     compose cp caddy:/data/caddy/pki/authorities/local/root.crt ./ib-ternak-ca.crt
     echo "Sertifikat root disalin ke ./ib-ternak-ca.crt (kirim ke HP bila tidak bisa diunduh)."
@@ -48,6 +52,7 @@ Perintah pos IB:
   cadangkan                   buat cadangan sekarang (otomatis setiap hari)
   daftar-cadangan             lihat cadangan di folder backups/
   pulihkan <nama-file>        kembalikan data dari cadangan
+  reset-demo                  server latihan (DEMO_MODE=1): isi ulang data contoh
   sertifikat                  salin sertifikat root ke file ib-ternak-ca.crt
   perbarui                    ambil versi terbaru lalu bangun ulang (butuh internet)
 HELP

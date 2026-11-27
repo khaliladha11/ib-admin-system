@@ -5,6 +5,7 @@ import {
   FileJson,
   FileSpreadsheet,
   HardDriveDownload,
+  RotateCcw,
   Upload,
   WifiOff,
 } from 'lucide-react';
@@ -24,6 +25,7 @@ import {
   EXPORT_JSON_URL,
   importData,
   loadSystemInfo,
+  resetDemo,
   useDataLayer,
   useSession,
   type ImportCounts,
@@ -45,6 +47,7 @@ const TABLE_TEXT: Record<string, string> = {
   auditLogs: 'Log',
   syncChanges: 'Riwayat kiriman',
   fieldVersions: 'Waktu ubah kolom',
+  feedback: 'Masukan',
 };
 
 const size = (bytes: number) =>
@@ -63,6 +66,7 @@ export function PosPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [counts, setCounts] = useState<ImportCounts | null>(null);
   const [reload, setReload] = useState(0);
+  const [confirmReset, setConfirmReset] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -283,6 +287,53 @@ export function PosPage() {
           </table>
         )}
       </Panel>
+
+      {info.demoMode && (
+        <Panel title="Data latihan" titleId="data-latihan">
+          <p className="text-muted-foreground">
+            Server ini server latihan (DEMO_MODE=1). Setelah sesi pelatihan, kembalikan data contoh
+            seperti semula. Semua catatan peserta hilang dan semua HP perlu masuk lagi.
+          </p>
+          {!agency ? (
+            <p className="text-muted-foreground">Reset data latihan hanya untuk admin dinas.</p>
+          ) : confirmReset ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="font-semibold">Hapus semua data dan isi ulang data contoh?</span>
+              <Button
+                variant="destructive"
+                disabled={busy}
+                onClick={() =>
+                  void run(async () => {
+                    // Sesi ikut terhapus: setelah ini aplikasi kembali ke layar Masuk.
+                    await resetDemo(layer);
+                  })
+                }
+              >
+                Ya, reset data latihan
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setConfirmReset(false);
+                }}
+              >
+                Batal
+              </Button>
+            </div>
+          ) : (
+            <Button
+              variant="outline"
+              className="self-start"
+              onClick={() => {
+                setConfirmReset(true);
+              }}
+            >
+              <RotateCcw aria-hidden="true" />
+              Reset data demo
+            </Button>
+          )}
+        </Panel>
+      )}
 
       {message && (
         <p role="status" className="font-semibold text-primary">

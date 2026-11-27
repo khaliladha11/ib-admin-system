@@ -10,16 +10,26 @@ import type { ApiClient } from './api';
 interface MeResponse {
   user: { id: string; name: string; role: UserRole; locationId: string | null };
   farmerId: string | null;
+  /** Penanda isi database server; berganti saat data demo direset (langkah 5.1). */
+  generation?: string | null;
+  demoMode?: boolean;
 }
 
-/** Hapus semua data lokal (tabel cermin, outbox, sesi, cursor). */
-export async function clearLocalData(db: IbDb): Promise<void> {
+/**
+ * Hapus semua data lokal (tabel cermin, outbox, sesi, cursor). Catatan pemakaian ikut dihapus,
+ * kecuali `keepUsage` (reset data demo: perangkat dan pemakainya sama).
+ */
+export async function clearLocalData(
+  db: IbDb,
+  { keepUsage = false }: { keepUsage?: boolean } = {},
+): Promise<void> {
   await db.transaction(
     'rw',
-    [...MIRROR_TABLES.map((t) => db.mirror(t)), db.outbox, db.meta, db.animalPhotos],
+    [...MIRROR_TABLES.map((t) => db.mirror(t)), db.outbox, db.meta, db.animalPhotos, db.usage],
     async () => {
       await Promise.all(MIRROR_TABLES.map((t) => db.mirror(t).clear()));
       await db.animalPhotos.clear();
+      if (!keepUsage) await db.usage.clear();
       await db.outbox.clear();
       await db.meta.where('key').anyOf(['session', 'sync', 'owner', 'pin']).delete();
     },
@@ -43,7 +53,12 @@ export async function signIn(
 ): Promise<Session> {
   const me = await api.request<MeResponse>('POST', '/api/auth/login', { identifier, password });
   const previous = await db.getMeta('owner');
-  if (previous && previous.id !== me.user.id) {
+  const generation = me.generation ?? null;
+  if (previous && (previous.generation ?? null) !== generation) {
+    // Data server diganti (reset data demo): data lokal dan perubahan yang belum terkirim milik
+    // isi database lama, jadi dibuang tanpa bertanya. Catatan pemakaian sesi latihan tetap ada.
+    await clearLocalData(db, { keepUsage: true });
+  } else if (previous && previous.id !== me.user.id) {
     const unsent = await db.outbox.count();
     if (unsent > 0 && !discardOtherAccountData) {
       throw new LocalValidationError(
@@ -61,9 +76,10 @@ export async function signIn(
       locationId: me.user.locationId,
     },
     farmerId: me.farmerId,
+    demoMode: me.demoMode ?? false,
   };
   await db.setMeta('session', session);
-  await db.setMeta('owner', { id: session.user.id, name: session.user.name });
+  await db.setMeta('owner', { id: session.user.id, name: session.user.name, generation });
   unlockApp();
   const sync = (await db.getMeta('sync')) ?? INITIAL_SYNC_STATE;
   await db.setMeta('sync', { ...sync, needsLogin: false, lastError: null });

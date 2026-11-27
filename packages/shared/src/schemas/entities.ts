@@ -4,6 +4,8 @@ import {
   ANIMAL_SEXES,
   ASSIGNMENT_END_REASONS,
   AUDIT_ACTIONS,
+  FEEDBACK_RATINGS,
+  FEEDBACK_TOPICS,
   LOCATION_LEVELS,
   SERVICE_REQUEST_STATUSES,
   SERVICE_REQUEST_TYPES,
@@ -108,6 +110,14 @@ export const qrCodeSchema = baseRowSchema.extend({
   issuedBy: idSchema,
 });
 
+/** Masukan peserta uji coba (langkah 5.1), dibuat di HP lalu ikut sinkron. */
+export const feedbackSchema = baseRowSchema.extend({
+  userId: idSchema,
+  topic: z.enum(FEEDBACK_TOPICS),
+  rating: z.int().min(1).max(FEEDBACK_RATINGS.length),
+  text: z.string().trim().max(1000),
+});
+
 export const serviceRequestSchema = baseRowSchema.extend({
   farmerId: idSchema,
   animalId: idSchema,
@@ -168,3 +178,4 @@ export type ServiceRequest = z.infer<typeof serviceRequestSchema>;
 export type Assignment = z.infer<typeof assignmentSchema>;
 export type SemenStock = z.infer<typeof semenStockSchema>;
 export type AuditLog = z.infer<typeof auditLogSchema>;
+export type Feedback = z.infer<typeof feedbackSchema>;

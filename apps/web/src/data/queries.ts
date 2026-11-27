@@ -11,6 +11,8 @@ import {
   type Assignment,
   type DomainEvent,
   type Farmer,
+  type Feedback,
+  type UserRole,
   type PublicUser,
   type Reminder,
   type ReminderItem,
@@ -435,6 +437,32 @@ export async function loadServerReviews(db: IbDb): Promise<ServerReviewView[]> {
       ...r,
       animalName: r.animalId ? (animalName.get(r.animalId) ?? null) : null,
       userName: userName.get(r.userId) ?? null,
+    }))
+    .sort((a, b) => b.createdAt - a.createdAt);
+}
+
+export interface FeedbackView extends Feedback {
+  userName: string | null;
+  role: UserRole | null;
+  /** Masih di outbox HP ini (belum diterima server). */
+  pending: boolean;
+}
+
+export async function loadFeedback(db: IbDb): Promise<FeedbackView[]> {
+  const [rows, users, pending] = await Promise.all([
+    db.feedback.toArray(),
+    db.users.toArray(),
+    db.outbox.where('status').equals('pending').toArray(),
+  ]);
+  const byId = new Map(users.map((u) => [u.id, u]));
+  const waiting = new Set(pending.filter((e) => e.table === 'feedback').map((e) => e.rowId));
+  return rows
+    .filter((r) => r.deletedAt === null)
+    .map((r) => ({
+      ...r,
+      userName: byId.get(r.userId)?.name ?? null,
+      role: byId.get(r.userId)?.role ?? null,
+      pending: waiting.has(r.id),
     }))
     .sort((a, b) => b.createdAt - a.createdAt);
 }

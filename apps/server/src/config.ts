@@ -16,6 +16,8 @@ export interface ServerConfig {
   backupDir: string;
   /** Jumlah cadangan yang disimpan (env BACKUP_KEEP, bawaan 14). */
   backupKeep: number;
+  /** Server latihan (env DEMO_MODE=1): data contoh bisa direset dari aplikasi (langkah 5.1). */
+  demoMode: boolean;
 }
 
 /** Teks env yang kosong dianggap tidak diisi. */
@@ -32,5 +34,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
     certUrl: nonEmpty(env.CERT_URL),
     backupDir: path.resolve(SERVER_ROOT, env.BACKUP_DIR ?? 'backups'),
     backupKeep: Math.max(1, Number(env.BACKUP_KEEP ?? 14)),
+    demoMode: env.DEMO_MODE === '1',
   };
 }

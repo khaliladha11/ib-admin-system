@@ -8,6 +8,7 @@ import { ListSkeleton } from '@/components/skeletons';
 import { EmptyState } from '@/components/empty-state';
 import { Button } from '@/components/ui/button';
 import {
+  useFeedback,
   useFollowUps,
   useRepo,
   useServerReviews,
@@ -17,8 +18,10 @@ import {
 } from '@/data';
 import { ErrorMessage } from '@/components/error-message';
 import { Panel } from '@/components/ui/panel';
+import { ROLE_LABEL } from '@/components/request-status';
 import { EVENT_TEXT } from '@/lib/describe-change';
-import { formatDate } from '@/lib/format';
+import { RATING_TEXT, TOPIC_TEXT } from '@/lib/feedback-text';
+import { formatDate, formatDateTime } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { followUpMessage, waLink } from '@/lib/whatsapp';
 
@@ -153,6 +156,34 @@ function ServerReviews() {
         ))}
       </ul>
       {error !== null && <ErrorMessage error={error} />}
+    </Panel>
+  );
+}
+
+/** Masukan peserta uji coba (langkah 5.1), terbaru dulu. */
+function ParticipantFeedback() {
+  const items = useFeedback();
+  if (!items || items.length === 0) return null;
+  const count = (rating: number) => items.filter((f) => f.rating === rating).length;
+  return (
+    <Panel title={`Masukan peserta (${String(items.length)})`} titleId="masukan-peserta">
+      <p className="text-muted-foreground">
+        {RATING_TEXT[3]}: {count(3)} · {RATING_TEXT[2]}: {count(2)} · {RATING_TEXT[1]}: {count(1)}
+      </p>
+      <ul className="flex flex-col">
+        {items.map((f) => (
+          <li key={f.id} className="border-t-(length:--bw) py-2 first:border-t-0">
+            <span className="block font-semibold">
+              {RATING_TEXT[f.rating]} · {TOPIC_TEXT[f.topic]}
+            </span>
+            {f.text && <span className="block">{f.text}</span>}
+            <span className="block text-sm text-muted-foreground">
+              {f.userName ?? 'Pengguna'}
+              {f.role ? ` (${ROLE_LABEL[f.role]})` : ''}, {formatDateTime(f.createdAt)}
+            </span>
+          </li>
+        ))}
+      </ul>
     </Panel>
   );
 }
@@ -293,6 +324,7 @@ export function FollowUpsPage() {
           </ul>
         </>
       )}
+      <ParticipantFeedback />
     </div>
   );
 }

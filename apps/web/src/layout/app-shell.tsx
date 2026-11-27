@@ -158,7 +158,8 @@ export function AppShell({ children }: { children: ReactNode }) {
     select: (s) => s.matches.at(-1)?.staticData ?? {},
   });
   const focus = data.focus ?? false;
-  const role = useSession()?.user.role;
+  const session = useSession();
+  const role = session?.user.role;
   const title =
     data.title ??
     (pathname === '/' ? (isAdminRole(role) ? 'Ringkasan' : 'Hari ini') : titleFor(pathname));
@@ -169,6 +170,11 @@ export function AppShell({ children }: { children: ReactNode }) {
       <Sidebar items={navItemsFor(role, 'side')} />
       <div className="lg:pl-62">
         <header className="sticky top-0 z-10 border-b-(length:--bw) bg-card/95 backdrop-blur">
+          {session?.demoMode && (
+            <p className="bg-straw px-4 py-1 text-center text-sm font-semibold text-foreground">
+              Mode latihan: data contoh, boleh dicoba sesukanya
+            </p>
+          )}
           <div className="mx-auto flex min-h-14 max-w-300 items-center justify-between gap-2 px-4">
             <div className="flex min-w-0 items-center gap-1">
               {focus && <BackButton fallback={data.backTo ?? '/'} />}

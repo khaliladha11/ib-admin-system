@@ -1,7 +1,9 @@
 // Lainnya: akun, status sinkron + data ditolak, PIN, kontras tinggi, keluar.
 import { Link } from '@tanstack/react-router';
 import {
+  BarChart3,
   KeyRound,
+  MessageSquareHeart,
   LogOut,
   RefreshCw,
   SwatchBook,
@@ -178,6 +180,26 @@ export function MorePage() {
             Cetak label QR
           </Link>
         </Button>
+      </Panel>
+
+      <Panel title="Uji coba">
+        <p className="text-muted-foreground">
+          Ceritakan apa yang sulit atau membingungkan. Masukan terkirim ke admin saat ada sinyal.
+        </p>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Button asChild variant="outline" className="justify-start">
+            <Link to="/masukan">
+              <MessageSquareHeart aria-hidden="true" />
+              Beri masukan
+            </Link>
+          </Button>
+          <Button asChild variant="outline" className="justify-start">
+            <Link to="/pemakaian">
+              <BarChart3 aria-hidden="true" />
+              Catatan pemakaian (hanya di HP ini)
+            </Link>
+          </Button>
+        </div>
       </Panel>
 
       <ContrastToggle mode={mode} onChange={setMode} />

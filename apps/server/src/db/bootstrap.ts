@@ -1,5 +1,6 @@
 // Pemasangan baru (langkah 4.3): database kosong → buat wilayah + akun admin dinas pertama dari
-// env ADMIN_EMAIL/ADMIN_PASSWORD (diisi skrip instal), atau data contoh bila DEMO_DATA=1.
+// env ADMIN_EMAIL/ADMIN_PASSWORD (diisi skrip instal), atau data contoh bila DEMO_DATA=1 atau
+// DEMO_MODE=1 (server latihan, langkah 5.1).
 import { SERVER_DEVICE_ID, uuidv7 } from '@ib/shared';
 
 import { hashPassword } from '../auth/password';
@@ -14,7 +15,7 @@ export async function bootstrapDatabase(
   now = Date.now(),
 ): Promise<'demo' | 'admin' | 'skip'> {
   if (countRows(db, users) > 0) return 'skip';
-  if (env.DEMO_DATA === '1') {
+  if (env.DEMO_DATA === '1' || env.DEMO_MODE === '1') {
     insertSeedData(db, buildSeedData(now));
     await setSeedPasswords(db);
     return 'demo';

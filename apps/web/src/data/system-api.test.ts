@@ -8,6 +8,7 @@ const info = (patch: Partial<SystemInfo>): SystemInfo => ({
   addresses: [],
   backups: [],
   backupKeep: 14,
+  demoMode: false,
   ...patch,
 });
 

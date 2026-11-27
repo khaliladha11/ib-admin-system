@@ -16,7 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Panel } from '@/components/ui/panel';
-import { classifyScanText, useScanLookup } from '@/data';
+import { classifyScanText, useScanLookup, useScreenVisit } from '@/data';
 import { errorIdOf, fieldA11y } from '@/lib/a11y';
 import { batchStore, useBatchItems } from '@/lib/scan/batch-store';
 import { CAMERA_PROBLEM_TEXT } from '@/lib/scan/camera';
@@ -44,6 +44,7 @@ function saveContinuous(on: boolean) {
 }
 
 export function ScanPage() {
+  useScreenVisit('scan');
   const navigate = useNavigate();
   const lookup = useScanLookup();
   const batch = useBatchItems();

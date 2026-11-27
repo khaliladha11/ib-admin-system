@@ -9,13 +9,20 @@ import { EmptyState } from '@/components/empty-state';
 import { ErrorMessage } from '@/components/error-message';
 import { RequestStatusBadge } from '@/components/request-status-badge';
 import { Button } from '@/components/ui/button';
-import { useRepo, useServiceRequestViews, useSession, type ServiceRequestView } from '@/data';
+import {
+  useRepo,
+  useScreenVisit,
+  useServiceRequestViews,
+  useSession,
+  type ServiceRequestView,
+} from '@/data';
 import { formatDate } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
 const TYPE_TEXT = { IB: 'Inseminasi (IB)', PKB: 'Periksa bunting (PKB)' } as const;
 
 export function TasksPage() {
+  useScreenVisit('tasks');
   const session = useSession();
   const views = useServiceRequestViews();
   if (!session || !views) return <ListSkeleton label="Memuat tugas…" />;

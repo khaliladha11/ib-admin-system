@@ -11,7 +11,7 @@ import { nextStepLabel } from '@/components/schedule-text';
 import { STATUS_META } from '@/components/status-meta';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useAnimals, useDataLayer } from '@/data';
+import { useAnimals, useDataLayer, useScreenVisit } from '@/data';
 import { cn } from '@/lib/utils';
 
 import { countByStatus, filterAnimals, type StatusFilter } from './animal-filter';
@@ -28,6 +28,7 @@ const FILTERS: StatusFilter[] = [
 ];
 
 export function AnimalsPage() {
+  useScreenVisit('animals');
   const { now } = useDataLayer();
   const today = now();
   const animals = useAnimals({ includeExited: true });

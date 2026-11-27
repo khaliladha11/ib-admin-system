@@ -19,6 +19,10 @@ export {
   useScanLookup,
   useScanResult,
   useServerReviews,
+  useFeedback,
+  useFormTiming,
+  useScreenVisit,
+  useUsageRows,
   useSyncQueue,
   useQrLabels,
   useEventDefaults,
@@ -96,8 +100,13 @@ export {
   EXPORT_JSON_URL,
   importData,
   loadSystemInfo,
+  resetDemo,
   type BackupInfo,
   type ImportCounts,
   type SystemInfo,
 } from './system-api';
 export type { SyncResult } from './sync/engine';
+
+export { clearUsage, MAX_USAGE_ROWS } from './usage';
+export type { UsageRow } from './db';
+export type { FeedbackView } from './queries';

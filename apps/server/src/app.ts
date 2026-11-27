@@ -10,6 +10,7 @@ import type { AppEnv } from './http/env';
 import { registerAnimalRoutes } from './routes/animals';
 import { registerAuthRoutes } from './routes/auth';
 import { registerFarmerRoutes } from './routes/farmers';
+import { registerFeedbackRoutes } from './routes/feedback';
 import { registerReminderRoutes } from './routes/reminders';
 import { registerServiceRequestRoutes } from './routes/service-requests';
 import { registerSyncRoutes } from './routes/sync';
@@ -70,6 +71,7 @@ export function createApp({ db, now = monotonicClock(), config }: AppDeps) {
   registerUserRoutes(app);
   registerQrCodeRoutes(app);
   registerSystemRoutes(app);
+  registerFeedbackRoutes(app);
 
   app.openAPIRegistry.registerComponent('securitySchemes', 'cookieAuth', {
     type: 'apiKey',

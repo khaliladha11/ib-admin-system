@@ -27,6 +27,7 @@ const TABLES = {
   auditLogs: t.auditLogs,
   syncChanges: t.syncChanges,
   fieldVersions: t.fieldVersions,
+  feedback: t.feedback,
 } as const satisfies Record<string, SQLiteTable>;
 export type ExportTable = keyof typeof TABLES;
 export const EXPORT_TABLES = Object.keys(TABLES) as ExportTable[];

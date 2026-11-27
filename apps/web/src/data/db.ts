@@ -7,6 +7,7 @@ import type {
   AnimalTag,
   Assignment,
   Farmer,
+  Feedback,
   Location,
   AuditLog,
   PublicUser,
@@ -34,6 +35,8 @@ export interface Session {
   user: SessionUser;
   /** Id peternak milik pengguna ber-peran farmer. */
   farmerId: string | null;
+  /** Server latihan (DEMO_MODE=1): tampilkan pita "Mode latihan". */
+  demoMode?: boolean;
 }
 
 export interface SyncState {
@@ -69,7 +72,12 @@ export interface MetaValues {
   deviceId: string;
   session: Session;
   /** Akun pemilik data lokal; tetap tersimpan setelah keluar agar akun lain tidak melihatnya. */
-  owner: { id: string; name: string };
+  owner: {
+    id: string;
+    name: string;
+    /** Penanda isi database server (berganti saat data demo direset); null di server biasa. */
+    generation?: string | null;
+  };
   pin: PinRecord;
   sync: SyncState;
 }
@@ -93,6 +101,7 @@ export const MIRROR_TABLES = [
   'users',
   'auditLogs',
   'syncReviews',
+  'feedback',
 ] as const;
 export type MirrorTable = (typeof MIRROR_TABLES)[number];
 
@@ -113,6 +122,26 @@ export interface MirrorRows {
   auditLogs: AuditLog;
   /** Event "perlu dicek" yang disimpan server (milik pengguna; admin: wilayahnya). */
   syncReviews: SyncReview;
+  /** Masukan peserta (milik sendiri; admin: wilayahnya). */
+  feedback: Feedback;
+}
+
+/**
+ * Catatan pemakaian anonim (langkah 5.1). HANYA di perangkat ini: tidak masuk outbox, tidak
+ * pernah dikirim. Tanpa id pengguna, id ternak, atau teks isian.
+ */
+export interface UsageRow {
+  seq?: number;
+  kind: 'form_start' | 'form_done' | 'form_cancel' | 'screen';
+  /** Nama form/layar, mis. "record", "request", "home". */
+  name: string;
+  /** Jenis event yang dicatat (BH, IB, …) untuk form_done form catat. */
+  eventType?: string | null;
+  /** Lama mengisi form (ms) untuk form_done/form_cancel. */
+  durationMs?: number | null;
+  at: number;
+  /** Tanggal lokal YYYY-MM-DD. */
+  day: string;
 }
 
 export class IbDb extends Dexie {
@@ -128,6 +157,8 @@ export class IbDb extends Dexie {
   users!: Table<PublicUser, string>;
   auditLogs!: Table<AuditLog, string>;
   syncReviews!: Table<SyncReview, string>;
+  feedback!: Table<Feedback, string>;
+  usage!: Table<UsageRow, number>;
   outbox!: Table<OutboxEntry, number>;
   animalPhotos!: Table<AnimalPhoto, string>;
   meta!: Table<MetaRow, MetaKey>;
@@ -178,6 +209,20 @@ export class IbDb extends Dexie {
     // "perlu dicek" dari server. Pull diulang dari awal sekali.
     this.version(5)
       .stores({ syncReviews: 'id, userId, animalId, rowId, updatedAt' })
+      .upgrade(async (tx) => {
+        await tx
+          .table('meta')
+          .where('key')
+          .equals('sync')
+          .modify((row: { value: Record<string, unknown> }) => {
+            row.value.cursor = null;
+            row.value.scope = null;
+          });
+      });
+    // v6 (langkah 5.1): masukan peserta (ikut sinkron) dan catatan pemakaian (lokal saja).
+    // Pull diulang dari awal agar masukan lama ikut masuk ke HP admin.
+    this.version(6)
+      .stores({ feedback: 'id, userId, updatedAt', usage: '++seq, kind, at' })
       .upgrade(async (tx) => {
         await tx
           .table('meta')

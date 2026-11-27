@@ -12,6 +12,7 @@ import {
   ASSIGNMENT_END_REASONS,
   AUDIT_ACTIONS,
   EVENT_TYPES,
+  FEEDBACK_TOPICS,
   LOCATION_LEVELS,
   SERVICE_REQUEST_STATUSES,
   SERVICE_REQUEST_TYPES,
@@ -376,8 +377,41 @@ export const fieldVersions = sqliteTable(
   (t) => [primaryKey({ columns: [t.tableName, t.rowId, t.field] })],
 );
 
+/** Masukan peserta uji coba (langkah 5.1). Tambah-saja; dibaca admin di wilayahnya. */
+export const feedback = sqliteTable(
+  'feedback',
+  {
+    ...baseColumns,
+    userId: text()
+      .notNull()
+      .references(() => users.id),
+    topic: text({ enum: FEEDBACK_TOPICS }).notNull(),
+    /** 1 = sulit/kecewa, 2 = biasa, 3 = mudah/senang. */
+    rating: integer().notNull(),
+    text: text().notNull(),
+  },
+  (t) => [
+    oneOf('feedback_topic_check', t.topic, FEEDBACK_TOPICS),
+    check('feedback_rating_check', sql`${t.rating} BETWEEN 1 AND 3`),
+    index('feedback_user_idx').on(t.userId),
+    updatedAtIndex('feedback', t.updatedAt),
+  ],
+);
+
+/**
+ * Nilai sistem kecil (kunci → teks). `data_generation`: berganti setiap data demo direset,
+ * agar HP tahu data lokalnya milik isi database yang lama (langkah 5.1).
+ */
+export const systemMeta = sqliteTable('system_meta', {
+  key: text().primaryKey(),
+  value: text().notNull(),
+  updatedAt: integer().notNull(),
+});
+
 /** Urutan tabel untuk menghapus data (anak sebelum induk). */
 export const allTables = [
+  systemMeta,
+  feedback,
   fieldVersions,
   syncChanges,
   sessions,

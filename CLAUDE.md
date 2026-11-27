@@ -41,7 +41,10 @@ inseminator, dan admin kelompok/dinas.
   event "perlu dicek", halaman Data belum terkirim, tes dua HP). 4.3 mode pos selesai (Docker +
   Caddy HTTPS lokal, skrip instal, halaman Pos IB, cadangan harian, ekspor/impor, `docs/INSTALL.md`);
   image Docker, Caddy, dan skrip instal BELUM diuji di perangkat sungguhan (sandbox tidak bisa).
-  Fase 4 selesai setelah uji itu; tag `v0.4.0` manual. Langkah berikutnya: Fase 5 (lihat PLAN.md).
+  Fase 4 selesai setelah uji itu; tag `v0.4.0` manual.
+- Fase 5: 5.1 persiapan UAT selesai (`docs/UAT.md`, panduan cetak `docs/panduan/`, mode demo
+  `DEMO_MODE=1` + reset, form masukan, catatan pemakaian lokal). Langkah berikutnya: jalankan
+  UAT, lalu 5.2 perbaikan dari umpan balik.
 
 ## Prinsip
 1. Offline-first: semua pencatatan harus bisa tanpa internet; sinkron menyusul.
@@ -120,6 +123,10 @@ inseminator, dan admin kelompok/dinas.
   ulang offline dari cache SW, catat event offline, online → terkirim ke server (`4.1-*.png`), dan
   `two-devices.spec.ts` (dua HP offline mengubah data yang sama → `4.2-*.png`). `pos.spec.ts`:
   halaman Pos IB (cadangan, ekspor lalu impor) → `4.3-*.png`. Di luar sandbox: `pnpm --filter @ib/web exec playwright install chromium`.
+- `uat.spec.ts`: masukan offline → terkirim → terlihat admin, catatan pemakaian + unduh CSV, mode demo
+  (jawaban login/info ditandai demoMode di peramban) → `5.1-*.png`. `guide.spec.ts` membuat gambar
+  `docs/panduan/img/*.jpg` dan PDF A4 satu halaman `docs/panduan/*.pdf`.
+- Server latihan: `DEMO_MODE=1` di `.env`; `pnpm db:demo-reset` / `./scripts/pos.sh reset-demo`.
 - Pos IB: `docker compose up -d --build` (butuh `POS_HOST` di `.env`), `scripts/install.sh` (Linux/Pi
   satu baris), `scripts/pos.sh` (mulai/berhenti/alamat/cadangkan/pulihkan/sertifikat/perbarui).
   `pnpm db:backup` (atau `db:backup daftar`) dan `pnpm db:restore <file>` (server dimatikan dulu).
@@ -263,6 +270,22 @@ inseminator, dan admin kelompok/dinas.
   data di `/data`, cadangan di `/backups`), `docker-compose.yml` (app + Caddy), `deploy/Caddyfile`
   (`local_certs`, `tls internal` untuk `POS_HOST` + `default_sni`, sertifikat root di
   `http://IP/sertifikat`). `tsx` kini dependensi runtime server.
+- UAT (langkah 5.1): `DEMO_MODE=1` (`config.demoMode`) = server latihan: bootstrap mengisi data
+  contoh, `POST /api/system/demo/reset` (admin dinas, 404 bila mati) dan CLI `reset-demo` memakai
+  `ops/demo.ts` `resetDemoData` (cadangan dulu, satu transaksi, sesi terhapus). Tabel `system_meta`
+  menyimpan `data_generation` yang berganti setiap reset; `/api/auth/login|me` mengirim `generation`
+  dan `demoMode`. HP menyimpan generasi di `meta.owner`; generasi berbeda saat masuk → data lokal
+  dibuang tanpa bertanya (`clearLocalData(db, { keepUsage: true })`). Pita "Mode latihan" di
+  `app-shell` dari `session.demoMode`.
+- Masukan: tabel `feedback` (topik `FEEDBACK_TOPICS`, nilai 1–3), `POST/GET /api/feedback`, kind
+  sinkron `feedback.create`, pull: pengirim melihat miliknya, admin melihat pengguna di wilayahnya
+  (`vis.userIds`); ikut ekspor. Web: Dexie v6 `feedback`, `repo.sendFeedback`, halaman `/masukan`,
+  daftar admin di Tindak lanjut.
+- Catatan pemakaian HANYA lokal (`data/usage.ts`, Dexie v6 `usage`): tanpa id pengguna/ternak/teks,
+  tidak masuk outbox, tanpa fetch, maks 5.000 baris. `useFormTiming(name)` (form ditutup < 2 detik
+  bukan batal, > 30 menit durasi dibuang) dan `useScreenVisit(name)`. Ringkasan/CSV di
+  `lib/usage-summary.ts`; halaman `/pemakaian` mengunduh lewat Blob (`lib/download.ts`), nama file
+  tanpa id perangkat.
 - Tes web memakai `fake-indexeddb` (di `src/test/setup.ts`) dan fixture
   `src/test/data-fixtures.ts` (DB baru per tes, fetch tiruan).
 - Logika reproduksi di `packages/shared/src/domain/`: `deriveReproStatus`,

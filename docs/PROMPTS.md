@@ -327,7 +327,7 @@ Buat cara mudah menjalankan server di laptop atau mini PC untuk pos IB tanpa int
 
 Karena proyek ini juga untuk mengenang skripsi, Fase 5 boleh sesederhana mencoba bersama satu inseminator dan beberapa peternak yang kamu kenal. Prompt 6.1 tetap layak dikerjakan apa pun hasil pilotnya, supaya repo enak dilihat dan dicoba orang lain.
 
-- [ ] **5.1 Persiapan pilot lapangan**
+- [x] **5.1 Persiapan pilot lapangan**
 
 ```text
 Siapkan materi untuk uji coba lapangan (UAT) bersama 1-2 inseminator dan 5-10 peternak:

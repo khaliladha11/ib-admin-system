@@ -19,6 +19,7 @@ Internet hanya dibutuhkan **sekali** saat memasang (mengunduh aplikasi) dan saat
 7. [Ekspor dan impor data](#7-ekspor-dan-impor-data)
 8. [Perawatan sehari-hari](#8-perawatan-sehari-hari)
 9. [Masalah umum](#9-masalah-umum)
+10. [Server latihan (mode demo)](#10-server-latihan-mode-demo)
 
 ---
 
@@ -223,3 +224,33 @@ Server menyala otomatis setiap komputer dinyalakan.
 - Caddy melayani HTTPS dengan CA lokal (`tls internal`) untuk alamat IP di `POS_HOST`.
 - Database SQLite berada di volume Docker `ib-data`; cadangan di `./backups`.
 - Lihat juga `docker-compose.yml`, `deploy/Caddyfile`, `scripts/install.sh`, dan `scripts/pos.sh`.
+
+## 10. Server latihan (mode demo)
+
+Untuk pelatihan dan uji coba lapangan (skenario di [`docs/UAT.md`](UAT.md)), pakai server
+**terpisah** dari server sungguhan, berisi data contoh fiktif yang bisa dikembalikan seperti semula.
+
+1. Pasang seperti biasa (bagian 2 atau 3), di komputer lain atau folder lain.
+2. Di file `.env`, tambahkan baris:
+
+   ```
+   DEMO_MODE=1
+   ```
+
+   Bila database masih kosong, data contoh langsung terisi. Semua akun contoh memakai password
+   `contoh123` (daftar akun di `docs/UAT.md`).
+3. Nyalakan ulang: `./scripts/pos.sh mulai` (Windows: `docker compose up -d`).
+4. Di aplikasi tampil pita kuning **"Mode latihan"**.
+
+Mengembalikan data contoh setelah sesi pelatihan:
+
+- Dari aplikasi: masuk sebagai admin dinas → **Pos IB** → **Reset data demo** → **Ya**.
+- Dari komputer pos: `./scripts/pos.sh reset-demo`.
+
+Semua catatan peserta hilang (cadangan dibuat dulu di folder `backups/`). Semua HP kembali ke
+layar Masuk; setelah masuk lagi, data lama di HP dibuang otomatis, termasuk yang belum terkirim.
+Catatan pemakaian di HP tetap ada, jadi unduh dulu dari setiap HP bila perlu
+(Lainnya → Catatan pemakaian).
+
+> Jangan pakai `DEMO_MODE=1` untuk data sungguhan. Tanpa `DEMO_MODE=1`, tombol dan perintah reset
+> tidak berfungsi.

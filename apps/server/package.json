@@ -13,7 +13,8 @@
     "db:seed": "tsx --env-file-if-exists=../../.env src/db/seed.ts",
     "start": "tsx src/index.ts",
     "db:backup": "tsx --env-file-if-exists=../../.env src/ops/backup-cli.ts",
-    "db:restore": "tsx --env-file-if-exists=../../.env src/ops/backup-cli.ts pulihkan"
+    "db:restore": "tsx --env-file-if-exists=../../.env src/ops/backup-cli.ts pulihkan",
+    "db:demo-reset": "tsx --env-file-if-exists=../../.env src/ops/backup-cli.ts reset-demo"
   },
   "dependencies": {
     "@hono/node-server": "^2.1.11",
