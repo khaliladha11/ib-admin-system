@@ -13,6 +13,7 @@ import { registerAnimalRoutes } from './routes/animals';
 import { registerAuthRoutes } from './routes/auth';
 import { registerFarmerRoutes } from './routes/farmers';
 import { registerFeedbackRoutes } from './routes/feedback';
+import { registerIsikhnasRoutes } from './routes/isikhnas';
 import { registerReminderRoutes } from './routes/reminders';
 import { registerServiceRequestRoutes } from './routes/service-requests';
 import { registerSyncRoutes } from './routes/sync';
@@ -80,6 +81,7 @@ export function createApp({ db, now = monotonicClock(), config }: AppDeps) {
   registerQrCodeRoutes(app);
   registerSystemRoutes(app);
   registerFeedbackRoutes(app);
+  registerIsikhnasRoutes(app);
 
   app.openAPIRegistry.registerComponent('securitySchemes', 'cookieAuth', {
     type: 'apiKey',

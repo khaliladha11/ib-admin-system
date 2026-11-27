@@ -18,6 +18,7 @@ import {
   serviceRequestSchema,
   syncReviewSchema,
   feedbackSchema,
+  isikhnasReportSchema,
   MAX_PUSH_CHANGES,
   type SyncChangeResult,
 } from '@ib/shared';
@@ -82,6 +83,7 @@ const SCOPED_TABLES = [
   'auditLogs',
   'syncReviews',
   'feedback',
+  'isikhnasReports',
 ] as const satisfies readonly MirrorTable[];
 
 export interface SyncEngineOptions {
@@ -124,6 +126,8 @@ function serverRows(entry: OutboxEntry, body: unknown): ServerRows {
       return { syncReviews: parseOne(syncReviewSchema, b) };
     case 'feedback.create':
       return { feedback: parseOne(feedbackSchema, b) };
+    case 'isikhnasReport.create':
+      return { isikhnasReports: parseOne(isikhnasReportSchema, b) };
     case 'serviceRequest.create':
     case 'serviceRequest.accept':
     case 'serviceRequest.assign':

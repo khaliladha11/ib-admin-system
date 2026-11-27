@@ -35,6 +35,7 @@ import {
   events,
   farmers,
   feedback,
+  isikhnasReports,
   locations,
   qrCodes,
   semenStock,
@@ -56,6 +57,7 @@ import {
 } from '../http/schemas';
 import { inIds, visibilityOf } from '../sync/visibility';
 import { feedbackDtoSchema } from './feedback';
+import { isikhnasReportDtoSchema } from './isikhnas';
 import {
   audit,
   CHANGE_AT_HEADER,
@@ -106,6 +108,7 @@ const ROUTES: Record<SyncChangeKind, { method: 'POST' | 'PATCH'; path: RegExp }>
     path: new RegExp(`^/api/sync/reviews/${UUID}/discard$`),
   },
   'feedback.create': { method: 'POST', path: /^\/api\/feedback$/ },
+  'isikhnasReport.create': { method: 'POST', path: /^\/api\/isikhnas-reports$/ },
 };
 
 interface ErrorBody {
@@ -184,6 +187,7 @@ const pullRowsSchema = z.object({
   auditLogs: z.array(z.object(auditLogSchema.shape)),
   syncReviews: z.array(reviewDtoSchema),
   feedback: z.array(feedbackDtoSchema),
+  isikhnasReports: z.array(isikhnasReportDtoSchema),
 });
 type PullRows = z.infer<typeof pullRowsSchema>;
 type PullTable = keyof PullRows;
@@ -216,6 +220,7 @@ const PULL_TABLES: readonly PullTable[] = [
   'auditLogs',
   'syncReviews',
   'feedback',
+  'isikhnasReports',
 ];
 
 const DEFAULT_PULL_LIMIT = 500;
@@ -570,6 +575,19 @@ export function registerSyncRoutes(app: OpenAPIHono<AppEnv>) {
               ),
             )
             .orderBy(feedback.updatedAt, feedback.id)
+            .limit(take)
+            .all(),
+        isikhnasReports: (i) =>
+          db
+            .select()
+            .from(isikhnasReports)
+            .where(
+              and(
+                inIds(isikhnasReports.animalId, vis.animalIds),
+                afterCursor(i, cursor, isikhnasReports.updatedAt, isikhnasReports.id),
+              ),
+            )
+            .orderBy(isikhnasReports.updatedAt, isikhnasReports.id)
             .limit(take)
             .all(),
       };

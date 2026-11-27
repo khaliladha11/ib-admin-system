@@ -398,6 +398,28 @@ export const feedback = sqliteTable(
   ],
 );
 
+/** Event yang sudah dilaporkan ke iSIKHNAS (langkah 6.3): satu baris per event, tambah-saja. */
+export const isikhnasReports = sqliteTable(
+  'isikhnas_reports',
+  {
+    ...baseColumns,
+    eventId: text()
+      .notNull()
+      .references(() => events.id),
+    animalId: text()
+      .notNull()
+      .references(() => animals.id),
+    reportedBy: text()
+      .notNull()
+      .references(() => users.id),
+  },
+  (t) => [
+    uniqueIndex('isikhnas_reports_event_unique').on(t.eventId),
+    index('isikhnas_reports_animal_idx').on(t.animalId),
+    updatedAtIndex('isikhnas_reports', t.updatedAt),
+  ],
+);
+
 /**
  * Nilai sistem kecil (kunci → teks). `data_generation`: berganti setiap data demo direset,
  * agar HP tahu data lokalnya milik isi database yang lama (langkah 5.1).
@@ -411,6 +433,7 @@ export const systemMeta = sqliteTable('system_meta', {
 /** Urutan tabel untuk menghapus data (anak sebelum induk). */
 export const allTables = [
   systemMeta,
+  isikhnasReports,
   feedback,
   fieldVersions,
   syncChanges,

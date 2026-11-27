@@ -21,6 +21,7 @@ export {
   useServerReviews,
   useFeedback,
   useReportData,
+  useIsikhnasQueue,
   useFormTiming,
   useScreenVisit,
   useUsageRows,
@@ -110,4 +111,4 @@ export type { SyncResult } from './sync/engine';
 
 export { clearUsage, MAX_USAGE_ROWS } from './usage';
 export type { UsageRow } from './db';
-export type { FeedbackView, ReportData } from './queries';
+export type { FeedbackView, IsikhnasItem, ReportData } from './queries';

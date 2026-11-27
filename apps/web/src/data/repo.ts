@@ -14,6 +14,7 @@ import {
   parseQrCode,
   QR_CODE_PATTERN,
   feedbackSchema,
+  isikhnasReportSchema,
   qrCodeSchema,
   serviceRequestSchema,
   uuidv7,
@@ -23,6 +24,7 @@ import {
   type AnimalTag,
   type Feedback,
   type FeedbackTopic,
+  type IsikhnasReport,
   type QrCode,
   type RandomFill,
   type TagRemovalReason,
@@ -1027,6 +1029,44 @@ export function createRepo(
   }
 
   /** Admin membuang catatan perlu dicek milik petugas di wilayahnya (lewat outbox). */
+  /**
+   * Tandai event sudah dilaporkan ke iSIKHNAS (langkah 6.3). Bila HP lain sudah menandai event yang
+   * sama, server menjawab dengan tanda itu dan tanda lokal (provisional) dibuang.
+   */
+  async function markIsikhnasReported(eventId: string): Promise<IsikhnasReport> {
+    const { session, base } = await context();
+    if (session.user.role === 'farmer') {
+      throw new LocalValidationError('Laporan iSIKHNAS dilakukan petugas atau admin.');
+    }
+    const event = await db.events.get(eventId);
+    if (event?.deletedAt !== null) throw new LocalValidationError('Catatan tidak ditemukan.');
+    const existing = await db.isikhnasReports.where('eventId').equals(eventId).first();
+    if (existing) return existing;
+    const row = parse(isikhnasReportSchema, {
+      ...base(),
+      eventId,
+      animalId: event.animalId,
+      reportedBy: session.user.id,
+    });
+    await db.transaction('rw', db.isikhnasReports, db.outbox, async () => {
+      await db.isikhnasReports.add(row);
+      await enqueue(
+        db,
+        {
+          kind: 'isikhnasReport.create',
+          method: 'POST',
+          path: '/api/isikhnas-reports',
+          body: { id: row.id, eventId },
+          table: 'isikhnasReports',
+          rowId: row.id,
+          provisional: [{ table: 'isikhnasReports', id: row.id }],
+        },
+        row.createdAt,
+      );
+    });
+    return done(row);
+  }
+
   /** Masukan peserta (langkah 5.1): tersimpan di HP, terkirim saat ada sinyal. */
   async function sendFeedback(input: {
     topic: FeedbackTopic;
@@ -1123,6 +1163,7 @@ export function createRepo(
     discardReview,
     discardServerReview,
     sendFeedback,
+    markIsikhnasReported,
     setAnimalPhoto,
     removeAnimalPhoto,
   };

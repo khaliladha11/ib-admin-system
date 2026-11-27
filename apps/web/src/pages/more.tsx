@@ -3,6 +3,7 @@ import { Link } from '@tanstack/react-router';
 import {
   BarChart3,
   Code2,
+  MessageSquareText,
   KeyRound,
   MessageSquareHeart,
   LogOut,
@@ -175,6 +176,20 @@ export function MorePage() {
               </Link>
             </Button>
           </div>
+        </Panel>
+      )}
+
+      {session.user.role !== 'farmer' && (
+        <Panel title="Lapor ke iSIKHNAS">
+          <p className="text-muted-foreground">
+            Pesan SMS siap kirim untuk catatan yang belum dilaporkan ke sistem resmi.
+          </p>
+          <Button asChild variant="outline" className="justify-start self-start">
+            <Link to="/isikhnas">
+              <MessageSquareText aria-hidden="true" />
+              Pesan iSIKHNAS
+            </Link>
+          </Button>
         </Panel>
       )}
 

@@ -23,6 +23,7 @@ import {
   loadServerReviews,
   loadFeedback,
   loadReportData,
+  loadIsikhnasQueue,
   loadSyncQueue,
   loadSyncStatus,
   loadTimeline,
@@ -108,6 +109,12 @@ export function useServerReviews() {
 export function useFeedback() {
   const { db } = useDataLayer();
   return useLiveQuery(() => loadFeedback(db), [db]);
+}
+
+/** Event untuk dilaporkan ke iSIKHNAS beserta pesannya (langkah 6.3). */
+export function useIsikhnasQueue() {
+  const { db } = useDataLayer();
+  return useLiveQuery(() => loadIsikhnasQueue(db), [db]);
 }
 
 /** Data mentah untuk halaman Laporan (admin). */

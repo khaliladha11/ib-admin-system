@@ -5,5 +5,6 @@ export * from './files';
 export * from './health';
 export * from './ids';
 export * from './schemas';
+export * from './isikhnas';
 export * from './qr';
 export * from './sync';

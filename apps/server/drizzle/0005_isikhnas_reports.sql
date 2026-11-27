@@ -1,0 +1,48 @@
+CREATE TABLE `isikhnas_reports` (
+	`id` text PRIMARY KEY NOT NULL,
+	`created_at` integer NOT NULL,
+	`updated_at` integer NOT NULL,
+	`deleted_at` integer,
+	`device_id` text NOT NULL,
+	`event_id` text NOT NULL,
+	`animal_id` text NOT NULL,
+	`reported_by` text NOT NULL,
+	FOREIGN KEY (`event_id`) REFERENCES `events`(`id`) ON UPDATE no action ON DELETE no action,
+	FOREIGN KEY (`animal_id`) REFERENCES `animals`(`id`) ON UPDATE no action ON DELETE no action,
+	FOREIGN KEY (`reported_by`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE no action
+);
+--> statement-breakpoint
+CREATE UNIQUE INDEX `isikhnas_reports_event_unique` ON `isikhnas_reports` (`event_id`);--> statement-breakpoint
+CREATE INDEX `isikhnas_reports_animal_idx` ON `isikhnas_reports` (`animal_id`);--> statement-breakpoint
+CREATE INDEX `isikhnas_reports_updated_at_idx` ON `isikhnas_reports` (`updated_at`);--> statement-breakpoint
+PRAGMA foreign_keys=OFF;--> statement-breakpoint
+CREATE TABLE `__new_sync_changes` (
+	`id` text PRIMARY KEY NOT NULL,
+	`created_at` integer NOT NULL,
+	`updated_at` integer NOT NULL,
+	`deleted_at` integer,
+	`device_id` text NOT NULL,
+	`user_id` text NOT NULL,
+	`kind` text NOT NULL,
+	`row_id` text,
+	`animal_id` text,
+	`result` text NOT NULL,
+	`code` text,
+	`message` text,
+	`payload` text,
+	`resolved_at` integer,
+	`resolution` text,
+	FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE no action,
+	CONSTRAINT "sync_changes_kind_check" CHECK("__new_sync_changes"."kind" IN ('farmer.create', 'farmer.update', 'animal.create', 'animal.update', 'event.create', 'serviceRequest.create', 'serviceRequest.accept', 'serviceRequest.assign', 'serviceRequest.reassign', 'serviceRequest.reject', 'qrCode.reserve', 'tag.attach', 'tag.remove', 'syncReview.discard', 'feedback.create', 'isikhnasReport.create')),
+	CONSTRAINT "sync_changes_result_check" CHECK("__new_sync_changes"."result" IN ('applied', 'merged', 'needs_review', 'rejected')),
+	CONSTRAINT "sync_changes_resolution_check" CHECK("__new_sync_changes"."resolution" IN ('resent', 'discarded'))
+);
+--> statement-breakpoint
+INSERT INTO `__new_sync_changes`("id", "created_at", "updated_at", "deleted_at", "device_id", "user_id", "kind", "row_id", "animal_id", "result", "code", "message", "payload", "resolved_at", "resolution") SELECT "id", "created_at", "updated_at", "deleted_at", "device_id", "user_id", "kind", "row_id", "animal_id", "result", "code", "message", "payload", "resolved_at", "resolution" FROM `sync_changes`;--> statement-breakpoint
+DROP TABLE `sync_changes`;--> statement-breakpoint
+ALTER TABLE `__new_sync_changes` RENAME TO `sync_changes`;--> statement-breakpoint
+PRAGMA foreign_keys=ON;--> statement-breakpoint
+CREATE INDEX `sync_changes_user_idx` ON `sync_changes` (`user_id`);--> statement-breakpoint
+CREATE INDEX `sync_changes_review_idx` ON `sync_changes` (`result`,`resolved_at`);--> statement-breakpoint
+CREATE INDEX `sync_changes_row_idx` ON `sync_changes` (`row_id`);--> statement-breakpoint
+CREATE INDEX `sync_changes_updated_at_idx` ON `sync_changes` (`updated_at`);

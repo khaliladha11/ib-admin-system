@@ -5,6 +5,8 @@ import {
   computeSchedule,
   deriveReproStatus,
   effectiveEvents,
+  isIsikhnasEvent,
+  isikhnasMessages,
   listReminders,
   type Animal,
   type AnimalEvent,
@@ -12,6 +14,8 @@ import {
   type DomainEvent,
   type Farmer,
   type Feedback,
+  type IsikhnasMessage,
+  type IsikhnasReport,
   type UserRole,
   type PublicUser,
   type Reminder,
@@ -724,3 +728,50 @@ export async function loadReportData(db: IbDb) {
   return { events, requests, animals, farmers, locations, users };
 }
 export type ReportData = Awaited<ReturnType<typeof loadReportData>>;
+
+export interface IsikhnasItem {
+  event: AnimalEvent;
+  animal: Animal | null;
+  farmer: Farmer | null;
+  messages: IsikhnasMessage[];
+  /** Tanda sudah dilaporkan, atau null. */
+  report: IsikhnasReport | null;
+  recordedByName: string | null;
+}
+
+/** Event yang bisa dilaporkan ke iSIKHNAS beserta pesannya, terbaru dulu (langkah 6.3). */
+export async function loadIsikhnasQueue(db: IbDb): Promise<IsikhnasItem[]> {
+  const [events, animals, farmers, reports, users] = await Promise.all([
+    db.events.toArray(),
+    db.animals.toArray(),
+    db.farmers.toArray(),
+    db.isikhnasReports.toArray(),
+    db.users.toArray(),
+  ]);
+  const animalById = new Map(animals.map((a) => [a.id, a]));
+  const farmerById = new Map(farmers.map((f) => [f.id, f]));
+  const reportByEvent = new Map(
+    reports.filter((r) => r.deletedAt === null).map((r) => [r.eventId, r]),
+  );
+  const userName = new Map(users.map((u) => [u.id, u.name]));
+  const calfIds = new Map(animals.map((a) => [a.id, a.isikhnasAnimalId]));
+  return effectiveEvents(events)
+    .filter((e) => isIsikhnasEvent(e))
+    .map((event) => {
+      const animal = animalById.get(event.animalId) ?? null;
+      const farmer = animal ? (farmerById.get(animal.farmerId) ?? null) : null;
+      return {
+        event,
+        animal,
+        farmer,
+        messages: isikhnasMessages(event, {
+          ownerId: farmer?.isikhnasOwnerId ?? null,
+          animalId: animal?.isikhnasAnimalId ?? null,
+          calfIds,
+        }),
+        report: reportByEvent.get(event.id) ?? null,
+        recordedByName: userName.get(event.recordedBy) ?? null,
+      };
+    })
+    .reverse();
+}

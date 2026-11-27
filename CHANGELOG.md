@@ -15,6 +15,11 @@ Format mengikuti [Keep a Changelog](https://keepachangelog.com/id-ID/1.1.0/), ve
   - Dihitung di HP (juga offline) dengan fungsi `@ib/shared/analytics`.
 - Ekspor laporan ke **Excel (.xlsx)** yang dibuat langsung di perangkat tanpa library tambahan.
   Untuk PDF ada tampilan **cetak A4** → Simpan sebagai PDF.
+- Halaman **Lapor iSIKHNAS** (6.3):
+  - pesan SMS siap kirim untuk BH, IB, PKB, KGG, LH, dan BB yang belum dilaporkan;
+  - tombol salin satu-satu atau sekaligus;
+  - tanda "sudah dilaporkan" yang ikut sinkron;
+  - ID pemilik dan ID hewan iSIKHNAS yang kosong bisa diisi langsung di halaman itu.
 
 ## [1.0.0] - 2026-11-27
 

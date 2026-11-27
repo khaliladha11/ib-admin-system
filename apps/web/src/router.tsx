@@ -39,6 +39,7 @@ const SyncQueuePage = lazyRouteComponent(() => import('@/pages/sync-queue'), 'Sy
 const ScanPage = lazyRouteComponent(() => import('@/pages/scan/scan-page'), 'ScanPage');
 const AnimalNewPage = lazyRouteComponent(() => import('@/pages/animal-new'), 'AnimalNewPage');
 const PosPage = lazyRouteComponent(() => import('@/pages/admin/pos'), 'PosPage');
+const IsikhnasPage = lazyRouteComponent(() => import('@/pages/isikhnas'), 'IsikhnasPage');
 const ReportsPage = lazyRouteComponent(() => import('@/pages/admin/reports'), 'ReportsPage');
 const FeedbackPage = lazyRouteComponent(() => import('@/pages/feedback'), 'FeedbackPage');
 const UsagePage = lazyRouteComponent(() => import('@/pages/usage'), 'UsagePage');
@@ -145,6 +146,12 @@ const syncQueueRoute = createRoute({
   path: '/data-belum-terkirim',
   component: SyncQueuePage,
   staticData: { title: 'Data belum terkirim', focus: true, backTo: '/lainnya' },
+});
+const isikhnasRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/isikhnas',
+  component: IsikhnasPage,
+  staticData: { title: 'Lapor iSIKHNAS', focus: true, backTo: '/lainnya' },
 });
 const reportsRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -275,6 +282,7 @@ const routeTree = rootRoute.addChildren([
   syncQueueRoute,
   posRoute,
   reportsRoute,
+  isikhnasRoute,
   feedbackRoute,
   usageRoute,
   devRoute,

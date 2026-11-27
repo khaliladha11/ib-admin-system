@@ -48,7 +48,8 @@ inseminator, dan admin kelompok/dinas.
   SECURITY, template issue/PR, CHANGELOG, versi 1.0.0, catatan rilis `docs/rilis/v1.0.0.md`, header
   keamanan, batas percobaan masuk). Tag `v1.0.0` dan GitHub Release dibuat manual oleh pemilik repo.
   6.2 Laporan selesai (S/C, CR IB pertama, tren permintaan, waktu respons; Excel + cetak A4).
-  Langkah berikutnya: 6.3 ekspor iSIKHNAS.
+  6.3 ekspor iSIKHNAS selesai (halaman `/isikhnas`, pesan SMS, tanda sudah dilaporkan). Semua langkah
+  di PROMPTS.md selesai kecuali 5.2 (menunggu pilot).
 
 ## Prinsip
 1. Offline-first: semua pencatatan harus bisa tanpa internet; sinkron menyusul.
@@ -303,6 +304,13 @@ inseminator, dan admin kelompok/dinas.
   Excel: `buildXlsx` (`packages/shared/src/files/`, ZIP + XML tanpa dependensi; `zipFiles` dipindah dari
   server ke shared, `utf8()` pengganti TextEncoder). PDF = cetak A4 (`.report-print`, dilepas saat
   `afterprint`). Grafik satu seri batang tipis + tabel (skill dataviz).
+- iSIKHNAS (6.3): format pesan di `packages/shared/src/isikhnas/messages.ts` (`isikhnasMessages`: satu
+  pesan per event, LH satu per anak; ID memakai kolom `isikhnasOwnerId`/`isikhnasAnimalId`, spasi
+  dibuang; PKB tidak bunting = `0` dan anak lahir mati tanpa ID anak adalah ASUMSI, cocokkan dengan
+  panduan iSIKHNAS resmi). Tanda dilaporkan: tabel `isikhnas_reports` (satu per event, tambah-saja,
+  kind `isikhnasReport.create`, outbox `provisional` karena HP lain bisa menandai lebih dulu → server
+  menjawab 200 dengan tanda yang ada). Halaman `pages/isikhnas.tsx` (petugas: "Hanya catatan saya");
+  salin lewat `lib/clipboard.ts`.
 - Tes web memakai `fake-indexeddb` (di `src/test/setup.ts`) dan fixture
   `src/test/data-fixtures.ts` (DB baru per tes, fetch tiruan).
 - Logika reproduksi di `packages/shared/src/domain/`: `deriveReproStatus`,

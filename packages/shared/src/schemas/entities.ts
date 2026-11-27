@@ -118,6 +118,13 @@ export const feedbackSchema = baseRowSchema.extend({
   text: z.string().trim().max(1000),
 });
 
+/** Tanda event sudah dilaporkan ke iSIKHNAS (langkah 6.3). Tambah-saja; satu per event. */
+export const isikhnasReportSchema = baseRowSchema.extend({
+  eventId: idSchema,
+  animalId: idSchema,
+  reportedBy: idSchema,
+});
+
 export const serviceRequestSchema = baseRowSchema.extend({
   farmerId: idSchema,
   animalId: idSchema,
@@ -179,3 +186,4 @@ export type Assignment = z.infer<typeof assignmentSchema>;
 export type SemenStock = z.infer<typeof semenStockSchema>;
 export type AuditLog = z.infer<typeof auditLogSchema>;
 export type Feedback = z.infer<typeof feedbackSchema>;
+export type IsikhnasReport = z.infer<typeof isikhnasReportSchema>;

@@ -367,7 +367,7 @@ Tambahkan halaman Laporan untuk admin:
 - Semua perhitungan berada di `packages/shared` dan punya unit test dengan data contoh yang hasilnya dihitung manual
 ```
 
-- [ ] **6.3 Ekspor format iSIKHNAS**
+- [x] **6.3 Ekspor format iSIKHNAS**
 
 ```text
 Tambahkan fitur ekspor laporan dalam format teks SMS iSIKHNAS agar petugas bisa melapor ke sistem resmi:

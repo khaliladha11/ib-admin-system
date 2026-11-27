@@ -45,7 +45,8 @@ kelahiran dari HP. Datanya tersimpan di HP dan terkirim sendiri ke server pos IB
   yang sama, dengan HTTPS lokal, cadangan harian, serta ekspor/impor JSON dan CSV.
 - **Mudah dipakai di lapangan.** Tombol besar (≥ 44px), kontras tinggi untuk terik matahari, huruf
   Atkinson Hyperlegible, Bahasa Indonesia sederhana.
-- **Selaras iSIKHNAS.** Kode kejadian BH, IB, PKB, KGG, LH, BB.
+- **Selaras iSIKHNAS.** Kode kejadian BH, IB, PKB, KGG, LH, BB. Pesan SMS iSIKHNAS dibuat
+  otomatis untuk catatan yang belum dilaporkan, tinggal disalin dan dikirim.
 - **Siap uji coba.** Mode latihan dengan data contoh yang bisa direset, form masukan, catatan
   pemakaian anonim yang hanya tersimpan di HP, dan panduan cetak satu halaman.
 

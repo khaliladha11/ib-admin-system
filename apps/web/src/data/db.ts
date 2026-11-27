@@ -8,6 +8,7 @@ import type {
   Assignment,
   Farmer,
   Feedback,
+  IsikhnasReport,
   Location,
   AuditLog,
   PublicUser,
@@ -102,6 +103,7 @@ export const MIRROR_TABLES = [
   'auditLogs',
   'syncReviews',
   'feedback',
+  'isikhnasReports',
 ] as const;
 export type MirrorTable = (typeof MIRROR_TABLES)[number];
 
@@ -124,6 +126,8 @@ export interface MirrorRows {
   syncReviews: SyncReview;
   /** Masukan peserta (milik sendiri; admin: wilayahnya). */
   feedback: Feedback;
+  /** Event yang sudah dilaporkan ke iSIKHNAS (langkah 6.3). */
+  isikhnasReports: IsikhnasReport;
 }
 
 /**
@@ -158,6 +162,7 @@ export class IbDb extends Dexie {
   auditLogs!: Table<AuditLog, string>;
   syncReviews!: Table<SyncReview, string>;
   feedback!: Table<Feedback, string>;
+  isikhnasReports!: Table<IsikhnasReport, string>;
   usage!: Table<UsageRow, number>;
   outbox!: Table<OutboxEntry, number>;
   animalPhotos!: Table<AnimalPhoto, string>;
@@ -223,6 +228,19 @@ export class IbDb extends Dexie {
     // Pull diulang dari awal agar masukan lama ikut masuk ke HP admin.
     this.version(6)
       .stores({ feedback: 'id, userId, updatedAt', usage: '++seq, kind, at' })
+      .upgrade(async (tx) => {
+        await tx
+          .table('meta')
+          .where('key')
+          .equals('sync')
+          .modify((row: { value: Record<string, unknown> }) => {
+            row.value.cursor = null;
+            row.value.scope = null;
+          });
+      });
+    // v7 (langkah 6.3): tanda sudah dilaporkan ke iSIKHNAS. Pull diulang agar tanda lama ikut masuk.
+    this.version(7)
+      .stores({ isikhnasReports: 'id, eventId, animalId, updatedAt' })
       .upgrade(async (tx) => {
         await tx
           .table('meta')

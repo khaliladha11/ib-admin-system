@@ -40,6 +40,7 @@ describe('migrasi', () => {
         'farmers',
         'feedback',
         'field_versions',
+        'isikhnas_reports',
         'locations',
         'qr_codes',
         'semen_stock',
