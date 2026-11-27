@@ -13,6 +13,8 @@ describe('describeSync', () => {
     [{ ...base, online: false }, 'offline', 'Tanpa sinyal'],
     [{ ...base, online: false, pending: 5 }, 'offline', 'Tanpa sinyal, 5 belum terkirim'],
     [{ ...base, rejected: 2, pending: 1 }, 'rejected', '2 catatan tidak diterima'],
+    [{ ...base, rejected: 2, reviews: 1 }, 'review', '1 perlu dicek'],
+    [{ ...base, online: false, reviews: 1 }, 'offline', 'Tanpa sinyal'],
     [{ ...base, online: false, needsLogin: true }, 'login', 'Masuk lagi untuk mengirim data'],
   ])('%o → %s', (state, kind, text) => {
     expect(describeSync(state)).toMatchObject({ kind, text });

@@ -18,6 +18,8 @@ export {
   useAnimalTags,
   useScanLookup,
   useScanResult,
+  useServerReviews,
+  useSyncQueue,
   useQrLabels,
   useEventDefaults,
   useHasPin,
@@ -56,6 +58,9 @@ export type {
   ReminderView,
   ServiceRequestFilter,
   SyncStatusView,
+  SyncQueueItem,
+  SyncQueueView,
+  ServerReviewView,
   TimelineEvent,
 } from './queries';
 export { classifyScanText, type ScanResult } from './scan-lookup';

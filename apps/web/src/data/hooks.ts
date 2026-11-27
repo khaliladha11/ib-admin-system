@@ -20,6 +20,8 @@ import {
   loadEventDefaults,
   loadServiceRequestViews,
   loadServiceRequests,
+  loadServerReviews,
+  loadSyncQueue,
   loadSyncStatus,
   loadTimeline,
   type AnimalFilter,
@@ -85,6 +87,18 @@ export function useScanResult(text: string) {
 export function useScanLookup() {
   const { db } = useDataLayer();
   return useMemo(() => (text: string) => lookupScan(db, text), [db]);
+}
+
+/** Isi halaman "Data belum terkirim". */
+export function useSyncQueue() {
+  const { db } = useDataLayer();
+  return useLiveQuery(() => loadSyncQueue(db), [db]);
+}
+
+/** Event perlu dicek di server yang belum diselesaikan (admin). */
+export function useServerReviews() {
+  const { db } = useDataLayer();
+  return useLiveQuery(() => loadServerReviews(db), [db]);
 }
 
 export function useFarmers() {

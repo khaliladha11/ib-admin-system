@@ -13,7 +13,13 @@ describe('signIn / signOut', () => {
   it('menyimpan sesi dan pemilik data, lalu menghapus tanda perlu masuk', async () => {
     const t = await createTestLayer('group_admin', () => meReply(IDS.admin, 'Hartono'));
     await t.db.meta.delete('session');
-    await t.db.setMeta('sync', { cursor: 5, lastSyncAt: null, lastError: 'x', needsLogin: true });
+    await t.db.setMeta('sync', {
+      cursor: '5.0.x',
+      scope: null,
+      lastSyncAt: null,
+      lastError: 'x',
+      needsLogin: true,
+    });
     const session = await signIn(t.db, t.api, 'admin.ktt01@contoh.test', 'contoh123');
     expect(session.user).toEqual({
       id: IDS.admin,
@@ -27,7 +33,7 @@ describe('signIn / signOut', () => {
       body: { identifier: 'admin.ktt01@contoh.test', password: 'contoh123' },
     });
     expect(await t.db.getMeta('sync')).toMatchObject({
-      cursor: 5,
+      cursor: '5.0.x',
       needsLogin: false,
       lastError: null,
     });

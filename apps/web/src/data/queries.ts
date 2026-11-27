@@ -18,11 +18,12 @@ import {
   type Schedule,
   type SemenStock,
   type ServiceRequest,
+  type SyncReview,
 } from '@ib/shared';
 
 import type { IbDb } from './db';
 import { childrenMap, descendantsOf } from './locations';
-import type { OutboxEntry } from './outbox';
+import { animalIdOf, type OutboxEntry } from './outbox';
 
 export interface AnimalView extends Animal {
   status: ReproStatus;
@@ -373,20 +374,81 @@ export async function loadAnimalPhoto(db: IbDb, animalId: string) {
 
 export interface SyncStatusView {
   pending: number;
+  /** Event yang perlu dicek (ditolak karena urutan riwayat). */
+  reviews: number;
   rejected: OutboxEntry[];
   lastSyncAt: number | null;
   lastError: string | null;
   needsLogin: boolean;
 }
 
+export interface SyncQueueItem {
+  entry: OutboxEntry;
+  animalId: string | null;
+  animalName: string | null;
+}
+
+export interface SyncQueueView {
+  /** Menunggu dikirim (FIFO). */
+  pending: SyncQueueItem[];
+  /** Event yang ditolak karena urutan riwayat: perlu dicek. */
+  reviews: SyncQueueItem[];
+  /** Tidak diterima server karena alasan lain. */
+  rejected: SyncQueueItem[];
+}
+
+/** Isi halaman "Data belum terkirim". */
+export async function loadSyncQueue(db: IbDb): Promise<SyncQueueView> {
+  const [entries, animals] = await Promise.all([
+    db.outbox.orderBy('seq').toArray(),
+    db.animals.toArray(),
+  ]);
+  const names = new Map(animals.map((a) => [a.id, a.name]));
+  const item = (entry: OutboxEntry): SyncQueueItem => {
+    const animalId = animalIdOf(entry);
+    return { entry, animalId, animalName: animalId ? (names.get(animalId) ?? null) : null };
+  };
+  return {
+    pending: entries.filter((e) => e.status === 'pending').map(item),
+    reviews: entries.filter((e) => e.status === 'needs_review').map(item),
+    rejected: entries.filter((e) => e.status === 'rejected').map(item),
+  };
+}
+
+export interface ServerReviewView extends SyncReview {
+  animalName: string | null;
+  userName: string | null;
+}
+
+/** Event "perlu dicek" yang tersimpan di server dan belum diselesaikan (untuk admin). */
+export async function loadServerReviews(db: IbDb): Promise<ServerReviewView[]> {
+  const [reviews, animals, users] = await Promise.all([
+    db.syncReviews.toArray(),
+    db.animals.toArray(),
+    db.users.toArray(),
+  ]);
+  const animalName = new Map(animals.map((a) => [a.id, a.name]));
+  const userName = new Map(users.map((u) => [u.id, u.name]));
+  return reviews
+    .filter((r) => r.resolvedAt === null && r.deletedAt === null)
+    .map((r) => ({
+      ...r,
+      animalName: r.animalId ? (animalName.get(r.animalId) ?? null) : null,
+      userName: userName.get(r.userId) ?? null,
+    }))
+    .sort((a, b) => b.createdAt - a.createdAt);
+}
+
 export async function loadSyncStatus(db: IbDb): Promise<SyncStatusView> {
-  const [pending, rejected, sync] = await Promise.all([
+  const [pending, reviews, rejected, sync] = await Promise.all([
     db.outbox.where('status').equals('pending').count(),
+    db.outbox.where('status').equals('needs_review').count(),
     db.outbox.where('status').equals('rejected').sortBy('seq'),
     db.getMeta('sync'),
   ]);
   return {
     pending,
+    reviews,
     rejected,
     lastSyncAt: sync?.lastSyncAt ?? null,
     lastError: sync?.lastError ?? null,

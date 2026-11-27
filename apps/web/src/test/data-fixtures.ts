@@ -26,10 +26,89 @@ export interface Call {
 export type Reply = { status: number; body?: unknown } | 'network';
 export type Handler = (call: Call) => Reply;
 
-/** fetch tiruan yang mencatat setiap panggilan dan menjawab lewat `handler`. */
-export function fakeServer(initial: Handler = () => ({ status: 200, body: {} })) {
+/** Satu perubahan di dalam POST /api/sync/push. */
+interface PushedChange {
+  id: string;
+  kind: string;
+  method: string;
+  path: string;
+  body: unknown;
+}
+
+const jsonResponse = (status: number, body: unknown) =>
+  new Response(body === undefined ? null : JSON.stringify(body), {
+    status,
+    headers: { 'content-type': 'application/json' },
+  });
+
+/**
+ * fetch tiruan yang mencatat setiap panggilan dan menjawab lewat `handler`.
+ *
+ * POST /api/sync/push dibongkar seperti server sungguhan (docs/SYNC.md §3): setiap perubahan
+ * menjadi satu panggilan ke `handler` dengan method/path/body aslinya (tercatat di `calls`),
+ * lalu jawabannya diklasifikasikan menjadi applied / needs_review / rejected. Jawaban
+ * 'network' atau 401 berlaku untuk seluruh request; 5xx menghentikan batch.
+ * Gunakan `rawPush: true` untuk menjawab /api/sync/push langsung.
+ */
+export function fakeServer(
+  initial: Handler = () => ({ status: 200, body: {} }),
+  { rawPush = false }: { rawPush?: boolean } = {},
+) {
   const calls: Call[] = [];
   let handler = initial;
+
+  function push(changes: PushedChange[]): Promise<Response> {
+    const results: unknown[] = [];
+    for (const change of changes) {
+      const call: Call = { method: change.method, path: change.path, body: change.body };
+      calls.push(call);
+      const reply = handler(call);
+      if (reply === 'network') return Promise.reject(new TypeError('Failed to fetch'));
+      const err = (reply.body as { error?: { code?: string; message?: string } } | undefined)
+        ?.error;
+      if (reply.status === 401) return Promise.resolve(jsonResponse(401, reply.body));
+      if (reply.status >= 500) break;
+      if (reply.status < 300) {
+        results.push({
+          id: change.id,
+          result: 'applied',
+          code: null,
+          message: null,
+          body: reply.body ?? null,
+        });
+      } else if (reply.status === 409 && err?.code === 'ALREADY_EXISTS') {
+        results.push({
+          id: change.id,
+          result: 'applied',
+          code: 'ALREADY_EXISTS',
+          message: null,
+          body: null,
+        });
+      } else {
+        const review =
+          change.kind === 'event.create' && reply.status === 422 && err?.code === 'INVALID_EVENT';
+        results.push({
+          id: change.id,
+          result: review ? 'needs_review' : 'rejected',
+          code: err?.code ?? null,
+          message: err?.message ?? null,
+          body: null,
+        });
+      }
+    }
+    // Gangguan pada perubahan pertama: seluruh request dijawab 5xx (seperti server mati).
+    if (results.length === 0 && changes.length > 0) {
+      const first = changes[0];
+      const reply = first
+        ? handler({ method: first.method, path: first.path, body: first.body })
+        : null;
+      if (reply && reply !== 'network' && reply.status >= 500) {
+        return Promise.resolve(jsonResponse(reply.status, reply.body));
+      }
+    }
+    return Promise.resolve(jsonResponse(200, { results }));
+  }
+
   const fetch = (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
     const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
     const call: Call = {
@@ -37,15 +116,13 @@ export function fakeServer(initial: Handler = () => ({ status: 200, body: {} }))
       path: url,
       body: typeof init?.body === 'string' ? (JSON.parse(init.body) as unknown) : undefined,
     };
+    if (!rawPush && call.method === 'POST' && call.path === '/api/sync/push') {
+      return push((call.body as { changes: PushedChange[] }).changes);
+    }
     calls.push(call);
     const reply = handler(call);
     if (reply === 'network') return Promise.reject(new TypeError('Failed to fetch'));
-    return Promise.resolve(
-      new Response(reply.body === undefined ? null : JSON.stringify(reply.body), {
-        status: reply.status,
-        headers: { 'content-type': 'application/json' },
-      }),
-    );
+    return Promise.resolve(jsonResponse(reply.status, reply.body));
   };
   return {
     fetch,

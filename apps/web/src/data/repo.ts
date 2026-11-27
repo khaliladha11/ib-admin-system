@@ -141,6 +141,18 @@ function parse<T extends z.ZodType>(schema: T, value: unknown): z.output<T> {
   return result.data;
 }
 
+/**
+ * Hanya kolom yang nilainya benar-benar berubah. Penting untuk konflik per kolom
+ * (docs/SYNC.md §5): kolom yang tidak diubah tidak boleh ikut "menang" di server.
+ */
+const changedOnly = <T extends Record<string, unknown>>(before: object, data: T): Partial<T> =>
+  Object.fromEntries(
+    Object.entries(data).filter(
+      ([key, value]) =>
+        JSON.stringify(value) !== JSON.stringify((before as Record<string, unknown>)[key] ?? null),
+    ),
+  ) as Partial<T>;
+
 /** Kolom bawaan yang tidak ikut ditulis bila undefined. */
 const definedOnly = <T extends Record<string, unknown>>(obj: T) =>
   Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== undefined)) as Partial<T>;
@@ -246,8 +258,9 @@ export function createRepo(
   async function updateFarmer(id: string, patch: FarmerPatch): Promise<Farmer> {
     const { session, deviceId, time } = await context();
     requireAdmin(session);
-    const data = definedOnly(parse(farmerPatchSchema, patch));
     const before = await liveFarmer(id);
+    const data = changedOnly(before, definedOnly(parse(farmerPatchSchema, patch)));
+    if (Object.keys(data).length === 0) return before;
     const row = parse(farmerSchema, { ...before, ...data, updatedAt: time, deviceId });
     await db.transaction('rw', db.farmers, db.outbox, async () => {
       await db.farmers.put(row);
@@ -359,8 +372,9 @@ export function createRepo(
 
   async function updateAnimal(id: string, patch: AnimalPatch): Promise<Animal> {
     const { deviceId, time } = await context();
-    const data = definedOnly(parse(animalPatchSchema, patch));
     const before = await liveAnimal(id);
+    const data = changedOnly(before, definedOnly(parse(animalPatchSchema, patch)));
+    if (Object.keys(data).length === 0) return before;
     if (data.farmerId) await liveFarmer(data.farmerId);
     const row = parse(animalSchema, { ...before, ...data, updatedAt: time, deviceId });
     await db.transaction('rw', db.animals, db.outbox, async () => {
@@ -930,6 +944,117 @@ export function createRepo(
     return done(row);
   }
 
+  // --- Antrean kirim: perlu dicek (langkah 4.2) ---------------------------------
+
+  async function reviewEntry(entryId: string) {
+    const entry = await db.outbox.where('id').equals(entryId).first();
+    if (entry?.status !== 'needs_review' || entry.seq === undefined) {
+      throw new LocalValidationError('Catatan ini tidak ada di daftar perlu dicek.');
+    }
+    return { ...entry, seq: entry.seq };
+  }
+
+  /**
+   * Kirim ulang event yang perlu dicek, boleh dengan tanggal baru. Diperiksa dulu dengan riwayat
+   * di HP; bila masih bertentangan, pesan alasannya ditampilkan. Kiriman ulang memakai id
+   * perubahan baru (id lama sudah tercatat "perlu dicek" di server), id event tetap sama.
+   */
+  async function retryReview(entryId: string, change: { occurredAt?: number } = {}) {
+    const { time } = await context();
+    const entry = await reviewEntry(entryId);
+    const body = { ...(entry.body as Record<string, unknown>) };
+    if (change.occurredAt !== undefined) {
+      if (change.occurredAt > time + FUTURE_TOLERANCE_MS) {
+        throw new LocalValidationError('Tanggal kejadian tidak boleh di masa depan.');
+      }
+      body.occurredAt = change.occurredAt;
+    }
+    const event = entry.table === 'events' ? await db.events.get(entry.rowId) : undefined;
+    if (event) {
+      const candidate = {
+        ...event,
+        occurredAt: (body.occurredAt as number | undefined) ?? event.occurredAt,
+        deletedAt: null,
+      } as DomainEvent;
+      const history = (await eventsOf(event.animalId)).filter((e) => e.id !== event.id);
+      const check = validateNextEvent(history, candidate);
+      if (!check.ok) throw new LocalValidationError(check.errors.join(' '), check.errors);
+    }
+    await db.transaction('rw', db.outbox, db.events, async () => {
+      if (event) {
+        await db.events.update(event.id, {
+          deletedAt: null,
+          occurredAt: (body.occurredAt as number | undefined) ?? event.occurredAt,
+          updatedAt: time,
+        });
+      }
+      await db.outbox.update(entry.seq, {
+        id: uuidv7(time),
+        body,
+        status: 'pending',
+        attempts: 0,
+        lastError: null,
+        code: null,
+        nextAttemptAt: time,
+      });
+    });
+    onChange?.();
+  }
+
+  /** Buang event yang perlu dicek: dihapus dari HP; di server tetap tercatat sebagai dibuang. */
+  async function discardReview(entryId: string, reason?: string) {
+    const { time } = await context();
+    const entry = await reviewEntry(entryId);
+    await db.transaction('rw', db.outbox, async () => {
+      await db.outbox.delete(entry.seq);
+      await enqueue(
+        db,
+        {
+          kind: 'syncReview.discard',
+          method: 'POST',
+          path: `/api/sync/reviews/${entry.id}/discard`,
+          body: reason ? { reason } : {},
+          table: 'syncReviews',
+          rowId: entry.id,
+        },
+        time,
+      );
+    });
+    onChange?.();
+  }
+
+  /** Admin membuang catatan perlu dicek milik petugas di wilayahnya (lewat outbox). */
+  async function discardServerReview(reviewId: string, reason?: string) {
+    const { session, time, deviceId } = await context();
+    requireAdmin(session);
+    const review = await db.syncReviews.get(reviewId);
+    if (review?.resolvedAt !== null) {
+      throw new LocalValidationError('Catatan ini sudah diselesaikan.');
+    }
+    await db.transaction('rw', db.syncReviews, db.outbox, async () => {
+      await db.syncReviews.put({
+        ...review,
+        resolvedAt: time,
+        resolution: 'discarded',
+        updatedAt: time,
+        deviceId,
+      });
+      await enqueue(
+        db,
+        {
+          kind: 'syncReview.discard',
+          method: 'POST',
+          path: `/api/sync/reviews/${review.id}/discard`,
+          body: reason ? { reason } : {},
+          table: 'syncReviews',
+          rowId: review.id,
+        },
+        time,
+      );
+    });
+    onChange?.();
+  }
+
   async function setAnimalPhoto(animalId: string, data: ArrayBuffer, type: string) {
     const { time } = await context();
     await liveAnimal(animalId);
@@ -959,6 +1084,9 @@ export function createRepo(
     attachTag,
     attachNewQrCode,
     removeTag,
+    retryReview,
+    discardReview,
+    discardServerReview,
     setAnimalPhoto,
     removeAnimalPhoto,
   };

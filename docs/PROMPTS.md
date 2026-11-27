@@ -297,7 +297,7 @@ Jadikan `apps/web` PWA dengan vite-plugin-pwa:
 - Tes Playwright: buka aplikasi, matikan jaringan, catat event, nyalakan jaringan, pastikan data terkirim
 ```
 
-- [ ] **4.2 Sinkronisasi dua arah yang tahan konflik** \[Rencana dulu\]
+- [x] **4.2 Sinkronisasi dua arah yang tahan konflik** \[Rencana dulu\]
 
 ```text
 Sempurnakan sinkronisasi antara Dexie dan server:

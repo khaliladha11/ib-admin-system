@@ -37,7 +37,8 @@ inseminator, dan admin kelompok/dinas.
   belum dilakukan (panduan `docs/UJI-HP.md`). Fase 3 selesai setelah uji itu; tag `v0.3.0` manual.
 - Fase 4: 4.1 PWA selesai (nama **IB Ternak**, manifest + ikon, service worker precache semua
   aset, "Perbarui sekarang", bundel awal 735 KB / 228 KB gzip, `docs/BUNDLE.md`).
-  Langkah berikutnya: 4.2 sinkron tahan konflik (rencana dulu).
+  4.2 sinkron tahan konflik selesai (`docs/SYNC.md`: push/pull berbatch, konflik profil per kolom,
+  event "perlu dicek", halaman Data belum terkirim, tes dua HP). Langkah berikutnya: 4.3 mode pos/kelompok.
 
 ## Prinsip
 1. Offline-first: semua pencatatan harus bisa tanpa internet; sinkron menyusul.
@@ -113,7 +114,8 @@ inseminator, dan admin kelompok/dinas.
   menyimpan `3.1-*.png` (halaman label, tampilan cetak A4, riwayat tag). `scan.spec.ts` memakai
   kamera palsu (`e2e/fake-camera.ts`: video Y4M berisi QR `IB-SCAN2`) dan menyimpan `3.2-*.png`.
   Project `pwa` (`pwa.spec.ts`) memakai build produksi + `vite preview` port 5175: manifest, buka
-  ulang offline dari cache SW, catat event offline, online → terkirim ke server (`4.1-*.png`). Di luar sandbox: `pnpm --filter @ib/web exec playwright install chromium`.
+  ulang offline dari cache SW, catat event offline, online → terkirim ke server (`4.1-*.png`), dan
+  `two-devices.spec.ts` (dua HP offline mengubah data yang sama → `4.2-*.png`). Di luar sandbox: `pnpm --filter @ib/web exec playwright install chromium`.
 - `pnpm db:migrate` — jalankan migrasi (`DATABASE_URL`, bawaan `apps/server/data/ib.sqlite`)
 - `pnpm db:seed` — isi data contoh fiktif; `pnpm db:seed --reset` untuk mengisi ulang
 - `pnpm db:generate` — buat file migrasi baru setelah mengubah `apps/server/src/db/schema.ts`
@@ -156,10 +158,20 @@ inseminator, dan admin kelompok/dinas.
   lalu menulis baris + entri `outbox` dalam satu transaksi. Tidak ada `fetch` di komponen.
 - Status, jadwal, pengingat dihitung di klien dengan fungsi `@ib/shared` yang sama
   dengan server (`listReminders` dipakai bersama `/api/reminders`).
-- Sinkron sederhana (`data/sync/engine.ts`): push outbox FIFO lewat endpoint REST;
-  2xx/`409 ALREADY_EXISTS` = selesai, 4xx lain = ditolak (disimpan, antrean lanjut),
-  401 = berhenti (perlu masuk), jaringan/5xx = berhenti + backoff. Pull
-  `GET /api/sync/changes?since=` tidak menimpa baris yang masih pending. Konflik penuh: Fase 4.
+- Sinkron (langkah 4.2, `docs/SYNC.md`, `data/sync/engine.ts`): push `POST /api/sync/push` ≤ 50 entri
+  outbox (id entri = id perubahan, idempoten lewat tabel `sync_changes`); server menjalankan tiap
+  perubahan lewat route REST yang sama (daftar putih kind→path, header `x-ib-sync`/`x-ib-change-at`).
+  Hasil: applied/merged → selesai; needs_review (event 422 INVALID_EVENT) → outbox `needs_review`,
+  event lokal di-soft-delete (tidak dihitung status), isi tersimpan di server; rejected → "Tidak
+  diterima"; tanpa hasil (5xx) → backoff. Pull `GET /api/sync/pull?cursor=&scope=` berhalaman urut
+  (updated_at, tabel, id), jam server monoton; sidik jari cakupan berubah → `reset`, HP menghapus baris
+  yang tidak terlihat lagi. Pull tidak menimpa baris pending/needs_review. `/api/sync/changes` dihapus.
+- Konflik profil per kolom: `updateProfile` (server) + tabel `field_versions`; kolom kalah →
+  `audit_logs` `conflict`. Repo web hanya mengirim kolom yang berubah (`changedOnly`).
+- Peringatan event dari sinkron diterima otomatis (kejanggalan tampil di profil). Event perlu dicek:
+  `repo.retryReview` (id perubahan baru, cek lokal dulu), `repo.discardReview`; admin melihat
+  `syncReviews` di Tindak lanjut dan bisa `discardServerReview`. Halaman `/data-belum-terkirim`;
+  `SyncIndicator` menautkan ke halaman itu.
 - Data lokal milik satu akun (`meta.owner`); akun lain yang masuk menghapusnya, dan
   ditolak bila masih ada perubahan belum terkirim.
 - Desain: lihat `docs/DESIGN.md`. Warna hanya lewat token di `apps/web/src/index.css`

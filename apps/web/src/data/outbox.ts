@@ -17,7 +17,8 @@ export type OutboxKind =
   | 'serviceRequest.reject'
   | 'qrCode.reserve'
   | 'tag.attach'
-  | 'tag.remove';
+  | 'tag.remove'
+  | 'syncReview.discard';
 
 export interface OutboxEntry {
   /** Nomor urut otomatis (urutan kirim). */
@@ -38,7 +39,13 @@ export interface OutboxEntry {
   provisional: { table: MirrorTable; id: string }[];
   /** Baris lain yang ikut diubah secara lokal (mis. anak sapi dari LH); tidak ditimpa pull selama pending. */
   relatedRowIds: string[];
-  status: 'pending' | 'rejected';
+  /**
+   * pending = menunggu dikirim; rejected = tidak diterima server (alasan di lastError);
+   * needs_review = event ditolak karena urutan riwayat, tersimpan di server, perlu dicek.
+   */
+  status: 'pending' | 'rejected' | 'needs_review';
+  /** Kode error server untuk rejected/needs_review (mis. INVALID_EVENT). */
+  code?: string | null;
   attempts: number;
   lastError: string | null;
   /** Jangan dikirim sebelum waktu ini (backoff setelah gagal jaringan). */
@@ -85,9 +92,23 @@ export function rejectedEntries(db: IbDb): Promise<OutboxEntry[]> {
   return db.outbox.where('status').equals('rejected').sortBy('seq');
 }
 
-/** Id baris yang masih punya perubahan belum terkirim (tidak boleh ditimpa pull). */
+/** Id ternak dari perubahan (alamat /api/animals/{id}/…, atau baris ternak itu sendiri). */
+export function animalIdOf(entry: Pick<OutboxEntry, 'kind' | 'path' | 'rowId'>): string | null {
+  const match = /^\/api\/animals\/([0-9a-f-]{36})/.exec(entry.path);
+  if (match?.[1]) return match[1];
+  return entry.kind === 'animal.create' ? entry.rowId : null;
+}
+
+export function reviewEntries(db: IbDb): Promise<OutboxEntry[]> {
+  return db.outbox.where('status').equals('needs_review').sortBy('seq');
+}
+
+/**
+ * Id baris yang masih punya perubahan lokal (menunggu dikirim atau perlu dicek): tidak boleh
+ * ditimpa atau dihapus pull.
+ */
 export async function pendingRowIds(db: IbDb): Promise<Set<string>> {
-  const entries = await db.outbox.where('status').equals('pending').toArray();
+  const entries = await db.outbox.where('status').anyOf('pending', 'needs_review').toArray();
   return new Set(entries.flatMap((e) => [e.rowId, ...e.relatedRowIds]));
 }
 
@@ -95,12 +116,34 @@ export async function markDone(db: IbDb, entry: OutboxEntry): Promise<void> {
   if (entry.seq !== undefined) await db.outbox.delete(entry.seq);
 }
 
-export async function markRejected(db: IbDb, entry: OutboxEntry, message: string): Promise<void> {
+export async function markRejected(
+  db: IbDb,
+  entry: OutboxEntry,
+  message: string,
+  code: string | null = null,
+): Promise<void> {
   if (entry.seq === undefined) return;
   await db.outbox.update(entry.seq, {
     status: 'rejected',
     attempts: entry.attempts + 1,
     lastError: message,
+    code,
+  });
+}
+
+/** Event ditolak karena urutan riwayat: tetap disimpan, tampil "Perlu dicek". */
+export async function markNeedsReview(
+  db: IbDb,
+  entry: OutboxEntry,
+  message: string,
+  code: string | null,
+): Promise<void> {
+  if (entry.seq === undefined) return;
+  await db.outbox.update(entry.seq, {
+    status: 'needs_review',
+    attempts: entry.attempts + 1,
+    lastError: message,
+    code,
   });
 }
 
