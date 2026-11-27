@@ -1,0 +1,54 @@
+name: Laporan bug
+description: Ada yang tidak berjalan seperti seharusnya
+labels: ['bug']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Terima kasih! Jangan menulis data pribadi (nama asli peternak, nomor HP, password) di sini.
+        Celah keamanan? Laporkan lewat SECURITY.md, bukan issue publik.
+  - type: textarea
+    id: steps
+    attributes:
+      label: Yang dilakukan
+      description: Langkah demi langkah sampai bug muncul.
+      placeholder: |
+        1. Masuk sebagai petugas
+        2. Scan label sapi
+        3. Tekan Catat IB
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Yang terjadi
+      description: Termasuk pesan error. Screenshot sangat membantu.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Yang seharusnya terjadi
+    validations:
+      required: true
+  - type: dropdown
+    id: role
+    attributes:
+      label: Peran
+      options: [Peternak, Inseminator, Admin kelompok, Admin dinas, Tidak tahu]
+  - type: dropdown
+    id: signal
+    attributes:
+      label: Sinyal saat itu
+      options: [Ada sinyal, Tanpa sinyal / mode pesawat, Sinyal putus-putus, Tidak tahu]
+  - type: input
+    id: device
+    attributes:
+      label: HP / peramban
+      placeholder: Mis. Samsung A14, Android 14, Chrome
+  - type: input
+    id: version
+    attributes:
+      label: Versi aplikasi
+      description: Lihat Lainnya → Tentang aplikasi.
+      placeholder: 1.0.0

@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import tailwindcss from '@tailwindcss/vite';
 import basicSsl from '@vitejs/plugin-basic-ssl';
@@ -10,6 +11,10 @@ import { moduleSizes } from './scripts/module-sizes.ts';
 
 // .env dibaca dari root repo (lihat .env.example).
 const envDir = path.resolve(import.meta.dirname, '../..');
+/** Versi aplikasi = versi di package.json root (ditampilkan di Lainnya → Tentang aplikasi). */
+const appVersion = (
+  JSON.parse(readFileSync(path.join(envDir, 'package.json'), 'utf8')) as { version: string }
+).version;
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, envDir, '');
@@ -20,6 +25,7 @@ export default defineConfig(({ mode }) => {
 
   return {
     envDir,
+    define: { 'import.meta.env.VITE_APP_VERSION': JSON.stringify(appVersion) },
     plugins: [
       react(),
       tailwindcss(),

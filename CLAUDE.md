@@ -43,8 +43,11 @@ inseminator, dan admin kelompok/dinas.
   image Docker, Caddy, dan skrip instal BELUM diuji di perangkat sungguhan (sandbox tidak bisa).
   Fase 4 selesai setelah uji itu; tag `v0.4.0` manual.
 - Fase 5: 5.1 persiapan UAT selesai (`docs/UAT.md`, panduan cetak `docs/panduan/`, mode demo
-  `DEMO_MODE=1` + reset, form masukan, catatan pemakaian lokal). Langkah berikutnya: jalankan
-  UAT, lalu 5.2 perbaikan dari umpan balik.
+  `DEMO_MODE=1` + reset, form masukan, catatan pemakaian lokal). 5.2 dilewati dulu (belum ada pilot).
+- Fase 6: 6.1 rilis v1.0.0 selesai di repo (lisensi AGPL-3.0, README, CONTRIBUTING, CODE_OF_CONDUCT,
+  SECURITY, template issue/PR, CHANGELOG, versi 1.0.0, catatan rilis `docs/rilis/v1.0.0.md`, header
+  keamanan, batas percobaan masuk). Tag `v1.0.0` dan GitHub Release dibuat manual oleh pemilik repo.
+  Langkah berikutnya: 6.2 analitik & laporan.
 
 ## Prinsip
 1. Offline-first: semua pencatatan harus bisa tanpa internet; sinkron menyusul.
@@ -286,6 +289,12 @@ inseminator, dan admin kelompok/dinas.
   bukan batal, > 30 menit durasi dibuang) dan `useScreenVisit(name)`. Ringkasan/CSV di
   `lib/usage-summary.ts`; halaman `/pemakaian` mengunduh lewat Blob (`lib/download.ts`), nama file
   tanpa id perangkat.
+- Rilis (6.1): versi di `package.json` root (semua paket sama), tampil di Lainnya → Tentang aplikasi
+  lewat `VITE_APP_VERSION` (define di `vite.config.ts`); tautan kode sumber `VITE_SOURCE_URL` (AGPL §13).
+  Perubahan terlihat pengguna dicatat di `CHANGELOG.md` bagian "Belum dirilis".
+- Keamanan (6.1): `http/security.ts` (`secureHeaders`: CSP aplikasi tanpa `unsafe-inline` untuk skrip,
+  CSP Swagger terpisah, tanpa HSTS karena pos dibuka lewat IP). `auth/login-limiter.ts` di memori,
+  dicek sebelum argon2; 429 `TOO_MANY_REQUESTS` + `Retry-After`; IP dari `X-Forwarded-For` (Caddy).
 - Tes web memakai `fake-indexeddb` (di `src/test/setup.ts`) dan fixture
   `src/test/data-fixtures.ts` (DB baru per tes, fetch tiruan).
 - Logika reproduksi di `packages/shared/src/domain/`: `deriveReproStatus`,

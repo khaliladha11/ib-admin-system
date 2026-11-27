@@ -2,6 +2,7 @@
 import { Link } from '@tanstack/react-router';
 import {
   BarChart3,
+  Code2,
   KeyRound,
   MessageSquareHeart,
   LogOut,
@@ -23,6 +24,7 @@ import { Panel } from '@/components/ui/panel';
 import { clearPin, signOut, useDataLayer, useHasPin, useSession, useSyncStatus } from '@/data';
 import { useContrastMode } from '@/design/contrast-mode';
 import { isAdminRole } from '@/layout/nav-items';
+import { APP_VERSION, LICENSE_NAME, SOURCE_URL } from '@/lib/app-info';
 import { formatDateTime } from '@/lib/format';
 
 import { PinSetupForm } from './auth/pin-pages';
@@ -238,6 +240,20 @@ export function MorePage() {
             Keluar dari akun
           </Button>
         )}
+      </Panel>
+
+      <Panel title="Tentang aplikasi">
+        <p>
+          IB Ternak versi {APP_VERSION}. Perangkat lunak bebas dengan lisensi {LICENSE_NAME}: boleh
+          dipakai, dipelajari, dan diubah; perubahan yang dijalankan untuk orang lain wajib
+          dibagikan.
+        </p>
+        <Button asChild variant="outline" className="justify-start self-start">
+          <a href={SOURCE_URL} target="_blank" rel="noreferrer">
+            <Code2 aria-hidden="true" />
+            Kode sumber
+          </a>
+        </Button>
       </Panel>
 
       <Button variant="ghost" asChild className="justify-start">

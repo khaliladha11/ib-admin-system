@@ -21,7 +21,7 @@ import { registerQrCodeRoutes } from './routes/qr-codes';
 import { registerSystemRoutes } from './routes/system';
 
 export const SERVICE_NAME = 'ib-server';
-export const API_VERSION = '0.1.0';
+export const API_VERSION = '1.0.0';
 
 export interface AppDeps {
   db: Db;

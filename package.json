@@ -1,8 +1,9 @@
 {
   "name": "ib-admin-system",
+  "version": "1.0.0",
+  "license": "AGPL-3.0-only",
   "private": true,
   "description": "Sistem pencatatan siklus reproduksi sapi: rebuild dari skripsi IB Admin System",
-  "license": "MIT",
   "type": "module",
   "packageManager": "pnpm@10.28.0",
   "engines": {
