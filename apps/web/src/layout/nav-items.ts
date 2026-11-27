@@ -8,6 +8,7 @@ import {
   Inbox,
   LayoutDashboard,
   ScanQrCode,
+  Server,
   UserCog,
   Users,
   type LucideIcon,
@@ -23,7 +24,8 @@ export interface NavItem {
     | '/permintaan'
     | '/tindak-lanjut'
     | '/peternak'
-    | '/pengguna';
+    | '/pengguna'
+    | '/pos';
   label: string;
   /** Label pendek untuk navigasi bawah HP (lebar ±72px per item). */
   shortLabel?: string;
@@ -56,6 +58,7 @@ export const ADMIN_NAV_SIDE: readonly NavItem[] = [
   { to: '/ternak', label: 'Ternak', icon: Cow },
   { to: '/peternak', label: 'Peternak', icon: Users },
   { to: '/pengguna', label: 'Pengguna', icon: UserCog },
+  { to: '/pos', label: 'Pos IB', icon: Server },
   { to: '/lainnya', label: 'Lainnya', icon: Ellipsis },
 ];
 

@@ -7,6 +7,7 @@ import {
   SwatchBook,
   ListChecks,
   Printer,
+  Server,
   UserCog,
   UserRound,
   Users,
@@ -155,6 +156,12 @@ export function MorePage() {
               <Link to="/pengguna">
                 <UserCog aria-hidden="true" />
                 Pengguna dan petugas
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="justify-start">
+              <Link to="/pos">
+                <Server aria-hidden="true" />
+                Pos IB: alamat, cadangan, ekspor
               </Link>
             </Button>
           </div>

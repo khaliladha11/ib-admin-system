@@ -38,6 +38,7 @@ const RequestFormPage = lazyRouteComponent(() => import('@/pages/request-form'),
 const SyncQueuePage = lazyRouteComponent(() => import('@/pages/sync-queue'), 'SyncQueuePage');
 const ScanPage = lazyRouteComponent(() => import('@/pages/scan/scan-page'), 'ScanPage');
 const AnimalNewPage = lazyRouteComponent(() => import('@/pages/animal-new'), 'AnimalNewPage');
+const PosPage = lazyRouteComponent(() => import('@/pages/admin/pos'), 'PosPage');
 const LabelsPage = lazyRouteComponent(() => import('@/pages/labels/labels-page'), 'LabelsPage');
 const DevComponentsPage = lazyRouteComponent(
   () => import('@/pages/dev-components'),
@@ -129,6 +130,12 @@ const moreRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/lainnya',
   component: MorePage,
+});
+const posRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/pos',
+  component: PosPage,
+  staticData: { title: 'Pos IB' },
 });
 const syncQueueRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -245,6 +252,7 @@ const routeTree = rootRoute.addChildren([
   moreRoute,
   labelsRoute,
   syncQueueRoute,
+  posRoute,
   devRoute,
 ]);
 

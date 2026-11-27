@@ -88,4 +88,16 @@ export {
   type UpdateUserInput,
 } from './users-api';
 export { clearLocalData, signIn, signOut } from './sync/auth';
+export {
+  appUrlOf,
+  backupNow,
+  certUrlOf,
+  EXPORT_CSV_URL,
+  EXPORT_JSON_URL,
+  importData,
+  loadSystemInfo,
+  type BackupInfo,
+  type ImportCounts,
+  type SystemInfo,
+} from './system-api';
 export type { SyncResult } from './sync/engine';
