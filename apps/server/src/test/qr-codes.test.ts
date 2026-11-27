@@ -59,9 +59,8 @@ describe('daftar kode QR', () => {
     const list = await andi.get('/api/qr-codes');
     expect(list.body.items.map((r: { code: string }) => r.code)).toEqual(['IB-ANDY2']);
 
-    const changes = await andi.get('/api/sync/changes?since=0');
-    expect(changes.status).toBe(200);
-    expect(changes.body.qrCodes.map((r: { code: string }) => r.code)).toEqual(['IB-ANDY2']);
+    const changes = { body: (await h.pullAll('andi')).rows };
+    expect((changes.body.qrCodes ?? []).map((r: { code: string }) => r.code)).toEqual(['IB-ANDY2']);
   });
 
   it('wajib masuk', async () => {

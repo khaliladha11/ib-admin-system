@@ -26,7 +26,20 @@ export interface AppDeps {
   config?: Partial<ServerConfig>;
 }
 
-export function createApp({ db, now = () => Date.now(), config }: AppDeps) {
+/**
+ * Jam server yang tidak pernah mundur atau sama (+1 ms bila perlu), agar cursor pull berbasis
+ * updated_at tidak melewatkan baris (docs/SYNC.md §4).
+ */
+export function monotonicClock(source: () => number = () => Date.now()): () => number {
+  let last = 0;
+  return () => {
+    const t = source();
+    last = t > last ? t : last + 1;
+    return last;
+  };
+}
+
+export function createApp({ db, now = monotonicClock(), config }: AppDeps) {
   const fullConfig = { ...loadConfig(), ...config };
   const app = new OpenAPIHono<AppEnv>({ defaultHook: validationHook });
 

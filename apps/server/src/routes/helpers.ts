@@ -1,11 +1,25 @@
-import { deriveReproStatus, uuidv7, type DomainEvent } from '@ib/shared';
+import {
+  clampChangeTime,
+  deriveReproStatus,
+  mergeFieldVersions,
+  uuidv7,
+  type DomainEvent,
+} from '@ib/shared';
 import { and, asc, eq, inArray, isNull } from 'drizzle-orm';
 import type { Context } from 'hono';
 
 import { canAccessFarmer, loadScope, type Scope } from '../auth/scope';
 import { requireUser } from '../auth/session';
 import type { Db } from '../db/client';
-import { animals, animalTags, auditLogs, events, farmers, qrCodes } from '../db/schema';
+import {
+  animals,
+  animalTags,
+  auditLogs,
+  events,
+  farmers,
+  fieldVersions,
+  qrCodes,
+} from '../db/schema';
 import { alreadyExists, notFound } from '../http/errors';
 import type { AppEnv } from '../http/env';
 import { toStatusDto } from '../http/schemas';
@@ -110,7 +124,7 @@ export function audit(
   entry: {
     tableName: string;
     rowId: string;
-    action: 'insert' | 'update' | 'delete';
+    action: 'insert' | 'update' | 'delete' | 'conflict';
     before: Record<string, unknown> | null;
     after: Record<string, unknown> | null;
   },
@@ -156,4 +170,83 @@ export function registerQrCode(c: AppContext, tx: Tx, code: string) {
   tx.insert(qrCodes)
     .values({ ...newRow(c), code, issuedBy: requireUser(c).id })
     .run();
+}
+
+/** Header dari POST /api/sync/push: waktu perubahan dibuat di HP. */
+export const CHANGE_AT_HEADER = 'x-ib-change-at';
+/** Header dari POST /api/sync/push: permintaan ini bagian dari sinkron. */
+export const SYNC_HEADER = 'x-ib-sync';
+/** Header respons: sebagian kolom kalah oleh versi lebih baru (hasil push `merged`). */
+export const MERGED_HEADER = 'x-ib-merged';
+
+/** Waktu perubahan: dari HP lewat push (dipotong agar tidak di masa depan), selain itu sekarang. */
+export function changeTimeOf(c: AppContext): number {
+  const raw = c.req.header(CHANGE_AT_HEADER);
+  return clampChangeTime(raw ? Number(raw) : undefined, c.var.now());
+}
+
+type ProfileTable = typeof farmers | typeof animals;
+
+/**
+ * Ubah profil peternak/ternak dengan aturan konflik per kolom (docs/SYNC.md §5): kolom yang
+ * diubah lebih baru di HP lain tidak ditimpa; nilai yang kalah dicatat di audit_logs
+ * (`conflict`), nilai lama yang ditimpa dicatat sebagai `update`. Satu transaksi.
+ */
+export function updateProfile<Row extends { id: string; updatedAt: number }>(
+  c: AppContext,
+  table: ProfileTable,
+  tableName: 'farmers' | 'animals',
+  row: Row,
+  patch: Record<string, unknown>,
+): { row: Row; merged: boolean } {
+  const { db } = c.var;
+  const at = changeTimeOf(c);
+  const times = Object.fromEntries(
+    db
+      .select({ field: fieldVersions.field, changedAt: fieldVersions.changedAt })
+      .from(fieldVersions)
+      .where(and(eq(fieldVersions.tableName, tableName), eq(fieldVersions.rowId, row.id)))
+      .all()
+      .map((r) => [r.field, r.changedAt]),
+  );
+  // Kolom yang belum pernah tercatat waktunya: kiriman selalu dipakai (patokan 0).
+  const merge = mergeFieldVersions(row, times, patch, at, 0);
+  const lostAny = Object.keys(merge.lost).length > 0;
+  const applyAny = Object.keys(merge.apply).length > 0;
+  const updated = applyAny
+    ? { ...row, ...merge.apply, updatedAt: c.var.now(), deviceId: c.var.deviceId }
+    : row;
+  db.transaction((tx) => {
+    if (applyAny) {
+      tx.update(table).set(updated).where(eq(table.id, row.id)).run();
+      audit(c, tx, {
+        tableName,
+        rowId: row.id,
+        action: 'update',
+        before: merge.previous,
+        after: merge.apply,
+      });
+    }
+    for (const [field, changedAt] of Object.entries(merge.times)) {
+      if (times[field] === changedAt) continue;
+      tx.insert(fieldVersions)
+        .values({ tableName, rowId: row.id, field, changedAt })
+        .onConflictDoUpdate({
+          target: [fieldVersions.tableName, fieldVersions.rowId, fieldVersions.field],
+          set: { changedAt },
+        })
+        .run();
+    }
+    if (lostAny) {
+      audit(c, tx, {
+        tableName,
+        rowId: row.id,
+        action: 'conflict',
+        before: { ...merge.lost, changedAt: at },
+        after: merge.kept,
+      });
+    }
+  });
+  if (lostAny) c.header(MERGED_HEADER, '1');
+  return { row: updated, merged: lostAny };
 }

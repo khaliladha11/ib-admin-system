@@ -48,13 +48,14 @@ import {
 import {
   assertNewId,
   audit,
-  changedFields,
   loadAnimal,
   loadFarmer,
   newRow,
   registerQrCode,
   scopeOf,
+  SYNC_HEADER,
   toDomainEvent,
+  updateProfile,
   withStatus,
   type AppContext,
 } from './helpers';
@@ -328,21 +329,7 @@ export function registerAnimalRoutes(app: OpenAPIHono<AppEnv>) {
           throw conflict('Ternak tidak bisa menjadi induk dirinya sendiri.');
         loadAnimal(c, scope, patch.damId);
       }
-      const diff = changedFields(animal, patch);
-      let updated = animal;
-      if (diff.changed) {
-        updated = { ...animal, ...diff.after, updatedAt: c.var.now(), deviceId: c.var.deviceId };
-        c.var.db.transaction((tx) => {
-          tx.update(animals).set(updated).where(eq(animals.id, animal.id)).run();
-          audit(c, tx, {
-            tableName: 'animals',
-            rowId: animal.id,
-            action: 'update',
-            before: diff.before,
-            after: diff.after,
-          });
-        });
-      }
+      const { row: updated } = updateProfile(c, animals, 'animals', animal, patch);
       const [item] = withStatus(c, [updated]);
       if (!item) throw notFound('Ternak');
       return c.json(item, 200);
@@ -577,7 +564,9 @@ export function registerAnimalRoutes(app: OpenAPIHono<AppEnv>) {
       if (!result.ok) {
         throw new ApiError(422, 'INVALID_EVENT', result.errors.join(' '), result);
       }
-      if (result.warnings.length > 0 && !body.confirmWarnings) {
+      // Dari sinkron: peringatan akibat data HP lain diterima (kejanggalan tampil di profil).
+      const fromSync = c.req.header(SYNC_HEADER) === '1';
+      if (result.warnings.length > 0 && !body.confirmWarnings && !fromSync) {
         throw new ApiError(
           409,
           'WARNINGS_NEED_CONFIRMATION',

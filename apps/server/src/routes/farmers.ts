@@ -7,7 +7,7 @@ import { animals, farmers } from '../db/schema';
 import { conflict, errorResponses, forbidden } from '../http/errors';
 import type { AppEnv } from '../http/env';
 import { farmerDtoSchema, idParamSchema, jsonBody, jsonContent, listOf } from '../http/schemas';
-import { assertNewId, audit, changedFields, loadFarmer, newRow, scopeOf } from './helpers';
+import { assertNewId, audit, loadFarmer, newRow, scopeOf, updateProfile } from './helpers';
 
 const editable = z.object(
   farmerSchema.pick({
@@ -137,24 +137,7 @@ export function registerFarmerRoutes(app: OpenAPIHono<AppEnv>) {
       if (patch.locationId && !scope.locationIds.has(patch.locationId)) {
         throw forbidden('Lokasi di luar wilayah Anda.');
       }
-      const diff = changedFields(farmer, patch);
-      if (!diff.changed) return c.json(farmer, 200);
-      const updated = {
-        ...farmer,
-        ...diff.after,
-        updatedAt: c.var.now(),
-        deviceId: c.var.deviceId,
-      };
-      c.var.db.transaction((tx) => {
-        tx.update(farmers).set(updated).where(eq(farmers.id, farmer.id)).run();
-        audit(c, tx, {
-          tableName: 'farmers',
-          rowId: farmer.id,
-          action: 'update',
-          before: diff.before,
-          after: diff.after,
-        });
-      });
+      const { row: updated } = updateProfile(c, farmers, 'farmers', farmer, patch);
       return c.json(updated, 200);
     },
   );

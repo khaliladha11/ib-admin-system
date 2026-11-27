@@ -194,17 +194,20 @@ describe('aksi admin pada permintaan: aman dikirim ulang + tercatat di log', () 
     ).toBe(200);
 
     // Sinkron admin membawa log aktivitas permintaan dan nama pengguna (tanpa hash password).
-    const sync = await admin.get('/api/sync/changes');
+    const sync = { body: (await h.pullAll('groupAdmin1')).rows };
     const logs = (sync.body.auditLogs as { rowId: string; after: { action: string } }[])
       .filter((l) => l.rowId === reqA.id)
       .map((l) => l.after.action);
-    expect(logs).toEqual(['submit', 'assign', 'reassign']);
-    expect(sync.body.users.some((u: { name: string }) => u.name === 'Andi Pratama')).toBe(true);
+    // Jam tes tetap (semua baris di milidetik yang sama): urutan diperiksa di klien.
+    expect([...logs].sort()).toEqual(['assign', 'reassign', 'submit']);
+    expect((sync.body.users ?? []).some((u: { name: string }) => u.name === 'Andi Pratama')).toBe(
+      true,
+    );
     expect(JSON.stringify(sync.body.users)).not.toContain('passwordHash');
   });
 
   it('peternak menerima nama petugas tanpa email, dan tidak menerima log', async () => {
-    const res = await (await h.as('suparman')).get('/api/sync/changes');
+    const res = { body: (await h.pullAll('suparman')).rows };
     const rina = (res.body.users as { id: string; email: string | null }[]).find(
       (u) => u.id === h.userId('rina'),
     );

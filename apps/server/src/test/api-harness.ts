@@ -90,6 +90,40 @@ export async function createHarness() {
     };
   }
 
+  /**
+   * Tarik semua halaman GET /api/sync/pull dan gabungkan barisnya per tabel.
+   * `cursor`/`scope` untuk melanjutkan dari pull sebelumnya.
+   */
+  async function pullAll(
+    account: Account,
+    from: { cursor?: string | null; scope?: string } = {},
+    limit = 500,
+  ) {
+    const client = await as(account);
+    const rows: Record<string, any[]> = {};
+    let cursor = from.cursor ?? null;
+    let scope = from.scope;
+    let pages = 0;
+    let reset = false;
+    for (;;) {
+      const qs = new URLSearchParams({ limit: String(limit) });
+      if (cursor) qs.set('cursor', cursor);
+      if (scope) qs.set('scope', scope);
+      const res = await client.get(`/api/sync/pull?${qs.toString()}`);
+      if (res.status !== 200) throw new Error(`pull ${String(res.status)}`);
+      pages += 1;
+      reset ||= res.body.reset;
+      for (const [table, list] of Object.entries(res.body.rows as Record<string, any[]>)) {
+        rows[table] = [...(rows[table] ?? []), ...list];
+      }
+      cursor = res.body.cursor;
+      scope = res.body.scope;
+      if (!res.body.hasMore) break;
+      if (pages > 200) throw new Error('pull tidak berhenti');
+    }
+    return { rows, cursor, scope, pages, reset };
+  }
+
   function userId(account: Account) {
     const identifier = ACCOUNTS[account];
     const row = db
@@ -120,6 +154,7 @@ export async function createHarness() {
     as,
     login,
     userId,
+    pullAll,
     stockOf,
     now: () => clock,
     /** Majukan jam. Sesi berlaku 30 hari, jadi cookie lama dibuang dan login diulang. */

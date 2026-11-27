@@ -38,11 +38,13 @@ describe('migrasi', () => {
         'audit_logs',
         'events',
         'farmers',
+        'field_versions',
         'locations',
         'qr_codes',
         'semen_stock',
         'service_requests',
         'sessions',
+        'sync_changes',
         'users',
       ].sort(),
     );
@@ -51,6 +53,8 @@ describe('migrasi', () => {
   it('setiap tabel punya kolom umum (id, created_at, updated_at, deleted_at, device_id)', () => {
     for (const table of t.allTables) {
       const name = getTableName(table);
+      // Tabel bantu waktu ubah per kolom (docs/SYNC.md §5): bukan data yang disinkronkan.
+      if (name === 'field_versions') continue;
       const cols = ctx.sqlite
         .prepare(`PRAGMA table_info(${name})`)
         .all()

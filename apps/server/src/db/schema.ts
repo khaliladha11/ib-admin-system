@@ -16,6 +16,9 @@ import {
   SERVICE_REQUEST_STATUSES,
   SERVICE_REQUEST_TYPES,
   TAG_REMOVAL_REASONS,
+  SYNC_CHANGE_KINDS,
+  SYNC_RESULTS,
+  SYNC_REVIEW_RESOLUTIONS,
   TAG_TYPES,
   USER_ROLES,
   type EventPayload,
@@ -25,6 +28,7 @@ import {
   check,
   index,
   integer,
+  primaryKey,
   sqliteTable,
   text,
   uniqueIndex,
@@ -322,8 +326,60 @@ export const sessions = sqliteTable(
   (t) => [index('sessions_user_idx').on(t.userId)],
 );
 
+/**
+ * Setiap perubahan yang dikirim lewat POST /api/sync/push (docs/SYNC.md §3). Kunci idempoten:
+ * `id` = id entri outbox di HP. Perubahan yang ditolak (`rejected`) dan event yang perlu dicek
+ * (`needs_review`) menyimpan isi aslinya di `payload` agar tidak hilang.
+ */
+export const syncChanges = sqliteTable(
+  'sync_changes',
+  {
+    ...baseColumns,
+    userId: text()
+      .notNull()
+      .references(() => users.id),
+    kind: text({ enum: SYNC_CHANGE_KINDS }).notNull(),
+    rowId: text(),
+    /** Ternak yang terkait (event, tag), untuk cakupan admin. */
+    animalId: text(),
+    result: text({ enum: SYNC_RESULTS }).notNull(),
+    code: text(),
+    message: text(),
+    payload: text({ mode: 'json' }).$type<Record<string, unknown>>(),
+    resolvedAt: integer(),
+    resolution: text({ enum: SYNC_REVIEW_RESOLUTIONS }),
+  },
+  (t) => [
+    oneOf('sync_changes_kind_check', t.kind, SYNC_CHANGE_KINDS),
+    oneOf('sync_changes_result_check', t.result, SYNC_RESULTS),
+    oneOf('sync_changes_resolution_check', t.resolution, SYNC_REVIEW_RESOLUTIONS),
+    index('sync_changes_user_idx').on(t.userId),
+    index('sync_changes_review_idx').on(t.result, t.resolvedAt),
+    index('sync_changes_row_idx').on(t.rowId),
+    updatedAtIndex('sync_changes', t.updatedAt),
+  ],
+);
+
+/**
+ * Waktu ubah per kolom profil (peternak, ternak) untuk konflik per kolom (docs/SYNC.md §5).
+ * Kolom tanpa baris di sini dianggap belum pernah diubah lewat aturan ini.
+ */
+export const fieldVersions = sqliteTable(
+  'field_versions',
+  {
+    tableName: text().notNull(),
+    rowId: text().notNull(),
+    field: text().notNull(),
+    /** Waktu ubah di HP (ms UTC, sudah dipotong agar tidak di masa depan). */
+    changedAt: integer().notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.tableName, t.rowId, t.field] })],
+);
+
 /** Urutan tabel untuk menghapus data (anak sebelum induk). */
 export const allTables = [
+  fieldVersions,
+  syncChanges,
   sessions,
   auditLogs,
   assignments,
