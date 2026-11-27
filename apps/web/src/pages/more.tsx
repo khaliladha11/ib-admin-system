@@ -163,6 +163,12 @@ export function MorePage() {
               </Link>
             </Button>
             <Button asChild variant="outline" className="justify-start">
+              <Link to="/laporan">
+                <BarChart3 aria-hidden="true" />
+                Laporan S/C, CR, tren
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="justify-start">
               <Link to="/pos">
                 <Server aria-hidden="true" />
                 Pos IB: alamat, cadangan, ekspor

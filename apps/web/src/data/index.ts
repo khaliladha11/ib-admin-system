@@ -20,6 +20,7 @@ export {
   useScanResult,
   useServerReviews,
   useFeedback,
+  useReportData,
   useFormTiming,
   useScreenVisit,
   useUsageRows,
@@ -109,4 +110,4 @@ export type { SyncResult } from './sync/engine';
 
 export { clearUsage, MAX_USAGE_ROWS } from './usage';
 export type { UsageRow } from './db';
-export type { FeedbackView } from './queries';
+export type { FeedbackView, ReportData } from './queries';

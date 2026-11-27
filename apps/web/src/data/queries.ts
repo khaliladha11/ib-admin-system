@@ -710,3 +710,17 @@ export async function loadFarmerViews(db: IbDb) {
   }));
 }
 export type FarmerView = Awaited<ReturnType<typeof loadFarmerViews>>[number];
+
+/** Bahan halaman Laporan (langkah 6.2): dihitung di HP dari data lokal, juga saat offline. */
+export async function loadReportData(db: IbDb) {
+  const [events, requests, animals, farmers, locations, users] = await Promise.all([
+    db.events.toArray(),
+    db.serviceRequests.toArray(),
+    db.animals.toArray(),
+    db.farmers.toArray(),
+    db.locations.toArray(),
+    db.users.toArray(),
+  ]);
+  return { events, requests, animals, farmers, locations, users };
+}
+export type ReportData = Awaited<ReturnType<typeof loadReportData>>;

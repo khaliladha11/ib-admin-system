@@ -267,6 +267,16 @@
   .print-root {
     display: block;
   }
+  /* Laporan (langkah 6.2): A4 dengan margin di dalam halaman (@page tanpa margin). */
+  .report-print {
+    padding: 12mm;
+    font-size: 10pt;
+  }
+  .report-print .surface,
+  .report-print section {
+    break-inside: avoid;
+    box-shadow: none;
+  }
   .label-sheet {
     break-after: page;
   }

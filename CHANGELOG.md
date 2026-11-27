@@ -6,6 +6,16 @@ Format mengikuti [Keep a Changelog](https://keepachangelog.com/id-ID/1.1.0/), ve
 
 ## [Belum dirilis]
 
+### Ditambahkan
+
+- Halaman **Laporan** untuk admin (6.2):
+  - S/C dan CR (dari IB pertama) per petugas, desa, dan bulan;
+  - tren permintaan IB per bulan dan waktu respons petugas;
+  - rumus dijelaskan di halaman.
+  - Dihitung di HP (juga offline) dengan fungsi `@ib/shared/analytics`.
+- Ekspor laporan ke **Excel (.xlsx)** yang dibuat langsung di perangkat tanpa library tambahan.
+  Untuk PDF ada tampilan **cetak A4** → Simpan sebagai PDF.
+
 ## [1.0.0] - 2026-11-27
 
 Rilis open-source pertama **IB Ternak**.

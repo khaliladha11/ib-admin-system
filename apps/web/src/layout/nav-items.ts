@@ -1,6 +1,7 @@
 import type { UserRole } from '@ib/shared';
 import { Cow } from '@/components/icons/cow';
 import {
+  BarChart3,
   BellRing,
   ClipboardList,
   Ellipsis,
@@ -25,7 +26,8 @@ export interface NavItem {
     | '/tindak-lanjut'
     | '/peternak'
     | '/pengguna'
-    | '/pos';
+    | '/pos'
+    | '/laporan';
   label: string;
   /** Label pendek untuk navigasi bawah HP (lebar ±72px per item). */
   shortLabel?: string;
@@ -58,6 +60,7 @@ export const ADMIN_NAV_SIDE: readonly NavItem[] = [
   { to: '/ternak', label: 'Ternak', icon: Cow },
   { to: '/peternak', label: 'Peternak', icon: Users },
   { to: '/pengguna', label: 'Pengguna', icon: UserCog },
+  { to: '/laporan', label: 'Laporan', icon: BarChart3 },
   { to: '/pos', label: 'Pos IB', icon: Server },
   { to: '/lainnya', label: 'Lainnya', icon: Ellipsis },
 ];

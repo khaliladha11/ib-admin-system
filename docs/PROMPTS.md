@@ -357,7 +357,7 @@ Siapkan rilis v1.0:
 - Periksa keamanan: tidak ada rahasia di repo, dependensi tanpa kerentanan tinggi (`pnpm audit`), header keamanan di server, batas percobaan login
 ```
 
-- [ ] **6.2 Analitik & laporan**
+- [x] **6.2 Analitik & laporan**
 
 ```text
 Tambahkan halaman Laporan untuk admin:

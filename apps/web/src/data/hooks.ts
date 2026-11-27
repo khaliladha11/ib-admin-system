@@ -22,6 +22,7 @@ import {
   loadServiceRequests,
   loadServerReviews,
   loadFeedback,
+  loadReportData,
   loadSyncQueue,
   loadSyncStatus,
   loadTimeline,
@@ -107,6 +108,12 @@ export function useServerReviews() {
 export function useFeedback() {
   const { db } = useDataLayer();
   return useLiveQuery(() => loadFeedback(db), [db]);
+}
+
+/** Data mentah untuk halaman Laporan (admin). */
+export function useReportData() {
+  const { db } = useDataLayer();
+  return useLiveQuery(() => loadReportData(db), [db]);
 }
 
 /** Catatan pemakaian anonim di perangkat ini (langkah 5.1). */

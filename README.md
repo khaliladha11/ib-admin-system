@@ -39,6 +39,8 @@ kelahiran dari HP. Datanya tersimpan di HP dan terkirim sendiri ke server pos IB
   petugas, petugas menerima dan mencatat hasilnya. Setiap langkah tercatat beserta pelakunya.
 - **Label QR dan scan.** Cetak label A4 (24 atau 40 per lembar), scan dengan kamera HP (juga offline),
   daftarkan sapi baru dari label kosong, atau ketik nomor eartag.
+- **Laporan.** S/C dan CR per petugas, desa, dan bulan, tren permintaan IB, dan waktu respons
+  petugas. Bisa diunduh sebagai Excel atau dicetak/PDF; rumusnya ditampilkan di halaman.
 - **Pos IB tanpa internet.** Satu komputer atau Raspberry Pi di pos menjadi server untuk HP di Wi-Fi
   yang sama, dengan HTTPS lokal, cadangan harian, serta ekspor/impor JSON dan CSV.
 - **Mudah dipakai di lapangan.** Tombol besar (≥ 44px), kontras tinggi untuk terik matahari, huruf
