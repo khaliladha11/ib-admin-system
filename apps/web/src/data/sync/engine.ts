@@ -1,13 +1,13 @@
-// Sinkronisasi sederhana (langkah 2.0; versi lengkap di Fase 4):
-//   push: kirim outbox berurutan (FIFO) lewat endpoint REST biasa;
-//   pull: GET /api/sync/changes?since=cursor lalu upsert ke tabel cermin.
+// Sinkronisasi HP ↔ server (langkah 4.2, docs/SYNC.md):
+//   push: POST /api/sync/push dengan ≤ 50 entri outbox (FIFO), idempoten per id entri;
+//   pull: GET /api/sync/pull halaman demi halaman (cursor + sidik jari cakupan).
 //
-// Hasil kiriman per entri:
-//   2xx                      → selesai; baris lokal diganti versi server
-//   409 ALREADY_EXISTS       → sudah pernah diterima (kiriman ulang) → selesai
-//   4xx lain (400/403/404/409/422) → ditolak; pesan disimpan, antrean lanjut
-//   401                      → berhenti; pengguna perlu masuk lagi
-//   jaringan putus atau 5xx  → berhenti; dicoba lagi dengan backoff
+// Hasil per entri dari server:
+//   applied / merged  → selesai; baris lokal diganti versi server
+//   needs_review      → event ditolak karena urutan riwayat: tetap disimpan, "Perlu dicek"
+//   rejected          → tidak diterima; pesan disimpan, antrean lanjut
+//   tanpa hasil (gangguan server di tengah batch) → dicoba lagi dengan backoff
+// Seluruh request: 401 → berhenti, perlu masuk lagi; jaringan/5xx → berhenti + backoff.
 import {
   animalSchema,
   animalTagSchema,
@@ -16,6 +16,9 @@ import {
   farmerSchema,
   qrCodeSchema,
   serviceRequestSchema,
+  syncReviewSchema,
+  MAX_PUSH_CHANGES,
+  type SyncChangeResult,
 } from '@ib/shared';
 
 import {
@@ -29,6 +32,7 @@ import {
 import {
   clearBackoff,
   markDone,
+  markNeedsReview,
   markRejected,
   markRetry,
   pendingEntries,
@@ -50,9 +54,33 @@ export interface SyncResult extends PushResult {
   pulled: number | null;
 }
 
-export type ChangesResponse = { serverTime: number } & {
-  [T in keyof MirrorRows]: MirrorRows[T][];
-};
+export interface PullResponse {
+  rows: { [T in keyof MirrorRows]?: MirrorRows[T][] };
+  cursor: string | null;
+  hasMore: boolean;
+  scope: string;
+  reset: boolean;
+}
+
+interface PushResponse {
+  results: SyncChangeResult[];
+}
+
+/** Ukuran halaman pull. */
+export const PULL_PAGE_SIZE = 500;
+/** Tabel yang isinya bergantung cakupan: dibersihkan setelah pull diulang dari awal. */
+const SCOPED_TABLES = [
+  'farmers',
+  'animals',
+  'animalTags',
+  'events',
+  'serviceRequests',
+  'assignments',
+  'semenStock',
+  'users',
+  'auditLogs',
+  'syncReviews',
+] as const satisfies readonly MirrorTable[];
 
 export interface SyncEngineOptions {
   api: ApiClient;
@@ -90,6 +118,8 @@ function serverRows(entry: OutboxEntry, body: unknown): ServerRows {
     case 'tag.attach':
     case 'tag.remove':
       return { animalTags: parseOne(animalTagSchema, b) };
+    case 'syncReview.discard':
+      return { syncReviews: parseOne(syncReviewSchema, b) };
     case 'serviceRequest.create':
     case 'serviceRequest.accept':
     case 'serviceRequest.assign':
@@ -103,9 +133,6 @@ function serverRows(entry: OutboxEntry, body: unknown): ServerRows {
       };
   }
 }
-
-const isAlreadyExists = (err: ApiRequestError) =>
-  err.status === 409 && err.code === 'ALREADY_EXISTS';
 
 export function createSyncEngine(
   db: IbDb,
@@ -134,69 +161,134 @@ export function createSyncEngine(
   async function pushOutbox(): Promise<PushResult> {
     const result: PushResult = { sent: 0, rejected: 0, stopped: null };
     for (;;) {
-      const [entry] = await pendingEntries(db);
-      if (!entry) return result;
-      if (entry.nextAttemptAt > now()) return { ...result, stopped: 'backoff' };
+      const batch = (await pendingEntries(db)).slice(0, MAX_PUSH_CHANGES);
+      const [head] = batch;
+      if (!head) return result;
+      if (head.nextAttemptAt > now()) return { ...result, stopped: 'backoff' };
+
+      let response: PushResponse;
       try {
-        const body = await api.request(entry.method, entry.path, entry.body);
-        await accept(entry, body);
-        result.sent += 1;
+        response = await api.request<PushResponse>('POST', '/api/sync/push', {
+          changes: batch.map((e) => ({
+            id: e.id,
+            kind: e.kind,
+            method: e.method,
+            path: e.path,
+            body: e.body,
+            rowId: e.rowId,
+            at: e.createdAt,
+          })),
+        });
       } catch (err) {
         if (err instanceof ApiRequestError && err.status === 401) {
           await updateState({ needsLogin: true, lastError: err.message });
           return { ...result, stopped: 'unauthenticated' };
         }
-        if (err instanceof ApiRequestError && isAlreadyExists(err)) {
-          await accept(entry, undefined);
-          result.sent += 1;
-          continue;
-        }
-        if (err instanceof ApiRequestError && err.status < 500) {
-          await markRejected(db, entry, err.message);
-          result.rejected += 1;
-          continue;
-        }
         const message = err instanceof Error ? err.message : String(err);
-        await markRetry(db, entry, message, now());
+        await markRetry(db, head, message, now());
         await updateState({ lastError: message });
         if (err instanceof NetworkError || err instanceof ApiRequestError) {
           return { ...result, stopped: 'offline' };
         }
         throw err;
       }
+
+      const byId = new Map(response.results.map((r) => [r.id, r]));
+      for (const entry of batch) {
+        const r = byId.get(entry.id);
+        if (!r) {
+          // Server berhenti di tengah batch (gangguan): sisanya dicoba lagi nanti.
+          await markRetry(db, entry, 'Server sedang terganggu.', now());
+          await updateState({ lastError: 'Server sedang terganggu.' });
+          return { ...result, stopped: 'offline' };
+        }
+        if (r.result === 'applied' || r.result === 'merged') {
+          await accept(entry, r.body ?? undefined);
+          result.sent += 1;
+        } else if (r.result === 'needs_review') {
+          // Event disembunyikan dari riwayat (tidak dihitung di status/jadwal); isinya tetap
+          // di outbox dan di server sampai dikirim ulang atau dibuang.
+          await db.transaction('rw', db.outbox, db.events, async () => {
+            await markNeedsReview(
+              db,
+              entry,
+              r.message ?? 'Urutan riwayat tidak masuk akal.',
+              r.code,
+            );
+            if (entry.table === 'events') {
+              await db.events.update(entry.rowId, { deletedAt: now() });
+            }
+          });
+          result.rejected += 1;
+        } else {
+          await markRejected(db, entry, r.message ?? 'Tidak diterima server.', r.code);
+          result.rejected += 1;
+        }
+      }
     }
   }
 
-  async function pullChanges(): Promise<number> {
-    const state = (await db.getMeta('sync')) ?? INITIAL_SYNC_STATE;
-    const changes = await api.request<ChangesResponse>(
-      'GET',
-      `/api/sync/changes?since=${String(state.cursor)}`,
-    );
+  /** Simpan satu halaman pull; baris dengan perubahan lokal (pending/perlu dicek) dilewati. */
+  async function applyPage(page: PullResponse, seen: Map<MirrorTable, Set<string>> | null) {
     let applied = 0;
     await db.transaction(
       'rw',
       [...MIRROR_TABLES.map((t) => db.mirror(t)), db.outbox, db.meta],
       async () => {
-        // Baris yang masih punya perubahan lokal belum terkirim tidak ditimpa.
         const pending = await pendingRowIds(db);
         for (const table of MIRROR_TABLES) {
-          const rows = ((changes[table] as { id: string }[] | undefined) ?? []).filter(
-            (r) => !pending.has(r.id),
-          );
+          const all = (page.rows[table] ?? []) as { id: string }[];
+          if (seen) {
+            const set = seen.get(table) ?? new Set<string>();
+            for (const r of all) set.add(r.id);
+            seen.set(table, set);
+          }
+          const rows = all.filter((r) => !pending.has(r.id));
           if (rows.length === 0) continue;
           await db.mirror(table).bulkPut(rows as never[]);
           applied += rows.length;
         }
+        const state = (await db.getMeta('sync')) ?? INITIAL_SYNC_STATE;
         await db.setMeta('sync', {
           ...state,
-          cursor: changes.serverTime,
-          lastSyncAt: now(),
+          cursor: page.cursor,
+          scope: page.scope,
+          lastSyncAt: page.hasMore ? state.lastSyncAt : now(),
           lastError: null,
           needsLogin: false,
         });
       },
     );
+    return applied;
+  }
+
+  /** Setelah pull diulang dari awal: hapus baris yang tidak lagi terlihat (cakupan berubah). */
+  async function dropUnseen(seen: Map<MirrorTable, Set<string>>) {
+    await db.transaction('rw', [...SCOPED_TABLES.map((t) => db.mirror(t)), db.outbox], async () => {
+      const pending = await pendingRowIds(db);
+      for (const table of SCOPED_TABLES) {
+        const keep = seen.get(table) ?? new Set<string>();
+        const ids = await db.mirror(table).toCollection().primaryKeys();
+        const gone = ids.filter((id) => !keep.has(id) && !pending.has(id));
+        if (gone.length > 0) await db.mirror(table).bulkDelete(gone);
+      }
+    });
+  }
+
+  async function pullChanges(): Promise<number> {
+    let applied = 0;
+    let seen: Map<MirrorTable, Set<string>> | null = null;
+    for (let pages = 0; pages < 1000; pages += 1) {
+      const state = (await db.getMeta('sync')) ?? INITIAL_SYNC_STATE;
+      const qs = new URLSearchParams({ limit: String(PULL_PAGE_SIZE) });
+      if (state.cursor) qs.set('cursor', state.cursor);
+      if (state.scope) qs.set('scope', state.scope);
+      const page = await api.request<PullResponse>('GET', `/api/sync/pull?${qs.toString()}`);
+      if (page.reset) seen = new Map();
+      applied += await applyPage(page, seen);
+      if (!page.hasMore) break;
+    }
+    if (seen) await dropUnseen(seen);
     return applied;
   }
 

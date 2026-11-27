@@ -13,6 +13,7 @@ import type {
   QrCode,
   SemenStock,
   ServiceRequest,
+  SyncReview,
   UserRole,
 } from '@ib/shared';
 import { Dexie, type Table } from 'dexie';
@@ -36,8 +37,10 @@ export interface Session {
 }
 
 export interface SyncState {
-  /** Cursor pull berikutnya (`serverTime` dari server). */
-  cursor: number;
+  /** Cursor pull berikutnya (posisi baris terakhir dari server; null = dari awal). */
+  cursor: string | null;
+  /** Sidik jari cakupan dari pull terakhir; berubah → server mengulang pull dari awal. */
+  scope: string | null;
   lastSyncAt: number | null;
   /** Pesan kegagalan sinkron terakhir, atau null bila berhasil. */
   lastError: string | null;
@@ -89,6 +92,7 @@ export const MIRROR_TABLES = [
   'semenStock',
   'users',
   'auditLogs',
+  'syncReviews',
 ] as const;
 export type MirrorTable = (typeof MIRROR_TABLES)[number];
 
@@ -107,6 +111,8 @@ export interface MirrorRows {
   users: PublicUser;
   /** Log aksi permintaan layanan (hanya admin). */
   auditLogs: AuditLog;
+  /** Event "perlu dicek" yang disimpan server (milik pengguna; admin: wilayahnya). */
+  syncReviews: SyncReview;
 }
 
 export class IbDb extends Dexie {
@@ -121,6 +127,7 @@ export class IbDb extends Dexie {
   semenStock!: Table<SemenStock, string>;
   users!: Table<PublicUser, string>;
   auditLogs!: Table<AuditLog, string>;
+  syncReviews!: Table<SyncReview, string>;
   outbox!: Table<OutboxEntry, number>;
   animalPhotos!: Table<AnimalPhoto, string>;
   meta!: Table<MetaRow, MetaKey>;
@@ -167,6 +174,20 @@ export class IbDb extends Dexie {
             row.value.cursor = 0;
           });
       });
+    // v5 (langkah 4.2): pull berhalaman (cursor teks + sidik jari cakupan) dan event
+    // "perlu dicek" dari server. Pull diulang dari awal sekali.
+    this.version(5)
+      .stores({ syncReviews: 'id, userId, animalId, rowId, updatedAt' })
+      .upgrade(async (tx) => {
+        await tx
+          .table('meta')
+          .where('key')
+          .equals('sync')
+          .modify((row: { value: Record<string, unknown> }) => {
+            row.value.cursor = null;
+            row.value.scope = null;
+          });
+      });
   }
 
   /** Tabel cermin berdasarkan nama (untuk kode yang memproses semua tabel, mis. pull). */
@@ -185,7 +206,8 @@ export class IbDb extends Dexie {
 }
 
 export const INITIAL_SYNC_STATE: SyncState = {
-  cursor: 0,
+  cursor: null,
+  scope: null,
   lastSyncAt: null,
   lastError: null,
   needsLogin: false,

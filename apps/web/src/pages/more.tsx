@@ -5,7 +5,7 @@ import {
   LogOut,
   RefreshCw,
   SwatchBook,
-  Trash2,
+  ListChecks,
   Printer,
   UserCog,
   UserRound,
@@ -17,15 +17,7 @@ import { ListSkeleton } from '@/components/skeletons';
 import { ROLE_LABEL } from '@/components/request-status';
 import { Button } from '@/components/ui/button';
 import { Panel } from '@/components/ui/panel';
-import {
-  clearPin,
-  dismissRejected,
-  signOut,
-  useDataLayer,
-  useHasPin,
-  useSession,
-  useSyncStatus,
-} from '@/data';
+import { clearPin, signOut, useDataLayer, useHasPin, useSession, useSyncStatus } from '@/data';
 import { useContrastMode } from '@/design/contrast-mode';
 import { isAdminRole } from '@/layout/nav-items';
 import { formatDateTime } from '@/lib/format';
@@ -88,37 +80,15 @@ export function MorePage() {
           <RefreshCw aria-hidden="true" className={syncing ? 'animate-spin' : undefined} />
           {syncing ? 'Mengirim…' : 'Kirim dan perbarui sekarang'}
         </Button>
-        {status.rejected.length > 0 && (
-          <div className="flex flex-col gap-2">
-            <p className="font-bold text-alarm">Tidak diterima ({status.rejected.length})</p>
-            <p className="text-muted-foreground">
-              Catatan ini tidak bisa disimpan, biasanya karena bertentangan dengan catatan lain
-              (mis. sudah dicatat petugas). Baca alasannya, catat ulang bila perlu, lalu hapus dari
-              daftar.
-            </p>
-            <ul className="flex flex-col gap-2">
-              {status.rejected.map((entry) => (
-                <li
-                  key={entry.id}
-                  className="flex items-start justify-between gap-2 border-t-(length:--bw) pt-2"
-                >
-                  <span>
-                    <span className="block font-semibold">{formatDateTime(entry.createdAt)}</span>
-                    <span className="block">{entry.lastError}</span>
-                  </span>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    aria-label="Hapus dari daftar"
-                    onClick={() => void dismissRejected(db, entry.id)}
-                  >
-                    <Trash2 aria-hidden="true" />
-                  </Button>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
+        <Button asChild variant="outline" className="justify-start">
+          <Link to="/data-belum-terkirim">
+            <ListChecks aria-hidden="true" />
+            Data belum terkirim
+            {status.pending + status.reviews + status.rejected.length > 0
+              ? ` (${String(status.pending + status.reviews + status.rejected.length)})`
+              : ''}
+          </Link>
+        </Button>
       </Panel>
 
       <Panel title="PIN HP ini">

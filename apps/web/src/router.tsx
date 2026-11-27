@@ -35,6 +35,7 @@ const UsersPage = lazyRouteComponent(() => import('@/pages/admin/users'), 'Users
 const MorePage = lazyRouteComponent(() => import('@/pages/more'), 'MorePage');
 const RecordEventPage = lazyRouteComponent(() => import('@/pages/record-event'), 'RecordEventPage');
 const RequestFormPage = lazyRouteComponent(() => import('@/pages/request-form'), 'RequestFormPage');
+const SyncQueuePage = lazyRouteComponent(() => import('@/pages/sync-queue'), 'SyncQueuePage');
 const ScanPage = lazyRouteComponent(() => import('@/pages/scan/scan-page'), 'ScanPage');
 const AnimalNewPage = lazyRouteComponent(() => import('@/pages/animal-new'), 'AnimalNewPage');
 const LabelsPage = lazyRouteComponent(() => import('@/pages/labels/labels-page'), 'LabelsPage');
@@ -128,6 +129,12 @@ const moreRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/lainnya',
   component: MorePage,
+});
+const syncQueueRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/data-belum-terkirim',
+  component: SyncQueuePage,
+  staticData: { title: 'Data belum terkirim', focus: true, backTo: '/lainnya' },
 });
 const labelsRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -237,6 +244,7 @@ const routeTree = rootRoute.addChildren([
   requestRoute,
   moreRoute,
   labelsRoute,
+  syncQueueRoute,
   devRoute,
 ]);
 

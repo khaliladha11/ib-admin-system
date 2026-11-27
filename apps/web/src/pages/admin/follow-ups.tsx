@@ -1,13 +1,23 @@
 // Tindak lanjut: laporan terlambat (aturan skripsi 3 bulan dan 9 bulan) dengan tombol
 // WhatsApp berisi pesan siap kirim. Pesan tidak terkirim otomatis: admin menekan kirim sendiri.
 import { Link } from '@tanstack/react-router';
-import { MessageCircle, PartyPopper } from 'lucide-react';
+import { MessageCircle, PartyPopper, TriangleAlert } from 'lucide-react';
 import { useState } from 'react';
 
 import { ListSkeleton } from '@/components/skeletons';
 import { EmptyState } from '@/components/empty-state';
 import { Button } from '@/components/ui/button';
-import { useFollowUps, useSession, type FollowUp } from '@/data';
+import {
+  useFollowUps,
+  useRepo,
+  useServerReviews,
+  useSession,
+  type FollowUp,
+  type ServerReviewView,
+} from '@/data';
+import { ErrorMessage } from '@/components/error-message';
+import { Panel } from '@/components/ui/panel';
+import { EVENT_TEXT } from '@/lib/describe-change';
 import { formatDate } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { followUpMessage, waLink } from '@/lib/whatsapp';
@@ -82,6 +92,71 @@ function WaButtons({ item }: { item: FollowUp }) {
   );
 }
 
+/** Catatan petugas yang ditolak server karena urutan riwayat (docs/SYNC.md §6). */
+function ServerReviews() {
+  const reviews = useServerReviews();
+  const repo = useRepo();
+  const [error, setError] = useState<unknown>(null);
+  if (!reviews || reviews.length === 0) return null;
+  const summary = (r: ServerReviewView) => {
+    const body = (r.payload.body ?? {}) as { type?: string; occurredAt?: number };
+    return [
+      body.type ? (EVENT_TEXT[body.type] ?? body.type) : 'Catatan',
+      r.animalName ?? 'Sapi',
+      body.occurredAt ? formatDate(body.occurredAt) : null,
+    ]
+      .filter(Boolean)
+      .join(' · ');
+  };
+  return (
+    <Panel title={`Catatan perlu dicek (${String(reviews.length)})`} titleId="perlu-dicek-admin">
+      <p className="text-muted-foreground">
+        Catatan dari HP petugas yang bertentangan dengan riwayat sapi di server. Petugas bisa
+        mengubah tanggal lalu mengirim ulang; buang bila catatannya keliru.
+      </p>
+      <ul className="flex flex-col">
+        {reviews.map((r) => (
+          <li
+            key={r.id}
+            className="flex flex-col gap-2 border-t-(length:--bw) py-3 first:border-t-0 sm:flex-row sm:items-start sm:justify-between"
+          >
+            <span className="flex min-w-0 items-start gap-3">
+              <TriangleAlert aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-soil" />
+              <span className="min-w-0">
+                <span className="block font-bold">{summary(r)}</span>
+                <span className="block text-sm text-muted-foreground">
+                  Dari {r.userName ?? 'petugas'}, {formatDate(r.createdAt)}
+                </span>
+                <span className="block">{r.message}</span>
+                {r.animalId && (
+                  <Link
+                    to="/ternak/$animalId"
+                    params={{ animalId: r.animalId }}
+                    className="inline-flex min-h-11 items-center font-semibold underline underline-offset-4"
+                  >
+                    Lihat riwayat sapi
+                  </Link>
+                )}
+              </span>
+            </span>
+            <Button
+              variant="ghost"
+              className="self-start text-alarm"
+              onClick={() => {
+                setError(null);
+                repo.discardServerReview(r.id).catch(setError);
+              }}
+            >
+              Buang
+            </Button>
+          </li>
+        ))}
+      </ul>
+      {error !== null && <ErrorMessage error={error} />}
+    </Panel>
+  );
+}
+
 export function FollowUpsPage() {
   const items = useFollowUps();
   const [filter, setFilter] = useState<Filter>('semua');
@@ -91,6 +166,7 @@ export function FollowUpsPage() {
 
   return (
     <div className="flex flex-col gap-4">
+      <ServerReviews />
       <p className="max-w-prose text-muted-foreground">
         Sapi yang laporannya terlambat menurut aturan skripsi. Kirim pengingat lewat WhatsApp: pesan
         sudah terisi dan bisa diubah sebelum dikirim.

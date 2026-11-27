@@ -56,6 +56,7 @@ const SYNC_STATES: [string, SyncState][] = [
   ['Sedang mengirim', { online: true, pending: 3, rejected: 0, needsLogin: false }],
   ['Offline', { online: false, pending: 0, rejected: 0, needsLogin: false }],
   ['Offline, ada data', { online: false, pending: 5, rejected: 0, needsLogin: false }],
+  ['Perlu dicek', { online: true, pending: 0, rejected: 0, reviews: 1, needsLogin: false }],
   ['Ada yang ditolak', { online: true, pending: 0, rejected: 2, needsLogin: false }],
   ['Sesi habis', { online: true, pending: 4, rejected: 0, needsLogin: true }],
 ];

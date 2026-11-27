@@ -10,6 +10,7 @@ import {
   ScanQrCode,
   SearchX,
   Trash2,
+  TriangleAlert,
 } from 'lucide-react';
 import { useRef, useState } from 'react';
 
@@ -28,6 +29,7 @@ import {
   useEventDefaults,
   useRepo,
   useSession,
+  useSyncQueue,
   type AnimalTimeline,
 } from '@/data';
 import { ReminderActionLink } from '@/components/reminder-action-link';
@@ -93,6 +95,8 @@ export function AnimalProfilePage() {
       {scan && !exited && (
         <ScanQuickActions animalId={animal.id} female={animal.sex === 'F'} role={role} />
       )}
+
+      <ReviewNotice animalId={animal.id} />
 
       <StatusBlock timeline={timeline} today={today} role={role} />
 
@@ -331,5 +335,22 @@ function ScanQuickActions({
         )}
       </div>
     </section>
+  );
+}
+
+/** Catatan sapi ini yang ditolak server karena urutan riwayat (belum masuk riwayat). */
+function ReviewNotice({ animalId }: { animalId: string }) {
+  const queue = useSyncQueue();
+  const count = queue?.reviews.filter((r) => r.animalId === animalId).length ?? 0;
+  if (count === 0) return null;
+  return (
+    <Link
+      to="/data-belum-terkirim"
+      className="surface flex min-h-11 items-center gap-3 p-3 font-semibold text-soil"
+    >
+      <TriangleAlert aria-hidden="true" className="size-5 shrink-0" />
+      {count} catatan sapi ini perlu dicek: belum masuk riwayat karena bertentangan dengan catatan
+      lain.
+    </Link>
   );
 }

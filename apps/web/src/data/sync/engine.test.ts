@@ -11,26 +11,20 @@ import {
   type Call,
 } from '@/test/data-fixtures';
 
-import { pendingEntries, rejectedEntries } from '../outbox';
+import { pendingEntries, pendingRowIds, rejectedEntries, reviewEntries } from '../outbox';
 
-const emptyChanges = (serverTime: number) => ({
-  serverTime,
-  locations: [],
-  farmers: [],
-  animals: [],
-  animalTags: [],
-  events: [],
-  serviceRequests: [],
-  assignments: [],
-  semenStock: [],
-});
+/** Satu halaman GET /api/sync/pull. */
+const page = (
+  rows: Record<string, unknown[]> = {},
+  { cursor = 'c1', hasMore = false, scope = 's1', reset = false } = {},
+) => ({ rows, cursor, hasMore, scope, reset });
 
-const isPull = (c: Call) => c.method === 'GET' && c.path.startsWith('/api/sync/changes');
+const isPull = (c: Call) => c.method === 'GET' && c.path.startsWith('/api/sync/pull');
 
 /** Server yang menerima semua tulisan dan menggemakan baris yang dikirim. */
-function echoServer(serverTime = TODAY) {
+function echoServer() {
   return (call: Call) => {
-    if (isPull(call)) return { status: 200, body: emptyChanges(serverTime) };
+    if (isPull(call)) return { status: 200, body: page() };
     return { status: 201, body: call.body };
   };
 }
@@ -81,9 +75,13 @@ describe('pushOutbox', () => {
     expect(await t.db.outbox.count()).toBe(0);
   });
 
-  it('422/409 lain: entri ditolak beserta pesannya, antrean tetap jalan', async () => {
+  it('event dengan urutan tidak masuk akal: perlu dicek (tidak hilang), antrean tetap jalan', async () => {
     const t = await createTestLayer('inseminator');
-    await t.repo.recordEvent(t.animal.id, { type: 'BH', payload: {}, occurredAt: TODAY });
+    const ev = await t.repo.recordEvent(t.animal.id, {
+      type: 'BH',
+      payload: {},
+      occurredAt: TODAY,
+    });
     await t.repo.createAnimal({ farmerId: t.farmer.id, sex: 'M' });
     t.server.setHandler((call) =>
       call.path.endsWith('/events')
@@ -91,11 +89,44 @@ describe('pushOutbox', () => {
         : { status: 201, body: call.body },
     );
     expect(await t.sync.pushOutbox()).toEqual({ sent: 1, rejected: 1, stopped: null });
-    const rejected = await rejectedEntries(t.db);
-    expect(rejected).toMatchObject([
-      { kind: 'event.create', status: 'rejected', lastError: 'Urutan event tidak masuk akal.' },
+    expect(await reviewEntries(t.db)).toMatchObject([
+      {
+        kind: 'event.create',
+        status: 'needs_review',
+        code: 'INVALID_EVENT',
+        lastError: 'Urutan event tidak masuk akal.',
+      },
     ]);
+    // Event lokal tetap ada dan tidak ditimpa/dihapus pull.
+    expect(await t.db.events.get(ev.event.id)).toBeDefined();
+    expect(await pendingRowIds(t.db)).toContain(ev.event.id);
     expect(await pendingEntries(t.db)).toEqual([]);
+  });
+
+  it('penolakan lain (izin, data tidak ada): tidak diterima beserta pesannya', async () => {
+    const t = await createTestLayer('group_admin');
+    await t.repo.updateAnimal(t.animal.id, { name: 'X' });
+    t.server.setHandler(() => errorReply(404, 'NOT_FOUND', 'Ternak tidak ditemukan.'));
+    expect(await t.sync.pushOutbox()).toEqual({ sent: 0, rejected: 1, stopped: null });
+    expect(await rejectedEntries(t.db)).toMatchObject([
+      { status: 'rejected', code: 'NOT_FOUND', lastError: 'Ternak tidak ditemukan.' },
+    ]);
+  });
+
+  it('batch: satu request untuk banyak entri; gangguan di tengah → sisanya dicoba lagi', async () => {
+    const t = await createTestLayer('group_admin');
+    for (const name of ['A', 'B', 'C']) {
+      await t.repo.createAnimal({ farmerId: t.farmer.id, sex: 'F', name });
+    }
+    let n = 0;
+    t.server.setHandler((call) => {
+      n += 1;
+      return n === 2 ? errorReply(503, 'INTERNAL_ERROR') : { status: 201, body: call.body };
+    });
+    expect(await t.sync.pushOutbox()).toMatchObject({ sent: 1, stopped: 'offline' });
+    const left = await pendingEntries(t.db);
+    expect(left.map((e) => (e.body as { name: string }).name)).toEqual(['B', 'C']);
+    expect(left[0]?.attempts).toBe(1);
   });
 
   it('jaringan putus: berhenti, entri tetap pending dengan backoff', async () => {
@@ -164,33 +195,46 @@ describe('pushOutbox', () => {
 });
 
 describe('pullChanges', () => {
-  it('menyimpan perubahan server, memperbarui cursor, dan mengirim cursor berikutnya', async () => {
+  it('menyimpan perubahan server dan mengirim cursor + cakupan berikutnya', async () => {
     const t = await createTestLayer('group_admin');
     const remote = makeAnimal(t.farmer.id, { name: 'Dari HP lain' });
     const ev = makeEvent(remote.id, 2, { type: 'BH', payload: {} });
-    t.server.setHandler(() => ({
-      status: 200,
-      body: { ...emptyChanges(TODAY - 1_000), animals: [remote], events: [ev] },
-    }));
+    t.server.setHandler(() => ({ status: 200, body: page({ animals: [remote], events: [ev] }) }));
 
     expect(await t.sync.pullChanges()).toBe(2);
-    expect(t.server.calls[0]?.path).toBe('/api/sync/changes?since=0');
+    expect(t.server.calls[0]?.path).toBe('/api/sync/pull?limit=500');
     expect(await t.db.animals.get(remote.id)).toMatchObject({ name: 'Dari HP lain' });
     expect(await t.db.getMeta('sync')).toMatchObject({
-      cursor: TODAY - 1_000,
+      cursor: 'c1',
+      scope: 's1',
       lastSyncAt: TODAY,
       lastError: null,
     });
 
     await t.sync.pullChanges();
-    expect(t.server.calls[1]?.path).toBe(`/api/sync/changes?since=${String(TODAY - 1_000)}`);
+    expect(t.server.calls[1]?.path).toBe('/api/sync/pull?limit=500&cursor=c1&scope=s1');
+  });
+
+  it('beberapa halaman: diambil sampai habis, cursor disimpan per halaman', async () => {
+    const t = await createTestLayer('group_admin');
+    const a = makeAnimal(t.farmer.id, { name: 'A' });
+    const b = makeAnimal(t.farmer.id, { name: 'B' });
+    t.server.setHandler((call) =>
+      call.path.includes('cursor=p1')
+        ? { status: 200, body: page({ animals: [b] }, { cursor: 'p2' }) }
+        : { status: 200, body: page({ animals: [a] }, { cursor: 'p1', hasMore: true }) },
+    );
+    expect(await t.sync.pullChanges()).toBe(2);
+    expect(t.server.calls).toHaveLength(2);
+    expect((await t.db.getMeta('sync'))?.cursor).toBe('p2');
+    expect(await t.db.animals.get(b.id)).toBeDefined();
   });
 
   it('baris yang dihapus di server ikut tersimpan dengan deletedAt', async () => {
     const t = await createTestLayer('group_admin');
     t.server.setHandler(() => ({
       status: 200,
-      body: { ...emptyChanges(TODAY), animals: [{ ...t.animal, deletedAt: TODAY - DAY }] },
+      body: page({ animals: [{ ...t.animal, deletedAt: TODAY - DAY }] }),
     }));
     await t.sync.pullChanges();
     expect((await t.db.animals.get(t.animal.id))?.deletedAt).toBe(TODAY - DAY);
@@ -201,16 +245,39 @@ describe('pullChanges', () => {
     await t.repo.updateAnimal(t.animal.id, { name: 'Nama lokal' });
     t.server.setHandler(() => ({
       status: 200,
-      body: { ...emptyChanges(TODAY), animals: [{ ...t.animal, name: 'Nama server lama' }] },
+      body: page({ animals: [{ ...t.animal, name: 'Nama server lama' }] }),
     }));
     expect(await t.sync.pullChanges()).toBe(0);
     expect((await t.db.animals.get(t.animal.id))?.name).toBe('Nama lokal');
+  });
+
+  it('cakupan berubah (reset): baris yang tidak lagi terlihat dihapus, kecuali perubahan lokal', async () => {
+    const t = await createTestLayer('group_admin');
+    const keep = makeAnimal(t.farmer.id, { name: 'Tetap' });
+    const local = await t.repo.createAnimal({ farmerId: t.farmer.id, sex: 'F', name: 'Lokal' });
+    await t.db.animals.add(makeAnimal(t.farmer.id, { name: 'Pindah wilayah' }));
+    t.server.setHandler((call) =>
+      call.path.includes('cursor=r1')
+        ? { status: 200, body: page({ animals: [keep] }, { cursor: 'r2', scope: 's2' }) }
+        : {
+            status: 200,
+            body: page(
+              { farmers: [t.farmer], locations: [t.location] },
+              { cursor: 'r1', hasMore: true, scope: 's2', reset: true },
+            ),
+          },
+    );
+    await t.sync.pullChanges();
+    const names = (await t.db.animals.toArray()).map((a) => a.name).sort();
+    expect(names).toEqual(['Lokal', 'Tetap']);
+    expect(await t.db.animals.get(local.id)).toBeDefined();
+    expect(await t.db.getMeta('sync')).toMatchObject({ cursor: 'r2', scope: 's2' });
   });
 });
 
 describe('syncNow', () => {
   it('push lalu pull; offline: pull dilewati', async () => {
-    const t = await createTestLayer('group_admin', echoServer(TODAY - 1_000));
+    const t = await createTestLayer('group_admin', echoServer());
     await t.repo.createAnimal({ farmerId: t.farmer.id, sex: 'F' });
     expect(await t.sync.syncNow()).toEqual({ sent: 1, rejected: 0, stopped: null, pulled: 0 });
     expect(t.server.calls.map((c) => c.method)).toEqual(['POST', 'GET']);
