@@ -24,7 +24,9 @@ describe('masukan', () => {
   beforeAll(async () => {
     h = await createHarness();
   });
-  afterAll(() => { h.close(); });
+  afterAll(() => {
+    h.close();
+  });
 
   it('semua peran boleh mengirim; kiriman ulang lewat push aman', async () => {
     const id = h.newId();
