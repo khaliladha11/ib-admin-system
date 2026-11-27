@@ -38,7 +38,10 @@ inseminator, dan admin kelompok/dinas.
 - Fase 4: 4.1 PWA selesai (nama **IB Ternak**, manifest + ikon, service worker precache semua
   aset, "Perbarui sekarang", bundel awal 735 KB / 228 KB gzip, `docs/BUNDLE.md`).
   4.2 sinkron tahan konflik selesai (`docs/SYNC.md`: push/pull berbatch, konflik profil per kolom,
-  event "perlu dicek", halaman Data belum terkirim, tes dua HP). Langkah berikutnya: 4.3 mode pos/kelompok.
+  event "perlu dicek", halaman Data belum terkirim, tes dua HP). 4.3 mode pos selesai (Docker +
+  Caddy HTTPS lokal, skrip instal, halaman Pos IB, cadangan harian, ekspor/impor, `docs/INSTALL.md`);
+  image Docker, Caddy, dan skrip instal BELUM diuji di perangkat sungguhan (sandbox tidak bisa).
+  Fase 4 selesai setelah uji itu; tag `v0.4.0` manual. Langkah berikutnya: Fase 5 (lihat PLAN.md).
 
 ## Prinsip
 1. Offline-first: semua pencatatan harus bisa tanpa internet; sinkron menyusul.
@@ -115,7 +118,11 @@ inseminator, dan admin kelompok/dinas.
   kamera palsu (`e2e/fake-camera.ts`: video Y4M berisi QR `IB-SCAN2`) dan menyimpan `3.2-*.png`.
   Project `pwa` (`pwa.spec.ts`) memakai build produksi + `vite preview` port 5175: manifest, buka
   ulang offline dari cache SW, catat event offline, online → terkirim ke server (`4.1-*.png`), dan
-  `two-devices.spec.ts` (dua HP offline mengubah data yang sama → `4.2-*.png`). Di luar sandbox: `pnpm --filter @ib/web exec playwright install chromium`.
+  `two-devices.spec.ts` (dua HP offline mengubah data yang sama → `4.2-*.png`). `pos.spec.ts`:
+  halaman Pos IB (cadangan, ekspor lalu impor) → `4.3-*.png`. Di luar sandbox: `pnpm --filter @ib/web exec playwright install chromium`.
+- Pos IB: `docker compose up -d --build` (butuh `POS_HOST` di `.env`), `scripts/install.sh` (Linux/Pi
+  satu baris), `scripts/pos.sh` (mulai/berhenti/alamat/cadangkan/pulihkan/sertifikat/perbarui).
+  `pnpm db:backup` (atau `db:backup daftar`) dan `pnpm db:restore <file>` (server dimatikan dulu).
 - `pnpm db:migrate` — jalankan migrasi (`DATABASE_URL`, bawaan `apps/server/data/ib.sqlite`)
 - `pnpm db:seed` — isi data contoh fiktif; `pnpm db:seed --reset` untuk mengisi ulang
 - `pnpm db:generate` — buat file migrasi baru setelah mengubah `apps/server/src/db/schema.ts`
@@ -244,6 +251,18 @@ inseminator, dan admin kelompok/dinas.
 - Bundel: Motion lewat `LazyMotion` (`lib/motion-features.ts`, dimuat terpisah) dan komponen
   `m` dari `motion/react-m` (jangan impor `motion` dari `motion/react` di komponen). Halaman form
   catat, minta IB/PKB, Lainnya, Scan, label, admin dimuat lazy. Ukuran: `docs/BUNDLE.md`.
+- Pos (langkah 4.3): server menyajikan build web dari origin yang sama bila `WEB_DIST` diisi
+  (`http/web-app.ts`, SPA fallback, `/assets` immutable, `sw.js` no-cache). Database kosong →
+  `db/bootstrap.ts` membuat wilayah + admin dinas dari `ADMIN_EMAIL`/`ADMIN_PASSWORD` (atau data
+  contoh bila `DEMO_DATA=1`). Cadangan harian `ops/backup.ts` (API backup SQLite, simpan
+  `BACKUP_KEEP`, nama file UTC). Ekspor `ops/export.ts`: JSON lengkap (termasuk hash password) dan
+  CSV ZIP (`ops/zip.ts`, tanpa hash); impor = gabung `onConflictDoNothing`, baris baru `updatedAt`
+  = sekarang, cadangan dulu. Rute `/api/system/*` (info: admin; cadangan/ekspor/impor: admin dinas).
+  Halaman web `/pos` (`pages/admin/pos.tsx`, `data/system-api.ts`, online-only).
+- Docker: `Dockerfile` (build → `pnpm deploy --prod --legacy`, jalan dengan `tsx`, pengguna node,
+  data di `/data`, cadangan di `/backups`), `docker-compose.yml` (app + Caddy), `deploy/Caddyfile`
+  (`local_certs`, `tls internal` untuk `POS_HOST` + `default_sni`, sertifikat root di
+  `http://IP/sertifikat`). `tsx` kini dependensi runtime server.
 - Tes web memakai `fake-indexeddb` (di `src/test/setup.ts`) dan fixture
   `src/test/data-fixtures.ts` (DB baru per tes, fetch tiruan).
 - Logika reproduksi di `packages/shared/src/domain/`: `deriveReproStatus`,

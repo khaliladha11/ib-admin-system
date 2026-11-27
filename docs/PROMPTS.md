@@ -310,7 +310,7 @@ Sempurnakan sinkronisasi antara Dexie dan server:
 Tulis dulu dokumen desain singkat `docs/SYNC.md` berisi alur dan aturan konflik, tunggu persetujuan saya, baru implementasi.
 ```
 
-- [ ] **4.3 Mode Pos/Kelompok: server di jaringan lokal**
+- [x] **4.3 Mode Pos/Kelompok: server di jaringan lokal**
 
 ```text
 Buat cara mudah menjalankan server di laptop atau mini PC untuk pos IB tanpa internet:
